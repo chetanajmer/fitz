@@ -3,8 +3,10 @@
 use App\Http\Controllers\Api\V1\AppVersionController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CheckInController;
+use App\Http\Controllers\Api\V1\CityController;
 use App\Http\Controllers\Api\V1\FitnessPlanController;
 use App\Http\Controllers\Api\V1\GymBrandingController;
+use App\Http\Controllers\Api\V1\SignupController;
 use App\Http\Controllers\Api\V1\StreakController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +24,15 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::prefix('auth')->name('auth.')->group(function () {
         Route::post('send-otp', [AuthController::class, 'sendOtp'])->middleware('throttle:otp-send')->name('send-otp');
         Route::post('verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:otp-verify')->name('verify-otp');
+    });
+
+    // New member sign-up: verify phone, pick a city and a gym in it, send details (member starts pending).
+    Route::get('cities', [CityController::class, 'index'])->middleware('throttle:60,1')->name('cities.index');
+    Route::get('cities/{cityId}/gyms', [CityController::class, 'gyms'])->whereNumber('cityId')->middleware('throttle:60,1')->name('cities.gyms');
+    Route::prefix('auth/register')->name('auth.register.')->group(function () {
+        Route::post('send-otp', [SignupController::class, 'sendOtp'])->middleware('throttle:otp-send')->name('send-otp');
+        Route::post('verify-otp', [SignupController::class, 'verifyOtp'])->middleware('throttle:otp-verify')->name('verify-otp');
+        Route::post('/', [SignupController::class, 'register'])->middleware('throttle:10,1')->name('store');
     });
 
     Route::middleware(['auth:member'])->group(function () {

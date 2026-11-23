@@ -199,9 +199,10 @@ class Show extends Component
     public function toggleStatus(): void
     {
         Gate::authorize('update', $this->member);
+        $wasPending = $this->member->status === MemberStatus::Pending;
         $this->member->status = $this->member->status === MemberStatus::Active ? MemberStatus::Inactive : MemberStatus::Active;
         $this->member->save();
-        $this->dispatch('notify', message: "Member marked {$this->member->status->label()}.");
+        $this->dispatch('notify', message: $wasPending ? 'Registration approved. They can now log in to the app.' : "Member marked {$this->member->status->label()}.");
     }
 
     public function assignTrainer(?string $trainerId = null): void

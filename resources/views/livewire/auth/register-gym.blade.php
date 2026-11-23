@@ -14,8 +14,13 @@
                     <x-ui.field label="Gym name" name="gym_name" required class="sm:col-span-2">
                         <input wire:model="gym_name" id="gym_name" class="input" placeholder="Iron Paradise Fitness">
                     </x-ui.field>
-                    <x-ui.field label="City" name="city" required>
-                        <input wire:model="city" id="city" class="input">
+                    <x-ui.field label="City" name="city_id" required hint="Your city isn't listed? Contact Gymai support and we'll add it.">
+                        <select wire:model="city_id" id="city_id" class="input">
+                            <option value="">Select city</option>
+                            @foreach ($cities as $c)
+                                <option value="{{ $c->id }}">{{ $c->name }}{{ $c->state ? ', '.$c->state : '' }}</option>
+                            @endforeach
+                        </select>
                     </x-ui.field>
                     <x-ui.field label="Gym phone" name="gym_phone">
                         <input wire:model="gym_phone" id="gym_phone" class="input">

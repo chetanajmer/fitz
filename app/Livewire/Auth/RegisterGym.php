@@ -2,9 +2,11 @@
 
 namespace App\Livewire\Auth;
 
+use App\Models\City;
 use App\Models\PlatformSetting;
 use App\Models\PricingRate;
 use App\Services\GymRegistrationService;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -16,7 +18,7 @@ class RegisterGym extends Component
 {
     public string $gym_name = '';
 
-    public string $city = '';
+    public string $city_id = '';
 
     public string $address = '';
 
@@ -38,7 +40,7 @@ class RegisterGym extends Component
     {
         return [
             'gym_name' => 'required|string|min:2|max:120',
-            'city' => 'required|string|max:80',
+            'city_id' => ['required', Rule::exists('cities', 'id')->where('is_active', true)],
             'address' => 'nullable|string|max:255',
             'gym_phone' => 'nullable|string|max:20',
             'owner_name' => 'required|string|max:120',
@@ -65,6 +67,7 @@ class RegisterGym extends Component
     {
         return view('livewire.auth.register-gym', [
             'price' => PricingRate::rateOn(),
+            'cities' => City::active()->orderBy('name')->get(['id', 'name', 'state']),
             'open' => PlatformSetting::get('allow_registrations', '1') === '1',
         ]);
     }

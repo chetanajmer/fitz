@@ -2,11 +2,13 @@
 
 namespace App\Livewire\Gym\Settings;
 
+use App\Models\City;
 use App\Models\Gym;
 use App\Models\GymPhoto;
 use App\Services\GymProfileService;
 use App\Services\QrCodeService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
@@ -44,7 +46,7 @@ class Profile extends Component
         $gym = $this->gym();
         $this->profile = [
             'name' => $gym->name, 'phone' => (string) $gym->phone, 'email' => (string) $gym->email,
-            'address' => (string) $gym->address, 'city' => (string) $gym->city, 'description' => (string) $gym->description,
+            'address' => (string) $gym->address, 'city_id' => (string) $gym->city_id, 'description' => (string) $gym->description,
         ];
         $all = $gym->allSettings();
         $this->settings = [
@@ -69,7 +71,8 @@ class Profile extends Component
             'profile.phone' => 'nullable|string|max:20',
             'profile.email' => 'nullable|email|max:255',
             'profile.address' => 'nullable|string|max:255',
-            'profile.city' => 'nullable|string|max:80',
+            // An active city, or the gym's current one even if the Super Admin has since switched it off.
+            'profile.city_id' => ['required', Rule::exists('cities', 'id')->where(fn ($q) => $q->where('is_active', true)->orWhere('id', $this->gym()->city_id))],
             'profile.description' => 'nullable|string|max:3000',
             'settings.primary_color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'settings.secondary_color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
@@ -85,7 +88,7 @@ class Profile extends Component
             'facilities' => 'nullable|string|max:2000',
             'logo' => 'nullable|image|max:2048',
             'banner' => 'nullable|image|max:4096',
-        ], [], ['profile.name' => 'gym name']);
+        ], [], ['profile.name' => 'gym name', 'profile.city_id' => 'city']);
 
         $settings = $this->settings;
         $settings['facilities'] = preg_split('/\r?\n/', $this->facilities);
@@ -143,6 +146,7 @@ class Profile extends Component
         return view('livewire.gym.settings.profile', [
             'gym' => $gym,
             'gymPhotos' => GymPhoto::orderBy('sort_order')->get(),
+            'cities' => City::where(fn ($q) => $q->where('is_active', true)->orWhere('id', $gym->city_id))->orderBy('name')->get(['id', 'name', 'state']),
             'joinQr' => $qr->svg($gym->joinUrl(), 220),
         ]);
     }

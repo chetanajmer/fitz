@@ -9,13 +9,19 @@ use Illuminate\Support\Facades\Storage;
 
 class GymProfileService
 {
+    public function __construct(protected CityService $cities) {}
+
     /**
-     * @param  array  $profile  name, phone, email, address, city, description
+     * @param  array  $profile  name, phone, email, address, description, city_id (from the managed list)
      * @param  array  $settings  primary_color, secondary_color, tagline, opening_hours, facilities, social
      */
     public function update(Gym $gym, array $profile, array $settings, ?UploadedFile $logo = null, ?UploadedFile $banner = null): Gym
     {
-        $gym->fill($profile);
+        if (array_key_exists('city_id', $profile)) {
+            $this->cities->assignToGym($gym, $this->cities->resolve($profile['city_id'] ? (int) $profile['city_id'] : null));
+        }
+
+        $gym->fill(collect($profile)->except(['city', 'city_id'])->all());
 
         $current = $gym->allSettings();
         // Merge over the current settings so keys managed elsewhere (e.g. streak rules) are kept.

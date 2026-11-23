@@ -66,7 +66,11 @@
                     </x-ui.field>
                 </div>
                 <x-ui.field label="Status" name="form.status">
-                    <select wire:model="form.status" class="input"><option value="active">Active</option><option value="inactive">Inactive</option></select>
+                    <select wire:model="form.status" class="input">
+                        @foreach (\App\Enums\MemberStatus::options() as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
                 </x-ui.field>
                 @if ($canAssignTrainer)
                     <x-ui.field label="Assigned trainer" name="trainer_id">

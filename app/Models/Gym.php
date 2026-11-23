@@ -40,7 +40,7 @@ class Gym extends Model
         ],
     ];
 
-    // owner_id, slug, join_token, register_token and status are set by services only.
+    // owner_id, slug, join_token, register_token, city_id and status are set by services only.
     protected $fillable = ['name', 'phone', 'email', 'address', 'city', 'logo_path', 'description'];
 
     protected function casts(): array
@@ -61,6 +61,12 @@ class Gym extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /** The managed city (the `city` text column mirrors its name for display). */
+    public function cityRecord(): BelongsTo
+    {
+        return $this->belongsTo(City::class, 'city_id');
     }
 
     public function users(): HasMany

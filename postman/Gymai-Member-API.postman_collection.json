@@ -47,6 +47,18 @@
         {
             "key": "device_name",
             "value": "Postman"
+        },
+        {
+            "key": "city_id",
+            "value": ""
+        },
+        {
+            "key": "registration_token",
+            "value": ""
+        },
+        {
+            "key": "signup_phone",
+            "value": "9811100001"
         }
     ],
     "item": [
@@ -251,7 +263,7 @@
                                 "send-otp"
                             ]
                         },
-                        "description": "Sends a 6-digit OTP by SMS to a registered, active member.\n\n**Body**\n- `phone` (required) — any format: `9876543210`, `+91 98765 43210`, `09876543210`.\n- `gym_id` (optional) — required only when the number belongs to members of more than one gym (see the *Send OTP — choose gym* request).\n\n**Rules:** OTP valid 5 minutes · resend allowed after 30 s · max 5 OTPs per number per hour.\n\n`debug_otp` is included only when `OTP_EXPOSE_IN_RESPONSE=true` and the app is not in production.\n\n**Not connected to any gym (fallback):** if the number is not an active member of any active gym (never registered, deactivated or removed by their gym, or their gym is suspended), the API returns `404 NO_GYM_CONNECTED` with `data.callback_requested: true`. The number is saved as a **lead** in Super Admin → App Leads and a support executive calls back with nearby gyms.\n\nOptional lead fields (used only in that case): `name`, `city`, `latitude` + `longitude` (for gyms near the user), `app_platform`, `app_version`."
+                        "description": "Sends a 6-digit OTP by SMS to a registered, active member.\n\n**Body**\n- `phone` (required) — any format: `9876543210`, `+91 98765 43210`, `09876543210`.\n- `gym_id` (optional) — required only when the number belongs to members of more than one gym (see the *Send OTP — choose gym* request).\n\n**Rules:** OTP valid 5 minutes · resend allowed after 30 s · max 5 OTPs per number per hour.\n\n`debug_otp` is included only when `OTP_EXPOSE_IN_RESPONSE=true` and the app is not in production.\n\n**Not connected to any gym (fallback):** if the number is not an active member of any active gym (never registered, deactivated or removed by their gym, or their gym is suspended), the API returns `404 NO_GYM_CONNECTED` with `data.callback_requested: true`. The number is saved as a **lead** in Super Admin → App Leads and a support executive calls back with nearby gyms.\n\nOptional lead fields (used only in that case): `name`, `city`, `latitude` + `longitude` (for gyms near the user), `app_platform`, `app_version`.\n\n**Waiting for approval:** a number that signed up through *5. Sign up* and is not approved yet gets `403 MEMBER_PENDING_APPROVAL` (with `data.gym_id`, `data.gym_name`) and is not saved as a lead."
                     },
                     "response": [
                         {
@@ -1180,6 +1192,329 @@
                                 }
                             ],
                             "body": "{\n  \"success\": true,\n  \"message\": \"Diet chart.\",\n  \"data\": {\n    \"id\": 1,\n    \"type\": \"diet\",\n    \"title\": \"1500 kcal vegetarian fat loss\",\n    \"summary\": \"Simple Indian vegetarian meals, ~110 g protein a day.\",\n    \"cover_image_url\": \"http://localhost:8000/storage/gyms/1/plans/cover.jpg\",\n    \"is_custom\": false,\n    \"category\": { \"id\": 1, \"name\": \"Weight Loss\" },\n    \"level\": \"beginner\",\n    \"duration_weeks\": 8,\n    \"daily_calories\": 1500,\n    \"section_count\": 2,\n    \"updated_at\": \"2026-11-22T20:10:00+05:30\",\n    \"sections\": [\n      { \"id\": 1, \"position\": 1, \"title\": \"Breakfast\", \"subtitle\": \"8:30 AM · 350 kcal\", \"body\": \"Moong dal chilla (2) with mint chutney\n1 cup green tea\", \"image_url\": \"http://localhost:8000/storage/gyms/1/plans/breakfast.jpg\" },\n      { \"id\": 2, \"position\": 2, \"title\": \"Lunch\", \"subtitle\": \"1:00 PM · 450 kcal\", \"body\": \"2 phulka, 1 bowl dal\", \"image_url\": null }\n    ]\n  }\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "5. Sign up (new members)",
+            "description": "For people who are not members yet: verify phone → pick a city → pick a gym in that city → send details. The member starts **pending** until the gym approves.\n\nRun the requests in order; each one saves the variables the next one needs (`city_id`, `gym_id`, `otp`, `registration_token`).\n\nMembers who join with the QR code at the gym's desk don't use these endpoints: that form already knows the gym and creates an active member.",
+            "item": [
+                {
+                    "name": "List cities",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "pm.test('Cities listed', () => pm.expect(body.success).to.eql(true));",
+                                    "if (body.data.cities.length) { pm.collectionVariables.set('city_id', body.data.cities[0].id); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cities",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cities"
+                            ]
+                        },
+                        "description": "Step 1 of sign-up for people who are not members yet. Returns the cities Gymai is live in (managed by the Super Admin), A to Z.\n\nNo login needed. `gyms_count` counts only gyms that are currently active."
+                    },
+                    "response": [
+                        {
+                            "name": "Cities",
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": true,\n    \"message\": \"Cities.\",\n    \"data\": {\n        \"cities\": [\n            {\n                \"id\": 1,\n                \"name\": \"Pune\",\n                \"state\": \"Maharashtra\",\n                \"gyms_count\": 12\n            }\n        ]\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Search gyms in a city",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "if (pm.response.code === 200 && body.data.gyms.length) { pm.collectionVariables.set('gym_id', body.data.gyms[0].gym_id); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cities/{{city_id}}/gyms?search=iron",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cities",
+                                "{{city_id}}",
+                                "gyms"
+                            ],
+                            "query": [
+                                {
+                                    "key": "search",
+                                    "value": "iron",
+                                    "description": "Optional. Part of the gym name, for type-ahead."
+                                }
+                            ]
+                        },
+                        "description": "Step 2: gyms in the chosen city, filtered as the user types (`search`, optional). Up to 30 results, A to Z. Only active gyms are returned.\n\n`404 CITY_NOT_FOUND` if the city is not live."
+                    },
+                    "response": [
+                        {
+                            "name": "Gyms",
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": true,\n    \"message\": \"Gyms.\",\n    \"data\": {\n        \"city\": {\n            \"id\": 1,\n            \"name\": \"Pune\"\n        },\n        \"gyms\": [\n            {\n                \"gym_id\": 1,\n                \"name\": \"Iron Temple Fitness\",\n                \"address\": \"21 FC Road, Shivajinagar\",\n                \"logo_url\": null\n            }\n        ]\n    }\n}"
+                        },
+                        {
+                            "name": "City not live",
+                            "status": "Not Found",
+                            "code": 404,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": false,\n    \"message\": \"This city is not available on Gymai.\",\n    \"code\": \"CITY_NOT_FOUND\"\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Send sign-up OTP",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "if (pm.response.code === 200 && body.data.debug_otp) {",
+                                    "  pm.collectionVariables.set('otp', body.data.debug_otp);",
+                                    "} else if (pm.response.code === 200) {",
+                                    "  console.log('Read the OTP from the SMS (or storage/logs/laravel.log with SMS_DRIVER=log) and set the \"otp\" variable.');",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"phone\": \"{{signup_phone}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register/send-otp",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register",
+                                "send-otp"
+                            ]
+                        },
+                        "description": "Step 3: send an OTP to verify a **new** user's phone. Works for any number, member or not.\n\nSame rules as login OTPs: valid 5 minutes, resend after 30 s, max 5 per number per hour (`OTP_COOLDOWN`, `OTP_LIMIT_REACHED`).\n\n`debug_otp` is included only when `OTP_EXPOSE_IN_RESPONSE=true` and the app is not in production."
+                    },
+                    "response": [
+                        {
+                            "name": "OTP sent",
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": true,\n    \"message\": \"OTP sent to your mobile number.\",\n    \"data\": {\n        \"phone\": \"XXXXXX0001\",\n        \"expires_in\": 300,\n        \"resend_after\": 30\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Verify sign-up OTP",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "if (pm.response.code === 200) { pm.collectionVariables.set('registration_token', body.data.registration_token); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"phone\": \"{{signup_phone}}\",\n  \"otp\": \"{{otp}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register/verify-otp",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register",
+                                "verify-otp"
+                            ]
+                        },
+                        "description": "Step 4: check the OTP. Returns a `registration_token` that proves the phone was verified. It is valid for 30 minutes and can be used **once**.\n\nErrors: `OTP_INVALID` (with `attempts_left`), `OTP_EXPIRED`, `OTP_ATTEMPTS_EXCEEDED`, `OTP_NOT_FOUND`."
+                    },
+                    "response": [
+                        {
+                            "name": "Verified",
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": true,\n    \"message\": \"Phone verified. Choose your city and gym.\",\n    \"data\": {\n        \"registration_token\": \"64-character token\",\n        \"expires_in\": 1800\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Register at a gym",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"registration_token\": \"{{registration_token}}\",\n  \"city_id\": {{city_id}},\n  \"gym_id\": {{gym_id}},\n  \"name\": \"Rahul Sharma\",\n  \"email\": \"rahul@example.com\",\n  \"gender\": \"male\",\n  \"date_of_birth\": \"1995-06-15\",\n  \"address\": \"Kothrud, Pune\",\n  \"emergency_contact_name\": \"Anita Sharma\",\n  \"emergency_contact_phone\": \"9876500002\",\n  \"fitness_goal\": \"Weight loss\",\n  \"medical_notes\": \"\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        },
+                        "description": "Step 5: create the member at the chosen gym. Required: `registration_token`, `city_id`, `gym_id`, `name`. Everything else is optional.\n\nThe member is created as **pending** and gets **no login token**. The gym approves the registration in its panel; after that the user logs in normally with *2. Auth → Send OTP / Verify OTP*. Until then, *Send OTP* answers `403 MEMBER_PENDING_APPROVAL` with `data.gym_name`.\n\nErrors: `REGISTRATION_TOKEN_INVALID` (expired or already used: verify the phone again), `CITY_NOT_FOUND`, `GYM_NOT_FOUND` (gym not active or not in that city), `ALREADY_REGISTERED` (409, the number is already a member of that gym)."
+                    },
+                    "response": [
+                        {
+                            "name": "Registered (pending)",
+                            "status": "Created",
+                            "code": 201,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": true,\n    \"message\": \"Registration sent to Iron Temple Fitness. You can log in once the gym approves it.\",\n    \"data\": {\n        \"member_code\": \"M0023\",\n        \"status\": \"pending\",\n        \"gym\": {\n            \"gym_id\": 1,\n            \"name\": \"Iron Temple Fitness\"\n        }\n    }\n}"
+                        },
+                        {
+                            "name": "Already a member there",
+                            "status": "Conflict",
+                            "code": 409,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": false,\n    \"message\": \"This mobile number is already registered with Iron Temple Fitness.\",\n    \"code\": \"ALREADY_REGISTERED\"\n}"
                         }
                     ]
                 }

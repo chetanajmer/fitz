@@ -6,6 +6,15 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    @if ($stats['pending_members'] > 0)
+        @can('members.manage')
+            <a href="{{ route('gym.members.index', ['status' => 'pending']) }}" class="mb-4 flex items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100">
+                <span><strong>{{ $stats['pending_members'] }} app {{ \Illuminate\Support\Str::plural('sign-up', $stats['pending_members']) }}</strong> waiting for your approval.</span>
+                <span class="font-semibold">Review →</span>
+            </a>
+        @endcan
+    @endif
+
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <x-ui.stat label="Total members" :value="number_format($stats['total_members'])" icon="users" :href="route('gym.members.index')" />
         <x-ui.stat label="Active members" :value="number_format($stats['active_members'])" icon="check" color="green" hint="Valid membership today" :href="route('gym.members.index', ['membership' => 'active'])" />

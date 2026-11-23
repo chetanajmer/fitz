@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Gym\Members;
 
+use App\Enums\MemberStatus;
 use App\Models\Member;
 use App\Models\User;
 use App\Services\MemberService;
@@ -77,7 +78,7 @@ class Form extends Component
             'form.fitness_goal' => 'nullable|string|max:255',
             'form.medical_notes' => 'nullable|string|max:2000',
             'form.notes' => 'nullable|string|max:2000',
-            'form.status' => 'required|in:active,inactive',
+            'form.status' => ['required', Rule::enum(MemberStatus::class)],
             'trainer_id' => 'nullable|integer',
             'portal_password' => 'nullable|string|min:8',
             'photo' => 'nullable|image|max:2048',

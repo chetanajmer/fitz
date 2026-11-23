@@ -21,7 +21,14 @@
                             <x-ui.field label="Phone" name="profile.phone"><input wire:model="profile.phone" class="input"></x-ui.field>
                             <x-ui.field label="Email" name="profile.email"><input wire:model="profile.email" type="email" class="input"></x-ui.field>
                             <x-ui.field label="Address" name="profile.address"><input wire:model="profile.address" class="input"></x-ui.field>
-                            <x-ui.field label="City" name="profile.city"><input wire:model="profile.city" class="input"></x-ui.field>
+                            <x-ui.field label="City" name="profile.city_id" required hint="Missing your city? Ask Gymai support to add it.">
+                                <select wire:model="profile.city_id" class="input">
+                                    <option value="">Select city</option>
+                                    @foreach ($cities as $c)
+                                        <option value="{{ $c->id }}">{{ $c->name }}{{ $c->state ? ', '.$c->state : '' }}</option>
+                                    @endforeach
+                                </select>
+                            </x-ui.field>
                             <x-ui.field label="Description" name="profile.description" class="sm:col-span-2"><textarea wire:model="profile.description" rows="4" class="input" placeholder="Tell visitors about your gym…"></textarea></x-ui.field>
                         </div>
                     </div>

@@ -3,6 +3,7 @@
     $links = [
         ['route' => 'platform.dashboard', 'match' => 'platform.dashboard', 'icon' => 'home', 'label' => 'Overview'],
         ['route' => 'platform.gyms.index', 'match' => 'platform.gyms.*', 'icon' => 'building', 'label' => 'Gyms'],
+        ['route' => 'platform.cities', 'match' => 'platform.cities', 'icon' => 'globe', 'label' => 'Cities'],
         ['route' => 'platform.leads', 'match' => 'platform.leads', 'icon' => 'inbox', 'label' => 'App Leads', 'badge' => \App\Models\PlatformLead::where('status', 'new')->count()],
         ['route' => 'platform.library', 'match' => 'platform.library', 'icon' => 'tag', 'label' => 'Default Library'],
         ['route' => 'platform.invoices', 'match' => 'platform.invoices*', 'icon' => 'receipt', 'label' => 'Invoices & Payments'],

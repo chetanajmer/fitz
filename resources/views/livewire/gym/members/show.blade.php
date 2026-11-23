@@ -129,7 +129,12 @@
 
                 @if ($canManage)
                     <div class="card card-body space-y-2">
-                        <button wire:click="toggleStatus" class="btn-secondary w-full">Mark as {{ $m->status->value === 'active' ? 'inactive' : 'active' }}</button>
+                        @if ($m->status->value === 'pending')
+                            <p class="text-xs text-gray-500">Signed up from the app. Approve to let them log in; assign a plan as usual.</p>
+                            <button wire:click="toggleStatus" class="btn-primary w-full">Approve registration</button>
+                        @else
+                            <button wire:click="toggleStatus" class="btn-secondary w-full">Mark as {{ $m->status->value === 'active' ? 'inactive' : 'active' }}</button>
+                        @endif
                         <button wire:click="delete" wire:confirm="Delete {{ $m->name }}? Their history is kept but they will no longer appear in lists." class="btn-ghost w-full text-red-600">Delete member</button>
                     </div>
                 @endif

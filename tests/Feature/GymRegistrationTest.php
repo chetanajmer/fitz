@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Auth\RegisterGym;
+use App\Models\City;
 use App\Models\Gym;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,9 +16,11 @@ class GymRegistrationTest extends TestCase
 
     public function test_owner_can_register_a_gym_and_lands_on_dashboard(): void
     {
+        $mumbai = City::factory()->create(['name' => 'Mumbai']);
+
         Livewire::test(RegisterGym::class)
             ->set('gym_name', 'Iron Paradise')
-            ->set('city', 'Mumbai')
+            ->set('city_id', (string) $mumbai->id)
             ->set('owner_name', 'Ravi Kumar')
             ->set('email', 'ravi@example.com')
             ->set('phone', '9876543210')
@@ -38,6 +41,21 @@ class GymRegistrationTest extends TestCase
         $this->assertSame('iron-paradise', $gym->slug);
         $this->assertSame(40, strlen($gym->join_token));
         $this->assertTrue($gym->is_active);
+        $this->assertSame($mumbai->id, $gym->city_id);
+        $this->assertSame('Mumbai', $gym->city);
+    }
+
+    public function test_registration_only_offers_and_accepts_live_cities(): void
+    {
+        City::factory()->create(['name' => 'Pune']);
+        $hidden = City::factory()->inactive()->create(['name' => 'Nagpur']);
+
+        Livewire::test(RegisterGym::class)
+            ->assertSee('Pune')
+            ->assertDontSee('Nagpur')
+            ->set('city_id', (string) $hidden->id)
+            ->call('register')
+            ->assertHasErrors('city_id');
     }
 
     public function test_slugs_are_unique_and_avoid_reserved_words(): void

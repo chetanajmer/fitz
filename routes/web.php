@@ -134,6 +134,7 @@ Route::prefix('platform')->name('platform.')
         Route::livewire('/leads', Livewire\Platform\Leads::class)->name('leads');
         Route::livewire('/library', Livewire\Platform\Library::class)->name('library');
         Route::livewire('/pricing', Livewire\Platform\Pricing::class)->name('pricing');
+        Route::livewire('/cities', Livewire\Platform\Cities::class)->name('cities');
         Route::livewire('/invoices', Livewire\Platform\Invoices::class)->name('invoices');
         Route::get('/invoices/{invoice}', [DocumentController::class, 'platformSaasInvoice'])->name('invoices.show');
         Route::livewire('/settings', Livewire\Platform\Settings::class)->name('settings');
