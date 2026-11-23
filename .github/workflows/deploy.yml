@@ -81,17 +81,24 @@ jobs:
           npm ci
           npm run build
 
+      # Each build is a new commit ON TOP of the previous deploy commit (never a rewrite), so
+      # cPanel's "Update from Remote" (fast-forward only) always works.
       - name: Push the ready-to-run build to the "deploy" branch
         env:
           SOURCE_MESSAGE: ${{ github.event.head_commit.message || 'manual run' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan deploy-build
           git add -A
           git add -f vendor public/build
-          git commit -q -m "Deploy ${GITHUB_SHA::7}: $(printf '%s' "$SOURCE_MESSAGE" | head -n 1)"
-          git push -f origin HEAD:deploy
+          tree=$(git write-tree)
+          message="Deploy ${GITHUB_SHA::7}: $(printf '%s' "$SOURCE_MESSAGE" | head -n 1)"
+          if git fetch --quiet origin deploy; then
+            commit=$(git commit-tree "$tree" -p FETCH_HEAD -m "$message")
+          else
+            commit=$(git commit-tree "$tree" -m "$message")
+          fi
+          git push origin "$commit:refs/heads/deploy"
 
   deploy:
     name: Deploy on cPanel (SSH)
