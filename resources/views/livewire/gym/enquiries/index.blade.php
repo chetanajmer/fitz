@@ -13,7 +13,7 @@
             <button wire:key="pill-{{ $s->value }}" wire:click="$set('status', '{{ $s->value }}')" class="rounded-full px-3 py-1 text-xs font-medium {{ $status === $s->value ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 ring-1 ring-gray-200' }}">{{ $s->label() }} · {{ $counts[$s->value] ?? 0 }}</button>
         @endforeach
         @if ($dueCount)
-            <button wire:click="$set('followUp', '{{ $followUp === 'due' ? '' : 'due' }}')" class="rounded-full px-3 py-1 text-xs font-medium {{ $followUp === 'due' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-800 ring-1 ring-amber-200' }}">⏰ {{ $dueCount }} follow-ups due</button>
+            <button wire:click="$set('followUp', '{{ $followUp === 'due' ? '' : 'due' }}')" class="rounded-full px-3 py-1 text-xs font-medium {{ $followUp === 'due' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-800 ring-1 ring-amber-200' }}"><span class="inline-flex items-center gap-1"><x-ui.icon name="bell" class="size-3.5" /> {{ $dueCount }} follow-ups due</span></button>
         @endif
     </div>
 

@@ -3,7 +3,7 @@
     @if ($p->coverUrl())
         <img src="{{ $p->coverUrl() }}" alt="" class="w-28 shrink-0 object-cover">
     @else
-        <div class="flex w-28 shrink-0 items-center justify-center bg-gradient-to-br from-rose-50 to-amber-50 text-3xl">{{ $p->type->value === 'diet' ? '🥗' : '🏋️' }}</div>
+        <div class="flex w-28 shrink-0 items-center justify-center bg-gradient-to-br from-rose-50 to-amber-50 text-rose-300"><x-ui.icon :name="$p->type->value === 'diet' ? 'meal' : 'dumbbell'" class="size-10" /></div>
     @endif
     <div class="min-w-0 flex-1 p-4">
         <p class="truncate font-semibold text-gray-900">{{ $p->title }}</p>

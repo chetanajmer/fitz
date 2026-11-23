@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Resources\V1\MemberResource;
 use App\Services\MemberOtpService;
+use App\Tenancy\TenantManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class AuthController extends ApiController
 {
-    public function __construct(protected MemberOtpService $otp) {}
+    public function __construct(protected MemberOtpService $otp, protected TenantManager $tenant) {}
 
     /**
      * POST /api/v1/auth/send-otp  { phone, gym_id?, name?, city?, latitude?, longitude?, app_platform?, app_version? }
@@ -67,11 +68,15 @@ class AuthController extends ApiController
 
         $token = $member->createToken($data['device_name'] ?? 'member-app', ['member'])->plainTextToken;
 
+        // No tenant is set on this public route; resolve the member (memberships etc.) inside their own gym,
+        // otherwise the fail-closed GymScope hides their memberships and membership_state reads "none".
+        $memberData = $this->tenant->runAs($member->gym, fn () => (new MemberResource($member))->resolve($request));
+
         return $this->success([
             'token' => $token,
             'token_type' => 'Bearer',
             'gym_id' => $member->gym_id,
-            'member' => (new MemberResource($member))->resolve($request),
+            'member' => $memberData,
         ], 'Login successful.');
     }
 

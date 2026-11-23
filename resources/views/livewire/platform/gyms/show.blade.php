@@ -15,7 +15,7 @@
             @if ($g->status_reason)<p class="mt-1 text-sm text-amber-700">Reason: {{ $g->status_reason }} ({{ $g->status_changed_at?->format('d M Y') }})</p>@endif
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{{ $g->publicUrl() }}" target="_blank" class="btn-secondary btn-sm">Public page ↗</a>
+            <a href="{{ $g->publicUrl() }}" target="_blank" class="btn-secondary btn-sm">Public page <x-ui.icon name="external" class="size-3.5" /></a>
             @if ($g->status->value !== 'active')<button wire:click="openStatus('active')" class="btn-success btn-sm">Activate</button>@endif
             @if ($g->status->value !== 'suspended')<button wire:click="openStatus('suspended')" class="btn-secondary btn-sm">Suspend</button>@endif
             @if ($g->status->value !== 'deactivated')<button wire:click="openStatus('deactivated')" class="btn-danger btn-sm">Deactivate</button>@endif
@@ -188,7 +188,7 @@
                                 </p>
                                 <p class="truncate text-xs text-gray-500">{{ $u->email }} · last login {{ $u->last_login_at?->diffForHumans() ?? 'never' }}</p>
                             </div>
-                            <button wire:click="magicLink({{ $u->id }})" class="btn-secondary btn-sm" @disabled(! $u->isActive())>🔗 Magic link</button>
+                            <button wire:click="magicLink({{ $u->id }})" class="btn-secondary btn-sm" @disabled(! $u->isActive())><x-ui.icon name="link" class="size-4" /> Magic link</button>
                         </li>
                     @empty
                         <li><x-ui.empty message="No accounts." icon="users" /></li>
@@ -222,7 +222,7 @@
             <p class="text-sm text-gray-600">Valid for <strong>{{ \App\Services\ImpersonationService::LINK_MINUTES }} minutes</strong>, single use. Don't share it with anyone else.</p>
             <div class="flex gap-2">
                 <input readonly value="{{ $linkUrl }}" class="input font-mono text-xs" x-ref="link" @focus="$el.select()">
-                <button type="button" class="btn-secondary" @click="navigator.clipboard.writeText($refs.link.value); copied = true; setTimeout(() => copied = false, 2000)" x-text="copied ? 'Copied ✓' : 'Copy'"></button>
+                <button type="button" class="btn-secondary" @click="navigator.clipboard.writeText($refs.link.value); copied = true; setTimeout(() => copied = false, 2000)" x-text="copied ? 'Copied' : 'Copy'"></button>
             </div>
             <div class="rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
                 <strong>Recommended:</strong> copy it and paste it into a private/incognito window, so you stay logged in here.

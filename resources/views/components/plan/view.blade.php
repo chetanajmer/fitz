@@ -14,9 +14,9 @@
         <h1 class="mt-3 text-2xl font-bold text-gray-900 sm:text-3xl">{{ $plan->title }}</h1>
         @if ($plan->summary)<p class="mt-2 whitespace-pre-line text-gray-600">{{ $plan->summary }}</p>@endif
         <div class="mt-4 flex flex-wrap gap-4 text-sm text-gray-600">
-            <span>{{ $isDiet ? '🍽️' : '🏋️' }} {{ $plan->sections->count() }} {{ $isDiet ? 'meals' : 'exercises' }}</span>
-            @if ($plan->daily_calories)<span>🔥 {{ number_format($plan->daily_calories) }} kcal / day</span>@endif
-            @if ($plan->duration_weeks)<span>📅 {{ $plan->duration_weeks }} weeks</span>@endif
+            <span class="inline-flex items-center gap-1.5"><x-ui.icon :name="$isDiet ? 'meal' : 'dumbbell'" class="size-4 text-gray-400" /> {{ $plan->sections->count() }} {{ $isDiet ? 'meals' : 'exercises' }}</span>
+            @if ($plan->daily_calories)<span class="inline-flex items-center gap-1.5"><x-ui.icon name="fire" class="size-4 text-orange-500" /> {{ number_format($plan->daily_calories) }} kcal / day</span>@endif
+            @if ($plan->duration_weeks)<span class="inline-flex items-center gap-1.5"><x-ui.icon name="calendar" class="size-4 text-gray-400" /> {{ $plan->duration_weeks }} weeks</span>@endif
         </div>
 
         <ol class="mt-8 space-y-5">

@@ -10,7 +10,7 @@
 
     @if ($custom->isNotEmpty())
         <section>
-            <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold tracking-wide text-rose-600 uppercase">⭐ Made for you</h2>
+            <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold tracking-wide text-rose-600 uppercase"><x-ui.icon name="star" class="size-4" /> Made for you</h2>
             <div class="grid gap-4 sm:grid-cols-2">
                 @foreach ($custom as $p)
                     @include('livewire.portal.partials.plan-card', ['p' => $p, 'highlight' => true])

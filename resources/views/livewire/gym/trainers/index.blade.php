@@ -18,11 +18,11 @@
                 <div class="mt-4 grid grid-cols-2 gap-2">
                     <a href="{{ route('gym.trainers.show', $t->id) }}#members" class="group flex items-center gap-2.5 rounded-lg border border-indigo-100 bg-indigo-50 px-3 py-2 transition hover:border-indigo-300 hover:bg-indigo-100">
                         <x-ui.icon name="users" class="size-5 shrink-0 text-indigo-600" />
-                        <span class="min-w-0 leading-tight"><span class="block text-sm font-semibold text-indigo-900">{{ $t->assigned_members_count }} {{ Str::plural('member', $t->assigned_members_count) }}</span><span class="block text-xs text-indigo-700/80">Assign members →</span></span>
+                        <span class="min-w-0 leading-tight"><span class="block text-sm font-semibold text-indigo-900">{{ $t->assigned_members_count }} {{ Str::plural('member', $t->assigned_members_count) }}</span><span class="block text-xs text-indigo-700/80">Assign members <x-ui.icon name="arrow-right" class="inline size-3" /></span></span>
                     </a>
                     <a href="{{ route('gym.trainers.show', $t->id) }}#access" class="group flex items-center gap-2.5 rounded-lg border border-amber-100 bg-amber-50 px-3 py-2 transition hover:border-amber-300 hover:bg-amber-100">
                         <x-ui.icon name="cog" class="size-5 shrink-0 text-amber-600" />
-                        <span class="min-w-0 leading-tight"><span class="block text-sm font-semibold text-amber-900">{{ $t->permissions_count }} {{ Str::plural('section', $t->permissions_count) }}</span><span class="block text-xs text-amber-700/80">Manage access →</span></span>
+                        <span class="min-w-0 leading-tight"><span class="block text-sm font-semibold text-amber-900">{{ $t->permissions_count }} {{ Str::plural('section', $t->permissions_count) }}</span><span class="block text-xs text-amber-700/80">Manage access <x-ui.icon name="arrow-right" class="inline size-3" /></span></span>
                     </a>
                 </div>
                 <div class="mt-3 flex items-center justify-end border-t border-gray-100 pt-3 text-sm">

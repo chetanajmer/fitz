@@ -74,11 +74,13 @@ Route::prefix('app')->name('gym.')
         // Diet charts & workout plans (content.custom: admins + trainers; finer rules in FitnessPlanPolicy).
         Route::middleware('permission:content.custom')->group(function () {
             Route::livewire('/content/plans/{plan}', Livewire\Gym\Content\Show::class)->name('content.show');
+            Route::livewire('/programs', Livewire\Gym\Content\Programs::class)->name('programs');
             Route::livewire('/content/plans/{plan}/edit', Livewire\Gym\Content\Editor::class)->name('content.edit');
             Route::livewire('/content/{type}', Livewire\Gym\Content\Library::class)->whereIn('type', ['diet', 'workout'])->name('content.index');
             Route::livewire('/content/{type}/create', Livewire\Gym\Content\Editor::class)->whereIn('type', ['diet', 'workout'])->name('content.create');
         });
 
+        Route::livewire('/progress', Livewire\Gym\Progress::class)->middleware('permission:members.view')->name('progress');
         Route::livewire('/streaks', Livewire\Gym\Streaks::class)->middleware('permission:attendance.reports')->name('streaks');
 
         Route::middleware('permission:trainers.manage')->group(function () {

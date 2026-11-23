@@ -14,7 +14,7 @@
     @if (auth()->check() && session()->has(\App\Services\ImpersonationService::SESSION_KEY))
         @php($imp = session(\App\Services\ImpersonationService::SESSION_KEY))
         <div class="sticky top-0 z-[70] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-amber-400 px-4 py-2 text-sm font-medium text-amber-950 no-print">
-            <span>👁️ Logged in as <strong>{{ auth()->user()->name }}</strong> ({{ str_replace('_', ' ', auth()->user()->getRoleNames()->first()) }}) via Super Admin magic link</span>
+            <span class="inline-flex items-center gap-1.5"><x-ui.icon name="eye" class="size-4" /> Logged in as <strong>{{ auth()->user()->name }}</strong> ({{ str_replace('_', ' ', auth()->user()->getRoleNames()->first()) }}) via Super Admin magic link</span>
             <form method="POST" action="{{ route('impersonate.leave') }}">
                 @csrf
                 <button class="rounded-md bg-amber-950 px-3 py-1 text-xs font-semibold text-white hover:bg-black">
@@ -44,7 +44,7 @@
             <div x-transition.opacity
                  class="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg"
                  :class="toast.type === 'error' ? 'bg-red-600' : 'bg-gray-900'">
-                <span x-text="toast.type === 'error' ? '⚠' : '✓'"></span>
+                <span class="mt-0.5 shrink-0"><x-ui.icon name="warning" class="size-4" x-show="toast.type === 'error'" /><x-ui.icon name="check" class="size-4" x-show="toast.type !== 'error'" /></span>
                 <span x-text="toast.message" class="flex-1"></span>
             </div>
         </template>

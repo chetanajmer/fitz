@@ -3,6 +3,7 @@
 namespace App\Http\Resources\V1;
 
 use App\Models\Member;
+use App\Services\MemberMembershipService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -26,6 +27,8 @@ class MemberResource extends JsonResource
             'photo_url' => $this->photoUrl(),
             'status' => $this->status->value,
             'membership_state' => $this->membershipState(), // active | upcoming | expired | none
+            // Home-screen membership card (plan, dates, days left, progress, renew CTA).
+            'membership' => app(MemberMembershipService::class)->card($this->resource),
         ];
     }
 }

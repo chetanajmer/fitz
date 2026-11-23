@@ -12,7 +12,7 @@
 
     <div class="card card-body">
         <div class="flex items-center gap-4">
-            <div class="flex size-14 items-center justify-center rounded-2xl bg-gray-900 text-2xl">🔥</div>
+            <div class="flex size-14 items-center justify-center rounded-2xl bg-gray-900 text-orange-400"><x-ui.icon name="fire" class="size-7" /></div>
             <div class="flex-1">
                 <p class="text-2xl font-bold">{{ $streak['current_streak'] }} day streak</p>
                 <p class="text-sm text-gray-500">{{ $streak['visits_this_month'] }} visits this month · best {{ $streak['longest_streak'] }}</p>

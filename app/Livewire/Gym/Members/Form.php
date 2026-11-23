@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Gym\Members;
 
+use App\Enums\DietPreference;
 use App\Models\Member;
 use App\Models\User;
 use App\Services\MemberService;
@@ -23,9 +24,9 @@ class Form extends Component
 
     /** @var array<string, mixed> */
     public array $form = [
-        'name' => '', 'phone' => '', 'email' => '', 'gender' => '', 'date_of_birth' => '', 'blood_group' => '',
+        'name' => '', 'phone' => '', 'email' => '', 'gender' => '', 'date_of_birth' => '', 'blood_group' => '', 'height_cm' => '',
         'address' => '', 'city' => '', 'emergency_contact_name' => '', 'emergency_contact_phone' => '',
-        'emergency_contact_relation' => '', 'joining_date' => '', 'fitness_goal' => '', 'medical_notes' => '',
+        'emergency_contact_relation' => '', 'joining_date' => '', 'fitness_goal' => '', 'diet_preference' => '', 'medical_notes' => '',
         'notes' => '', 'status' => 'active',
     ];
 
@@ -68,6 +69,7 @@ class Form extends Component
             'form.gender' => 'nullable|in:male,female,other',
             'form.date_of_birth' => 'nullable|date|before:today',
             'form.blood_group' => 'nullable|string|max:5',
+            'form.height_cm' => 'nullable|numeric|between:50,250',
             'form.address' => 'nullable|string|max:255',
             'form.city' => 'nullable|string|max:80',
             'form.emergency_contact_name' => 'nullable|string|max:120',
@@ -75,6 +77,7 @@ class Form extends Component
             'form.emergency_contact_relation' => 'nullable|string|max:50',
             'form.joining_date' => 'required|date',
             'form.fitness_goal' => 'nullable|string|max:255',
+            'form.diet_preference' => ['nullable', Rule::enum(DietPreference::class)],
             'form.medical_notes' => 'nullable|string|max:2000',
             'form.notes' => 'nullable|string|max:2000',
             'form.status' => 'required|in:active,inactive',

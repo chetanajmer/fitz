@@ -37,6 +37,12 @@ class MemberPolicy
         return $this->update($user, $member);
     }
 
+    /** Record weigh-ins and set weight targets: anyone who can see the member (admins, their trainer). */
+    public function trackProgress(User $user, Member $member): bool
+    {
+        return $this->view($user, $member);
+    }
+
     public function checkIn(User $user, Member $member): bool
     {
         return $this->view($user, $member) && $user->can('attendance.manage');

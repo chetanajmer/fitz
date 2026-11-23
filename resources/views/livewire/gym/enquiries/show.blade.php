@@ -64,7 +64,7 @@
                         <div class="min-w-0 flex-1">
                             <p class="text-sm text-gray-900">
                                 @if ($a->type === 'status_changed' && $a->from_status !== $a->to_status)
-                                    Status <strong>{{ \App\Enums\EnquiryStatus::tryFrom($a->from_status)?->label() }}</strong> → <strong>{{ \App\Enums\EnquiryStatus::tryFrom($a->to_status)?->label() }}</strong>
+                                    Status <strong>{{ \App\Enums\EnquiryStatus::tryFrom($a->from_status)?->label() }}</strong> <x-ui.icon name="arrow-right" class="inline size-3.5 text-gray-400" /> <strong>{{ \App\Enums\EnquiryStatus::tryFrom($a->to_status)?->label() }}</strong>
                                 @elseif ($a->type === 'note')
                                     Note added
                                 @elseif ($a->type === 'converted')

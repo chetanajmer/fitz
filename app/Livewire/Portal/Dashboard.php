@@ -28,7 +28,7 @@ class Dashboard extends Component
     public function checkIn(AttendanceService $attendance): void
     {
         $record = $attendance->selfCheckIn($this->member());
-        $this->dispatch('notify', message: 'Checked in at '.$record->check_in_at->format('h:i A').'. Have a great workout! 💪');
+        $this->dispatch('notify', message: 'Checked in at '.$record->check_in_at->format('h:i A').'. Have a great workout!');
     }
 
     public function checkOut(AttendanceService $attendance): void

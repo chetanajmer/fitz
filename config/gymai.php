@@ -13,6 +13,9 @@ return [
     'currency_symbol' => '₹',
     'invoice_due_days' => 15,
 
+    // Member app membership card: show "Expiring soon" (and the renew call-to-action) this many days before the end date.
+    'membership_expiring_soon_days' => 7,
+
     // Member app OTP login.
     'otp' => [
         'length' => 6,

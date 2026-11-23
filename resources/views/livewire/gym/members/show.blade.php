@@ -37,7 +37,7 @@
 
     {{-- Tabs --}}
     <div class="mb-6 flex gap-6 overflow-x-auto border-b border-gray-200">
-        @foreach (['overview' => 'Overview', 'memberships' => 'Memberships', 'payments' => 'Payments', 'attendance' => 'Attendance', 'plans' => 'Diet & Workout'] as $key => $label)
+        @foreach (['overview' => 'Overview', 'memberships' => 'Memberships', 'payments' => 'Payments', 'attendance' => 'Attendance', 'progress' => 'Progress', 'plans' => 'Diet & Workout'] as $key => $label)
             <button wire:click="$set('tab', '{{ $key }}')" class="tab {{ $tab === $key ? 'tab-active' : '' }}">{{ $label }}</button>
         @endforeach
     </div>
@@ -72,6 +72,7 @@
                             'Gender' => $m->gender ? ucfirst($m->gender) : null,
                             'Date of birth' => $m->date_of_birth?->format('d M Y').($m->date_of_birth ? ' ('.$m->date_of_birth->age.' yrs)' : ''),
                             'Blood group' => $m->blood_group,
+                            'Height' => $m->height_cm ? (float) $m->height_cm.' cm' : null,
                             'Address' => trim($m->address.($m->city ? ', '.$m->city : ''), ', '),
                             'Fitness goal' => $m->fitness_goal,
                             'Emergency contact' => $m->emergency_contact_name ? $m->emergency_contact_name.($m->emergency_contact_relation ? ' ('.$m->emergency_contact_relation.')' : '').' · '.$m->emergency_contact_phone : null,
@@ -91,7 +92,7 @@
             <div class="space-y-6">
                 <div class="card card-body">
                     <div class="flex items-center gap-3">
-                        <div class="flex size-11 items-center justify-center rounded-xl bg-gray-900 text-xl">🔥</div>
+                        <div class="flex size-11 items-center justify-center rounded-xl bg-gray-900 text-orange-400"><x-ui.icon name="fire" class="size-6" /></div>
                         <div>
                             <p class="text-lg font-bold">{{ $streak['current_streak'] }} day streak</p>
                             <p class="text-xs text-gray-500">{{ $streak['visits_this_month'] }} visits this month · best {{ $streak['longest_streak'] }}</p>
@@ -216,7 +217,13 @@
         </div>
     @endif
 
+    @if ($tab === 'progress')
+        <livewire:gym.members.weight-progress :member="$m" :key="'wp-'.$m->id" />
+    @endif
+
     @if ($tab === 'plans')
+        <livewire:gym.members.member-programs :member="$m" :key="'mp-'.$m->id" />
+        <h2 class="mb-3 text-sm font-semibold tracking-wide text-gray-500 uppercase">Customised plans</h2>
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <p class="text-sm text-gray-600">Customised plans only {{ $m->name }} can see — shown in their app next to your default diet charts and workout plans.</p>
             @if ($canCustomPlans)

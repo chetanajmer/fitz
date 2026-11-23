@@ -15,8 +15,8 @@
                     <div class="card-header !py-3">
                         <span class="text-xs font-semibold tracking-wide text-gray-500 uppercase">{{ $planType === \App\Enums\FitnessPlanType::Diet ? 'Meal' : 'Exercise' }} {{ $i + 1 }}</span>
                         <div class="flex gap-1">
-                            <button type="button" wire:click="moveSection('{{ $section['key'] }}', -1)" class="btn-ghost btn-sm" @disabled($i === 0) title="Move up">↑</button>
-                            <button type="button" wire:click="moveSection('{{ $section['key'] }}', 1)" class="btn-ghost btn-sm" @disabled($i === count($sections) - 1) title="Move down">↓</button>
+                            <button type="button" wire:click="moveSection('{{ $section['key'] }}', -1)" class="btn-ghost btn-sm" @disabled($i === 0) title="Move up"><x-ui.icon name="arrow-up" class="size-4" /></button>
+                            <button type="button" wire:click="moveSection('{{ $section['key'] }}', 1)" class="btn-ghost btn-sm" @disabled($i === count($sections) - 1) title="Move down"><x-ui.icon name="arrow-down" class="size-4" /></button>
                             <button type="button" wire:click="removeSection('{{ $section['key'] }}')" wire:confirm="Remove this section?" class="btn-ghost btn-sm text-red-600" @disabled(count($sections) === 1)>Remove</button>
                         </div>
                     </div>

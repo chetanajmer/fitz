@@ -40,7 +40,7 @@
                                 <p>{{ $lead->name ?: '—' }}</p>
                                 <p class="text-xs text-gray-500">
                                     {{ $lead->city ?: '' }}
-                                    @if ($lead->mapUrl())<a href="{{ $lead->mapUrl() }}" target="_blank" rel="noopener" class="text-indigo-600">📍 map</a>@endif
+                                    @if ($lead->mapUrl())<a href="{{ $lead->mapUrl() }}" target="_blank" rel="noopener" class="inline-flex items-center gap-0.5 text-indigo-600"><x-ui.icon name="map-pin" class="size-3.5" /> map</a>@endif
                                 </p>
                             </td>
                             <td><x-ui.badge :color="$lead->reason->color()">{{ $lead->reason->label() }}</x-ui.badge></td>
@@ -50,7 +50,7 @@
                             <td class="{{ $lead->follow_up_date?->lte(today()) && in_array($lead->status->value, \App\Enums\LeadStatus::openValues()) ? 'font-medium text-amber-700' : '' }}">{{ $lead->follow_up_date?->format('d M') ?? '—' }}</td>
                             <td>
                                 <x-ui.badge :color="$lead->status->color()">{{ $lead->status->label() }}</x-ui.badge>
-                                @if ($lead->assignedGym)<p class="mt-0.5 text-xs text-gray-500">→ {{ $lead->assignedGym->name }}</p>@endif
+                                @if ($lead->assignedGym)<p class="mt-0.5 flex items-center gap-1 text-xs text-gray-500"><x-ui.icon name="arrow-right" class="size-3" /> {{ $lead->assignedGym->name }}</p>@endif
                             </td>
                             <td class="text-right"><button wire:click="open({{ $lead->id }})" class="btn-secondary btn-sm">Update</button></td>
                         </tr>
