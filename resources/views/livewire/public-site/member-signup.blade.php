@@ -25,6 +25,7 @@
     {{-- Step 1: city --}}
     @if ($step === 1)
         <h2 class="mt-6 text-sm font-semibold">Which city is your gym in?</h2>
+        <input wire:model.live.debounce.300ms="citySearch" type="search" class="input mt-3" placeholder="Type your city" autofocus>
         <div class="mt-3 grid gap-2 sm:grid-cols-2">
             @forelse ($cities as $c)
                 <button type="button" wire:key="city-{{ $c->id }}" wire:click="selectCity({{ $c->id }})"
@@ -36,7 +37,9 @@
                     <span class="text-xs text-gray-500">{{ $c->gyms_count }} {{ \Illuminate\Support\Str::plural('gym', $c->gyms_count) }}</span>
                 </button>
             @empty
-                <p class="text-sm text-gray-500 sm:col-span-2">Gymai isn't live in any city yet. Please check back soon.</p>
+                <p class="py-4 text-center text-sm text-gray-500 sm:col-span-2">
+                    {{ trim($citySearch) !== '' ? 'No city matches "'.trim($citySearch).'".' : "Gymai isn't live in any city yet. Please check back soon." }}
+                </p>
             @endforelse
         </div>
         <p class="mt-4 text-xs text-gray-500">Don't see your city? Gymai isn't there yet.</p>

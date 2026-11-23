@@ -37,6 +37,8 @@ class MemberSignup extends Component
     #[Locked]
     public ?string $memberCode = null;
 
+    public string $citySearch = '';
+
     public string $gymSearch = '';
 
     public string $name = '';
@@ -182,10 +184,13 @@ class MemberSignup extends Component
     public function render(): View
     {
         $search = trim($this->gymSearch);
+        $cityLike = '%'.addcslashes(trim($this->citySearch), '%_\\').'%';
 
         return view('livewire.public-site.member-signup', [
             'cities' => $this->step === 1
-                ? City::active()->withCount(['gyms' => fn ($q) => $q->operational()])->orderBy('name')->get()
+                ? City::active()->withCount(['gyms' => fn ($q) => $q->operational()])
+                    ->when(trim($this->citySearch) !== '', fn ($q) => $q->where(fn ($w) => $w->where('name', 'like', $cityLike)->orWhere('state', 'like', $cityLike)))
+                    ->orderBy('name')->get()
                 : collect(),
             'gyms' => $this->step === 2 && $this->cityId
                 ? Gym::operational()->where('city_id', $this->cityId)

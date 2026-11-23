@@ -81,6 +81,22 @@ class MemberSignupWebTest extends TestCase
         $this->assertSame('9811100002', $member->phone_digits);
     }
 
+    public function test_city_search_filters_by_name_or_state(): void
+    {
+        $this->createGymOwner();
+        City::factory()->create(['name' => 'Jaipur', 'state' => 'Rajasthan']);
+        City::factory()->create(['name' => 'Mumbai', 'state' => 'Maharashtra']);
+
+        Livewire::test(MemberSignup::class)
+            ->assertSee('Jaipur')->assertSee('Mumbai')->assertSee('Pune')
+            ->set('citySearch', 'jai')
+            ->assertSee('Jaipur')->assertDontSee('Mumbai')->assertDontSee('Pune')
+            ->set('citySearch', 'Maharashtra')
+            ->assertSee('Mumbai')->assertDontSee('Jaipur')
+            ->set('citySearch', 'Delhi')
+            ->assertSee('No city matches');
+    }
+
     public function test_hidden_city_and_gym_from_another_city_cannot_be_chosen(): void
     {
         $gym = $this->gymOf($this->createGymOwner());
