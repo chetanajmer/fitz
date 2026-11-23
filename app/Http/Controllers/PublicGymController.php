@@ -35,7 +35,7 @@ class PublicGymController extends Controller
     /** gymai.com/register/{token} — member self-registration from the gym's desk QR. */
     public function register(string $token)
     {
-        $gym = Gym::where('join_token', $token)->first();
+        $gym = Gym::where('register_token', $token)->first();
 
         abort_unless($gym && $gym->isOperational(), 404);
 

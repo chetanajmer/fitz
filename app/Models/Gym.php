@@ -40,7 +40,7 @@ class Gym extends Model
         ],
     ];
 
-    // owner_id, slug, join_token and status are set by services only.
+    // owner_id, slug, join_token, register_token and status are set by services only.
     protected $fillable = ['name', 'phone', 'email', 'address', 'city', 'logo_path', 'description'];
 
     protected function casts(): array
@@ -161,7 +161,7 @@ class Gym extends Model
     /** Self-registration form that creates a member (encoded in the attendance-desk QR). */
     public function registerUrl(): string
     {
-        return route('gym.register', $this->join_token);
+        return route('gym.register', $this->register_token);
     }
 
     public function logoUrl(): ?string
@@ -215,6 +215,16 @@ class Gym extends Model
             // 40 chars of URL-safe randomness (~238 bits) — unguessable.
             $token = Str::random(40);
         } while (static::where('join_token', $token)->exists());
+
+        return $token;
+    }
+
+    /** Separate secret for the desk self-registration QR, so the public join link cannot create members. */
+    public static function generateRegisterToken(): string
+    {
+        do {
+            $token = Str::random(40);
+        } while (static::where('register_token', $token)->exists());
 
         return $token;
     }

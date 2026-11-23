@@ -17,6 +17,9 @@
                 <a href="{{ route('gym.attendance.register-qr', ['download' => 1]) }}" class="btn-primary btn-sm">Download SVG</a>
                 <a href="{{ $gym->registerUrl() }}" target="_blank" class="btn-secondary btn-sm">Open form</a>
             </div>
+            @can('gym.settings')
+                <button wire:click="regenerateRegisterLink" wire:confirm="Generate a new registration QR? Old printed QR codes will stop working." class="btn-secondary btn-sm mx-auto mt-3 no-print">Regenerate link</button>
+            @endcan
         </div>
     </div>
 </div>

@@ -85,13 +85,15 @@ class MemberRegistrationForm extends Component
             throw ValidationException::withMessages(['name' => 'Too many registrations. Please try again later or ask the front desk.']);
         }
 
+        // Count every attempt, including duplicates, so the "already registered" answer
+        // cannot be used to test unlimited phone numbers against this gym.
+        RateLimiter::hit($key, 3600);
+
         $alreadyRegistered = Member::withoutGlobalScopes()->where('gym_id', $this->gym->id)
             ->where('phone_digits', Member::normalizePhone($data['phone']))->exists();
         if ($alreadyRegistered) {
             throw ValidationException::withMessages(['phone' => 'This mobile number is already registered with '.$this->gym->name.'. Please contact the front desk.']);
         }
-
-        RateLimiter::hit($key, 3600);
 
         $data = array_map(fn ($v) => $v === '' ? null : $v, $data);
         $data['city'] = $this->gym->city;

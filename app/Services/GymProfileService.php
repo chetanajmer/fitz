@@ -92,6 +92,14 @@ class GymProfileService
         return $gym;
     }
 
+    public function regenerateRegisterToken(Gym $gym): Gym
+    {
+        $gym->register_token = Gym::generateRegisterToken();
+        $gym->save();
+
+        return $gym;
+    }
+
     protected function normaliseHours(array $hours): array
     {
         $out = [];
