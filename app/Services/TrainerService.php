@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\Role;
 use App\Models\Member;
 use App\Models\User;
+use App\Support\TrainerAccess;
 use App\Tenancy\TenantManager;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +36,7 @@ class TrainerService
             }
             $trainer->save();
             $trainer->assignRole(Role::Trainer->value);
+            $trainer->syncPermissions(TrainerAccess::normalize($data['permissions'] ?? TrainerAccess::DEFAULTS));
 
             return $trainer;
         });
@@ -61,6 +63,22 @@ class TrainerService
         $trainer->save();
 
         return $trainer;
+    }
+
+    /**
+     * Replace the sections this trainer can open in the gym panel.
+     *
+     * @param  array<int, string>  $permissions
+     * @return list<string> the permissions actually granted
+     */
+    public function setPermissions(User $trainer, array $permissions): array
+    {
+        $this->ensureOwnTrainer($trainer);
+
+        $granted = TrainerAccess::normalize($permissions);
+        $trainer->syncPermissions($granted);
+
+        return $granted;
     }
 
     public function setStatus(User $trainer, string $status): void

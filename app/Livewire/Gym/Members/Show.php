@@ -60,6 +60,7 @@ class Show extends Component
     {
         $memberships = app(MembershipService::class);
         Gate::authorize('update', $this->member);
+        abort_unless(Auth::user()->can('memberships.manage'), 403);
         $this->resetErrorBag();
         $this->planMode = $mode;
         $this->planForm = [
@@ -89,6 +90,7 @@ class Show extends Component
     public function savePlan(MembershipService $memberships): void
     {
         Gate::authorize('update', $this->member);
+        abort_unless(Auth::user()->can('memberships.manage'), 403);
 
         $this->validate([
             'planForm.plan_id' => 'required|integer',
@@ -103,7 +105,7 @@ class Show extends Component
         // Tenant-scoped lookup: a plan id from another gym resolves to 404.
         $plan = MembershipPlan::active()->findOrFail($this->planForm['plan_id']);
 
-        $payment = $this->planForm['pay_now'] && (float) $this->planForm['amount'] > 0
+        $payment = $this->planForm['pay_now'] && Auth::user()->can('payments.manage') && (float) $this->planForm['amount'] > 0
             ? ['amount' => (float) $this->planForm['amount'], 'method' => $this->planForm['method'], 'reference' => $this->planForm['reference']]
             : null;
 
@@ -119,6 +121,7 @@ class Show extends Component
     {
         $memberships = app(MembershipService::class);
         Gate::authorize('update', $this->member);
+        abort_unless(Auth::user()->can('memberships.manage'), 403);
         $membership = $this->member->memberships()->findOrFail($membershipId);
         $memberships->cancel($membership, 'Cancelled by '.Auth::user()->name);
         $this->dispatch('notify', message: 'Membership cancelled.');
@@ -205,6 +208,7 @@ class Show extends Component
     {
         $members = app(MemberService::class);
         Gate::authorize('update', $this->member);
+        abort_unless(Auth::user()->can('members.all'), 403);
         $members->assignTrainer($this->member, $trainerId ? (int) $trainerId : null);
         $this->dispatch('notify', message: 'Trainer updated.');
     }
@@ -227,6 +231,7 @@ class Show extends Component
             'm' => $member,
             'canManage' => $user->can('update', $member),
             'canPay' => $user->can('payments.manage'),
+            'canMembership' => $user->can('update', $member) && $user->can('memberships.manage'),
             'state' => $member->membershipState(),
             'current' => $member->currentMembership(),
             'latest' => $member->latestMembership()->first(),
@@ -240,7 +245,7 @@ class Show extends Component
             'attendanceCount30' => $member->attendances()->where('date', '>=', now()->subDays(30))->count(),
             'todayAttendance' => Attendance::where('member_id', $member->id)->whereDate('date', today())->first(),
             'plans' => MembershipPlan::active()->orderBy('sort_order')->orderBy('price')->get(),
-            'trainers' => $user->isGymAdmin() ? User::trainersOf($user->gym_id)->where('status', 'active')->orderBy('name')->get(['id', 'name']) : collect(),
+            'trainers' => $user->can('members.all') ? User::trainersOf($user->gym_id)->where('status', 'active')->orderBy('name')->get(['id', 'name']) : collect(),
             'openMemberships' => $member->memberships()->withBalance()->get(),
         ])->title($member->name);
     }

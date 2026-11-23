@@ -68,12 +68,16 @@
                 <x-ui.field label="Status" name="form.status">
                     <select wire:model="form.status" class="input"><option value="active">Active</option><option value="inactive">Inactive</option></select>
                 </x-ui.field>
-                <x-ui.field label="Assigned trainer" name="trainer_id">
-                    <select wire:model="trainer_id" class="input">
-                        <option value="">No trainer</option>
-                        @foreach ($trainers as $t)<option value="{{ $t->id }}">{{ $t->name }}</option>@endforeach
-                    </select>
-                </x-ui.field>
+                @if ($canAssignTrainer)
+                    <x-ui.field label="Assigned trainer" name="trainer_id">
+                        <select wire:model="trainer_id" class="input">
+                            <option value="">No trainer</option>
+                            @foreach ($trainers as $t)<option value="{{ $t->id }}">{{ $t->name }}</option>@endforeach
+                        </select>
+                    </x-ui.field>
+                @elseif (! $member)
+                    <p class="hint">This member will be assigned to you.</p>
+                @endif
             </div>
 
             <div class="card card-body">

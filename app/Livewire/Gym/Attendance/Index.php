@@ -73,7 +73,7 @@ class Index extends Component
 
         $todays = Attendance::with('member')
             ->whereDate('date', $today)
-            ->when(! $user->isGymAdmin(), fn ($q) => $q->whereHas('member', fn ($m) => $m->where('trainer_id', $user->id)))
+            ->when(! $user->can('members.all'), fn ($q) => $q->whereHas('member', fn ($m) => $m->where('trainer_id', $user->id)))
             ->latest('check_in_at')
             ->get();
 

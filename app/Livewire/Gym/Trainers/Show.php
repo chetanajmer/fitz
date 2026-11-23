@@ -5,6 +5,7 @@ namespace App\Livewire\Gym\Trainers;
 use App\Models\Member;
 use App\Models\User;
 use App\Services\TrainerService;
+use App\Support\TrainerAccess;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -22,10 +23,26 @@ class Show extends Component
     /** @var list<int> */
     public array $selected = [];
 
+    /** @var list<string> Sections (permissions) ticked in the access panel. */
+    public array $access = [];
+
     public function mount(int $trainer): void
     {
         // Resolve within the signed-in admin's gym only.
-        $this->trainerId = User::trainersOf(Auth::user()->gym_id)->findOrFail($trainer)->id;
+        $found = User::trainersOf(Auth::user()->gym_id)->findOrFail($trainer);
+        $this->trainerId = $found->id;
+        $this->access = $found->getDirectPermissions()->pluck('name')->intersect(TrainerAccess::all())->values()->all();
+    }
+
+    public function applyPreset(string $preset): void
+    {
+        $this->access = TrainerAccess::PRESETS[$preset]['permissions'] ?? $this->access;
+    }
+
+    public function saveAccess(TrainerService $service): void
+    {
+        $this->access = $service->setPermissions($this->trainer(), array_map('strval', $this->access));
+        $this->dispatch('notify', message: 'Access updated. The trainer sees the change on their next page load.');
     }
 
     protected function trainer(): User
@@ -52,6 +69,8 @@ class Show extends Component
 
         return view('livewire.gym.trainers.show', [
             'trainer' => $trainer,
+            'sections' => TrainerAccess::SECTIONS,
+            'presets' => TrainerAccess::PRESETS,
             'members' => Member::where('trainer_id', $trainer->id)->with('latestMembership')->orderBy('name')->get(),
             'candidates' => Member::active()->where(fn ($q) => $q->whereNull('trainer_id')->orWhere('trainer_id', '!=', $trainer->id))
                 ->search($this->search)->with('trainer')->orderBy('name')->limit(25)->get(),

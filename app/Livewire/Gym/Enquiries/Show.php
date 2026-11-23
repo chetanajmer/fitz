@@ -131,6 +131,12 @@ class Show extends Component
         ], [], ['convert.joining_date' => 'joining date', 'convert.start_date' => 'start date']);
 
         $c = $this->convert;
+        $user = Auth::user();
+        // Trainers only get the parts of the conversion their sections allow.
+        $c['trainer_id'] = $user->can('members.all') ? $c['trainer_id'] : $user->id;
+        $c['plan_id'] = $user->can('memberships.manage') ? $c['plan_id'] : null;
+        $c['pay_now'] = $c['pay_now'] && $user->can('payments.manage');
+
         $member = $service->convert($this->enquiry, array_filter([
             'gender' => $c['gender'] ?: null,
             'date_of_birth' => $c['date_of_birth'] ?: null,
@@ -160,6 +166,9 @@ class Show extends Component
             'plans' => MembershipPlan::active()->orderBy('price')->get(),
             'trainers' => User::trainersOf(Auth::user()->gym_id)->where('status', 'active')->orderBy('name')->get(['id', 'name']),
             'duplicates' => Member::where('phone', $enquiry->phone)->get(['id', 'name', 'member_code']),
+            'canAssignTrainer' => Auth::user()->can('members.all'),
+            'canAssignPlan' => Auth::user()->can('memberships.manage'),
+            'canPay' => Auth::user()->can('payments.manage'),
         ])->title('Enquiry · '.$enquiry->name);
     }
 }

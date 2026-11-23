@@ -26,7 +26,7 @@
                 <x-ui.badge color="green" class="self-center">Visited today</x-ui.badge>
             @endif
             @if ($canManage)
-                <button wire:click="openPlanModal('{{ $latest ? 'renew' : 'assign' }}')" class="btn-primary">{{ $latest ? 'Renew' : 'Assign plan' }}</button>
+                @if ($canMembership)<button wire:click="openPlanModal('{{ $latest ? 'renew' : 'assign' }}')" class="btn-primary">{{ $latest ? 'Renew' : 'Assign plan' }}</button>@endif
                 @if ($canPay && $openMemberships->isNotEmpty())
                     <button wire:click="openPaymentModal" class="btn-secondary"><x-ui.icon name="cash" class="size-4" /> Collect</button>
                 @endif
@@ -57,7 +57,7 @@
                             </div>
                         @else
                             <x-ui.empty :message="$state === 'upcoming' ? 'Next membership starts on '.$latest->start_date->format('d M Y').'.' : 'No active membership.'" icon="card">
-                                @if ($canManage)
+                                @if ($canMembership)
                                     <button wire:click="openPlanModal('{{ $latest ? 'renew' : 'assign' }}')" class="btn-primary btn-sm">{{ $latest ? 'Renew membership' : 'Assign a plan' }}</button>
                                 @endif
                             </x-ui.empty>
@@ -158,7 +158,7 @@
                                         <button wire:click="openPaymentModal({{ $ms->id }})" class="text-xs font-medium text-emerald-600 hover:underline">Collect</button>
                                     @endif
                                 @endif
-                                @if ($canManage && $status->value !== 'cancelled' && (float) $ms->amount_paid === 0.0)
+                                @if ($canMembership && $status->value !== 'cancelled' && (float) $ms->amount_paid === 0.0)
                                     <button wire:click="cancelMembership({{ $ms->id }})" wire:confirm="Cancel this membership?" class="text-xs font-medium text-red-600 hover:underline">Cancel</button>
                                 @endif
                             </td>
@@ -249,7 +249,7 @@
     @endif
 
     {{-- Assign / renew modal --}}
-    @if ($canManage)
+    @if ($canMembership)
         <x-ui.modal wire-model="showPlanModal" :title="$planMode === 'renew' ? 'Renew membership' : 'Assign membership plan'">
             <form wire:submit="savePlan" class="space-y-4">
                 @error('start_date') <div class="rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ $message }}</div> @enderror

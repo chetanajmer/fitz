@@ -6,6 +6,7 @@ use App\Models\Member;
 use App\Models\User;
 use App\Services\MemberService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -102,6 +103,11 @@ class Form extends Component
         $data = collect($this->form)->map(fn ($v) => $v === '' ? null : $v)->all();
         $extra = ['trainer_id' => $this->trainer_id ? (int) $this->trainer_id : null, 'portal_password' => $this->portal_password ?: null];
 
+        if (! $this->canAssignTrainer()) {
+            // A trainer limited to assigned members keeps what they register and cannot hand members away.
+            $this->member ? Arr::forget($extra, 'trainer_id') : $extra['trainer_id'] = Auth::id();
+        }
+
         if ($this->member) {
             Gate::authorize('update', $this->member);
             $member = $service->update($this->member, $data, $extra, $this->photo);
@@ -115,9 +121,15 @@ class Form extends Component
         return $this->redirect(route('gym.members.show', $member));
     }
 
+    protected function canAssignTrainer(): bool
+    {
+        return Auth::user()->can('members.all');
+    }
+
     public function render(): View
     {
         return view('livewire.gym.members.form', [
+            'canAssignTrainer' => $this->canAssignTrainer(),
             'trainers' => User::trainersOf(Auth::user()->gym_id)->where('status', 'active')->orderBy('name')->get(['id', 'name']),
         ])->title($this->member ? 'Edit '.$this->member->name : 'Add member');
     }

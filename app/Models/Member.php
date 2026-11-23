@@ -158,10 +158,10 @@ class Member extends Model implements AuthenticatableContract
 
     // ---- Scopes ------------------------------------------------------------
 
-    /** Restrict to what a given user may see: trainers only see their assigned members. */
+    /** Restrict to what a given user may see: trainers only see their assigned members unless granted "members.all". */
     public function scopeVisibleTo(Builder $query, User $user): Builder
     {
-        if ($user->isTrainer() && ! $user->isGymAdmin()) {
+        if (! $user->can('members.all')) {
             $query->where('trainer_id', $user->id);
         }
 

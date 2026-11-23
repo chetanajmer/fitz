@@ -13,8 +13,41 @@
         <a href="{{ route('gym.trainers.index') }}" class="btn-secondary">All trainers</a>
     </div>
 
+    <form id="access" wire:submit="saveAccess" class="card mb-6 scroll-mt-20">
+        <div class="card-header">
+            <div>
+                <h2 class="card-title">Sections this trainer can see</h2>
+                <p class="text-xs text-gray-500">The dashboard is always available. Unticked sections disappear from their menu and are blocked.</p>
+            </div>
+            <div class="flex flex-wrap gap-1.5">
+                @foreach ($presets as $key => $preset)
+                    <button type="button" wire:click="applyPreset('{{ $key }}')" class="btn-ghost btn-sm">{{ $preset['label'] }}</button>
+                @endforeach
+            </div>
+        </div>
+        <div class="grid gap-6 p-5 sm:grid-cols-2 lg:grid-cols-4">
+            @foreach ($sections as $group => $items)
+                <fieldset>
+                    <legend class="mb-2 text-xs font-semibold tracking-wide text-gray-500 uppercase">{{ $group }}</legend>
+                    <div class="space-y-3">
+                        @foreach ($items as $permission => $item)
+                            <label wire:key="perm-{{ $permission }}" class="flex cursor-pointer items-start gap-2.5">
+                                <input type="checkbox" wire:model="access" value="{{ $permission }}" class="mt-0.5 rounded border-gray-300 text-indigo-600">
+                                <span><span class="block text-sm font-medium">{{ $item['label'] }}</span><span class="block text-xs text-gray-500">{{ $item['hint'] }}</span></span>
+                            </label>
+                        @endforeach
+                    </div>
+                </fieldset>
+            @endforeach
+        </div>
+        <div class="flex items-center justify-between gap-3 border-t border-gray-100 px-5 py-3">
+            <p class="text-xs text-gray-500">Gym profile, Gymai billing and trainer management stay with gym admins.</p>
+            <button type="submit" class="btn-primary" wire:loading.attr="disabled" wire:target="saveAccess">Save access</button>
+        </div>
+    </form>
+
     <div class="grid gap-6 lg:grid-cols-2">
-        <div class="card">
+        <div id="members" class="card scroll-mt-20">
             <div class="card-header"><h2 class="card-title">Assigned members ({{ $members->count() }})</h2></div>
             <ul class="divide-y divide-gray-100">
                 @forelse ($members as $m)

@@ -20,12 +20,13 @@ enum Role: string
             self::SuperAdmin => ['platform.manage'],
             self::GymAdmin => [
                 'gym.dashboard', 'gym.settings', 'gym.billing',
-                'members.view', 'members.manage', 'members.import',
+                'members.view', 'members.all', 'members.manage', 'members.import',
                 'enquiries.manage', 'plans.manage', 'memberships.manage', 'payments.manage',
                 'attendance.manage', 'attendance.reports', 'trainers.manage',
                 'content.manage', 'content.custom',
             ],
-            self::Trainer => ['gym.dashboard', 'members.view', 'attendance.manage', 'content.custom'],
+            // Trainers get their sections as direct, per-trainer grants (see App\Support\TrainerAccess).
+            self::Trainer => ['gym.dashboard'],
             self::Member => ['portal.access'],
         };
     }

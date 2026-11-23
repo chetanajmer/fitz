@@ -5,7 +5,7 @@
     $links = [
         ['route' => 'gym.dashboard', 'match' => 'gym.dashboard', 'icon' => 'home', 'label' => 'Dashboard', 'can' => 'gym.dashboard'],
         ['route' => 'gym.enquiries.index', 'match' => 'gym.enquiries.*', 'icon' => 'inbox', 'label' => 'Enquiries', 'can' => 'enquiries.manage'],
-        ['route' => 'gym.members.index', 'match' => 'gym.members.*', 'icon' => 'users', 'label' => $user->isGymAdmin() ? 'Members' : 'My Members', 'can' => 'members.view'],
+        ['route' => 'gym.members.index', 'match' => 'gym.members.*', 'icon' => 'users', 'label' => $user->can('members.all') ? 'Members' : 'My Members', 'can' => 'members.view'],
         ['route' => 'gym.memberships.index', 'match' => 'gym.memberships.*', 'icon' => 'card', 'label' => 'Memberships', 'can' => 'memberships.manage'],
         ['route' => 'gym.payments.index', 'match' => 'gym.payments.*', 'icon' => 'cash', 'label' => 'Payments', 'can' => 'payments.manage'],
         ['route' => 'gym.attendance.index', 'match' => 'gym.attendance.index', 'icon' => 'calendar', 'label' => 'Attendance', 'can' => 'attendance.manage'],

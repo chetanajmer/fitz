@@ -12,18 +12,14 @@ class MemberPolicy
         return $user->can('members.view');
     }
 
-    /** Gym admins see every member of their gym; trainers only their assigned members. */
+    /** Gym admins (and trainers granted "members.all") see every member; other trainers only their assigned members. */
     public function view(User $user, Member $member): bool
     {
-        if ((int) $member->gym_id !== (int) $user->gym_id) {
+        if ((int) $member->gym_id !== (int) $user->gym_id || ! $user->can('members.view')) {
             return false;
         }
 
-        if ($user->can('members.manage')) {
-            return true;
-        }
-
-        return $user->isTrainer() && (int) $member->trainer_id === (int) $user->id;
+        return $user->can('members.all') || (int) $member->trainer_id === (int) $user->id;
     }
 
     public function create(User $user): bool
@@ -33,7 +29,7 @@ class MemberPolicy
 
     public function update(User $user, Member $member): bool
     {
-        return (int) $member->gym_id === (int) $user->gym_id && $user->can('members.manage');
+        return $user->can('members.manage') && $this->view($user, $member);
     }
 
     public function delete(User $user, Member $member): bool

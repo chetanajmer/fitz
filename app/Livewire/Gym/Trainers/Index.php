@@ -94,7 +94,7 @@ class Index extends Component
     public function render(): View
     {
         return view('livewire.gym.trainers.index', [
-            'trainers' => User::trainersOf(Auth::user()->gym_id)->withCount('assignedMembers')->orderBy('name')->get(),
+            'trainers' => User::trainersOf(Auth::user()->gym_id)->withCount(['assignedMembers', 'permissions'])->orderBy('name')->get(),
         ]);
     }
 }

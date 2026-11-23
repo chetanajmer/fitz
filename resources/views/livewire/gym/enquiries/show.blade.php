@@ -117,10 +117,14 @@
                 </x-ui.field>
                 <x-ui.field label="Date of birth" name="convert.date_of_birth"><input wire:model="convert.date_of_birth" type="date" class="input"></x-ui.field>
                 <x-ui.field label="Joining date" name="convert.joining_date" required><input wire:model="convert.joining_date" type="date" class="input"></x-ui.field>
-                <x-ui.field label="Trainer" name="convert.trainer_id">
-                    <select wire:model="convert.trainer_id" class="input"><option value="">None</option>@foreach ($trainers as $t)<option value="{{ $t->id }}">{{ $t->name }}</option>@endforeach</select>
-                </x-ui.field>
+                @if ($canAssignTrainer)
+                    <x-ui.field label="Trainer" name="convert.trainer_id">
+                        <select wire:model="convert.trainer_id" class="input"><option value="">None</option>@foreach ($trainers as $t)<option value="{{ $t->id }}">{{ $t->name }}</option>@endforeach</select>
+                    </x-ui.field>
+                @endif
             </div>
+            @if (! $canAssignTrainer)<p class="hint">The new member will be assigned to you.</p>@endif
+            @if ($canAssignPlan)
             <div class="rounded-lg border border-gray-200 p-4">
                 <p class="mb-3 text-sm font-medium">Membership (optional)</p>
                 <div class="grid gap-4 sm:grid-cols-3">
@@ -130,8 +134,8 @@
                     @if ($convert['plan_id'] ?? false)
                         <x-ui.field label="Start date" name="convert.start_date"><input wire:model="convert.start_date" type="date" class="input"></x-ui.field>
                         <x-ui.field label="Discount (₹)" name="convert.discount"><input wire:model="convert.discount" type="number" min="0" step="0.01" class="input"></x-ui.field>
-                        <label class="flex items-end gap-2 pb-2 text-sm font-medium"><input wire:model.live="convert.pay_now" type="checkbox" class="rounded border-gray-300 text-indigo-600"> Record payment</label>
-                        @if ($convert['pay_now'] ?? false)
+                        @if ($canPay)<label class="flex items-end gap-2 pb-2 text-sm font-medium"><input wire:model.live="convert.pay_now" type="checkbox" class="rounded border-gray-300 text-indigo-600"> Record payment</label>@endif
+                        @if ($canPay && ($convert['pay_now'] ?? false))
                             <x-ui.field label="Amount (₹)" name="convert.amount"><input wire:model="convert.amount" type="number" min="0" step="0.01" class="input"></x-ui.field>
                             <x-ui.field label="Method" name="convert.method"><select wire:model="convert.method" class="input">@foreach (\App\Enums\PaymentMethod::options() as $v => $l)<option value="{{ $v }}">{{ $l }}</option>@endforeach</select></x-ui.field>
                             <x-ui.field label="Reference" name="convert.reference"><input wire:model="convert.reference" class="input"></x-ui.field>
@@ -139,6 +143,7 @@
                     @endif
                 </div>
             </div>
+            @endif
             <div class="flex justify-end gap-2">
                 <button type="button" wire:click="$set('showConvert', false)" class="btn-secondary">Cancel</button>
                 <button type="submit" class="btn-success" wire:loading.attr="disabled">Convert</button>
