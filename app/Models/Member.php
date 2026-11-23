@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DietPreference;
 use App\Enums\MembershipStatus;
 use App\Enums\MemberStatus;
 use App\Models\Concerns\BelongsToGym;
@@ -56,9 +57,9 @@ class Member extends Model implements AuthenticatableContract
 
     // user_id, trainer_id, enquiry_id, sequence, member_code, qr_token are assigned by MemberService.
     protected $fillable = [
-        'name', 'phone', 'email', 'gender', 'date_of_birth', 'blood_group', 'address', 'city',
+        'name', 'phone', 'email', 'gender', 'date_of_birth', 'blood_group', 'height_cm', 'address', 'city',
         'emergency_contact_name', 'emergency_contact_phone', 'emergency_contact_relation',
-        'joining_date', 'fitness_goal', 'medical_notes', 'notes', 'photo_path', 'status',
+        'joining_date', 'fitness_goal', 'diet_preference', 'medical_notes', 'notes', 'photo_path', 'status',
     ];
 
     protected function casts(): array
@@ -66,6 +67,9 @@ class Member extends Model implements AuthenticatableContract
         return [
             'date_of_birth' => 'date',
             'joining_date' => 'date',
+            'height_cm' => 'decimal:1',
+            'diet_preference' => DietPreference::class,
+            'notification_settings' => 'array',
             'status' => MemberStatus::class,
         ];
     }
@@ -83,6 +87,32 @@ class Member extends Model implements AuthenticatableContract
     public function enquiry(): BelongsTo
     {
         return $this->belongsTo(Enquiry::class);
+    }
+
+    public function devices(): HasMany
+    {
+        return $this->hasMany(MemberDevice::class);
+    }
+
+    /** The member's in-app notification list (newest first). */
+    public function appNotifications(): HasMany
+    {
+        return $this->hasMany(MemberNotification::class)->latest('id');
+    }
+
+    public function weightLogs(): HasMany
+    {
+        return $this->hasMany(WeightLog::class)->orderByDesc('measured_on');
+    }
+
+    public function weightGoals(): HasMany
+    {
+        return $this->hasMany(WeightGoal::class)->orderByDesc('id');
+    }
+
+    public function programs(): HasMany
+    {
+        return $this->hasMany(MemberProgram::class)->orderByDesc('start_date')->orderByDesc('id');
     }
 
     public function memberships(): HasMany

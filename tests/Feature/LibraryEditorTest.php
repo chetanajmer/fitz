@@ -41,7 +41,7 @@ class LibraryEditorTest extends TestCase
 
     public function test_library_is_seeded_from_the_default_file(): void
     {
-        $this->assertSame(12, LibraryPlan::where('type', 'diet')->count());
+        $this->assertSame(20, LibraryPlan::where('type', 'diet')->count());
         $this->assertSame(17, LibraryPlan::where('type', 'workout')->count());
         $this->assertSame('Important', $this->pcos()->sections->first()->title);
     }

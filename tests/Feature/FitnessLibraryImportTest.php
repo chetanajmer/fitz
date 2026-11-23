@@ -77,7 +77,7 @@ class FitnessLibraryImportTest extends TestCase
         $this->assertSame($categoryCount, PlanCategory::ofType('diet')->count());
         $this->assertSame($planCount, FitnessPlan::ofType('diet')->count());
         $this->assertSame('diet-weight-loss', $own->fresh()->library_key);
-        $this->assertSame(4, FitnessPlan::where('plan_category_id', $own->id)->count());
+        $this->assertSame(6, FitnessPlan::where('plan_category_id', $own->id)->count());
         $this->assertTrue(FitnessPlan::ofType('diet')->get()->every(fn ($p) => $p->is_published && $p->member_id === null));
         $this->assertSame(0, FitnessPlan::ofType('workout')->count(), 'only the chosen type is imported');
 

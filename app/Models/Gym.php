@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -37,6 +38,10 @@ class Gym extends Model
             'grace_days' => 1,           // rest days allowed between two visits without breaking the streak
             'skip_closed_days' => true,   // days the gym is closed (opening hours) never break a streak
             'milestones' => [7, 14, 30, 60, 100],
+        ],
+        // Weight tracking: how often members are asked for a weigh-in (see WeightTrackingService).
+        'progress' => [
+            'weigh_in_every_days' => 15,
         ],
     ];
 
@@ -123,6 +128,22 @@ class Gym extends Model
             'skip_closed_days' => (bool) ($custom['skip_closed_days'] ?? $defaults['skip_closed_days']),
             'milestones' => $milestones,
         ];
+    }
+
+    /** Days between weigh-in reminders for members (7, 15 or 30). */
+    /** Whether the gym is open on that day of the week (opening hours). */
+    public function isOpenOn(Carbon $date): bool
+    {
+        $day = $this->allSettings()['opening_hours'][strtolower($date->format('l'))] ?? null;
+
+        return ! ($day['closed'] ?? false);
+    }
+
+    public function weighInEveryDays(): int
+    {
+        $days = (int) ($this->settings['progress']['weigh_in_every_days'] ?? self::DEFAULT_SETTINGS['progress']['weigh_in_every_days']);
+
+        return in_array($days, [7, 15, 30], true) ? $days : 15;
     }
 
     public function allowsSelfCheckIn(): bool

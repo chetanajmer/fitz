@@ -7,6 +7,7 @@ use App\Models\Member;
 use App\Models\MemberOtp;
 use App\Models\PlatformSetting;
 use App\Services\MemberService;
+use App\Services\MembershipService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -97,6 +98,21 @@ class MemberApiTest extends TestCase
         // OTP is single use.
         $this->postJson('/api/v1/auth/verify-otp', ['phone' => '9876543210', 'otp' => $this->lastOtp()])
             ->assertStatus(422)->assertJsonPath('code', 'OTP_NOT_FOUND');
+    }
+
+    public function test_login_reports_the_members_real_membership_state(): void
+    {
+        $gym = $this->gymOf($this->createGymOwner('State Gym'));
+        $plan = $this->createPlan($gym);
+        $member = $this->createMember($gym, ['phone' => '9123400001']);
+        $this->inGym($gym, fn () => app(MembershipService::class)->assign($member, $plan, now()->toDateString()));
+        $this->createMember($gym, ['phone' => '9123400002']);
+
+        $login = $this->login('9123400001')['member'];
+        $this->assertSame('active', $login['membership_state']);
+        $this->assertSame('Monthly', $login['membership']['plan_name']);
+        $this->assertSame(now()->toDateString(), $login['membership']['start_date']);
+        $this->assertSame('none', $this->login('9123400002')['member']['membership_state']);
     }
 
     public function test_unknown_inactive_and_suspended_gym_numbers_cannot_log_in(): void

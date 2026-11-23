@@ -38,7 +38,7 @@
                                             <span><span class="font-medium">{{ $s->member->name }}</span> <span class="text-xs text-gray-500">{{ $s->member->member_code }}</span></span>
                                         </a>
                                     </td>
-                                    <td><span class="text-lg font-bold">🔥 {{ $board === 'current' ? $s->current_streak : $s->longest_streak }}</span></td>
+                                    <td><span class="inline-flex items-center gap-1 text-lg font-bold"><x-ui.icon name="fire" class="size-5 text-orange-500" /> {{ $board === 'current' ? $s->current_streak : $s->longest_streak }}</span></td>
                                     <td class="text-gray-500">
                                         @if ($board === 'current')
                                             {{ $s->current_started_on?->format('d M') }}
@@ -64,11 +64,11 @@
                         <li wire:key="risk-{{ $s->id }}" class="flex items-center justify-between gap-3 px-5 py-3">
                             <a href="{{ route('gym.members.show', $s->member_id) }}" class="min-w-0">
                                 <p class="truncate text-sm font-medium">{{ $s->member->name }}</p>
-                                <p class="text-xs text-gray-500">🔥 {{ $s->current_streak }} day streak · last visit {{ $s->last_visit_on?->format('D, d M') }}</p>
+                                <p class="flex items-center gap-1 text-xs text-gray-500"><x-ui.icon name="fire" class="size-3.5 text-orange-500" /> {{ $s->current_streak }} day streak · last visit {{ $s->last_visit_on?->format('D, d M') }}</p>
                             </a>
                             <div class="flex gap-2">
                                 <a href="tel:{{ $s->member->phone }}" class="btn-secondary btn-sm">Call</a>
-                                <a href="https://wa.me/91{{ $s->member->phone_digits }}?text={{ urlencode('Hi '.$s->member->name.'! Your '.$s->current_streak.'-day streak at '.current_gym()->name.' ends today if you miss your workout. See you at the gym! 💪') }}" target="_blank" rel="noopener" class="btn-success btn-sm">WhatsApp</a>
+                                <a href="https://wa.me/91{{ $s->member->phone_digits }}?text={{ urlencode('Hi '.$s->member->name.'! Your '.$s->current_streak.'-day streak at '.current_gym()->name.' ends today if you miss your workout. See you at the gym!') }}" target="_blank" rel="noopener" class="btn-success btn-sm">WhatsApp</a>
                             </div>
                         </li>
                     @empty

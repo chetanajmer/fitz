@@ -1,0 +1,145 @@
+name: Test & deploy to cPanel
+
+# Every push to main:
+#   1. run the full test suite (a failure stops everything),
+#   2. build a ready-to-run copy (Composer packages + compiled CSS/JS) and push it to the "deploy" branch,
+#   3. deploy it on cPanel:
+#        - automatic: when the repository variable CPANEL_SSH_ENABLED = true, over SSH (job "deploy");
+#        - one click: otherwise, in cPanel -> Git Version Control -> Manage -> Pull or Deploy:
+#          "Update from Remote", then "Deploy HEAD Commit" (runs .cpanel.yml).
+#
+# For automatic deploys (Settings -> Secrets and variables -> Actions):
+#   Variable: CPANEL_SSH_ENABLED = true
+#   Secrets:  CPANEL_SSH_HOST, CPANEL_SSH_PORT, CPANEL_SSH_USER, CPANEL_SSH_KEY (private key),
+#             CPANEL_REPO_PATH (cPanel -> Git Version Control -> "Repository Path")
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_sqlite, sqlite3, gd, zip, intl, bcmath
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          composer install --prefer-dist --no-interaction --no-progress
+          npm ci
+
+      - name: Build CSS/JS
+        run: npm run build
+
+      - name: Run tests
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan test --compact
+
+  release:
+    name: Build deploy branch
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, gd, zip, intl, bcmath
+          coverage: none
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Production dependencies and assets
+        run: |
+          composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction --no-progress
+          npm ci
+          npm run build
+
+      # Each build is a new commit ON TOP of the previous deploy commit (never a rewrite), so
+      # cPanel's "Update from Remote" (fast-forward only) always works.
+      - name: Push the ready-to-run build to the "deploy" branch
+        env:
+          SOURCE_MESSAGE: ${{ github.event.head_commit.message || 'manual run' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git add -f vendor public/build
+          tree=$(git write-tree)
+          message="Deploy ${GITHUB_SHA::7}: $(printf '%s' "$SOURCE_MESSAGE" | head -n 1)"
+          if git fetch --quiet origin deploy; then
+            commit=$(git commit-tree "$tree" -p FETCH_HEAD -m "$message")
+          else
+            commit=$(git commit-tree "$tree" -m "$message")
+          fi
+          git push origin "$commit:refs/heads/deploy"
+
+  deploy:
+    name: Deploy on cPanel (SSH)
+    needs: release
+    if: ${{ vars.CPANEL_SSH_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.CPANEL_SSH_KEY }}
+          SSH_HOST: ${{ secrets.CPANEL_SSH_HOST }}
+          SSH_PORT: ${{ secrets.CPANEL_SSH_PORT }}
+          SSH_USER: ${{ secrets.CPANEL_SSH_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+          {
+            echo "Host cpanel"
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile ~/.ssh/deploy_key"
+            echo "  IdentitiesOnly yes"
+          } >> ~/.ssh/config
+
+      - name: Pull the deploy branch and run the cPanel deploy tasks
+        env:
+          REPO: ${{ secrets.CPANEL_REPO_PATH }}
+        run: |
+          ssh cpanel "cd '$REPO' && git fetch origin deploy && git checkout -q -B deploy origin/deploy && git reset -q --hard origin/deploy && bash deploy-cpanel.sh"
+
+  manual:
+    name: Ready to deploy in cPanel
+    needs: release
+    if: ${{ vars.CPANEL_SSH_ENABLED != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Next step
+        run: |
+          echo "### Ready to deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "The deploy branch is built. In cPanel -> Git Version Control -> Manage -> Pull or Deploy: click **Update from Remote**, then **Deploy HEAD Commit**." >> "$GITHUB_STEP_SUMMARY"

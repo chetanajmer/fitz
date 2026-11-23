@@ -15,7 +15,7 @@
                 <p class="mb-5 text-sm text-gray-500">Share your details and our team will get in touch.</p>
                 <livewire:public-site.enquiry-form :gym="$gym" source="qr" />
             </div>
-            <a href="{{ $gym->publicUrl() }}" class="mt-6 text-center text-sm text-white/90 hover:underline">View {{ $gym->name }} →</a>
+            <a href="{{ $gym->publicUrl() }}" class="mt-6 text-center text-sm text-white/90 hover:underline"><span class="inline-flex items-center gap-1">View {{ $gym->name }} <x-ui.icon name="arrow-right" class="size-4" /></span></a>
             <p class="mt-4 text-center text-xs text-white/60">Powered by Gymai</p>
         </div>
     </div>

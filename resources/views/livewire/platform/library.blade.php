@@ -25,15 +25,15 @@
                         @if ($category->imageUrl())
                             <img src="{{ $category->imageUrl() }}" alt="" class="size-11 shrink-0 rounded-lg object-cover">
                         @else
-                            <div class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-lg">{{ $type === 'diet' ? '🥗' : '🏋️' }}</div>
+                            <div class="flex size-11 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-500"><x-ui.icon :name="$type === 'diet' ? 'meal' : 'dumbbell'" class="size-5" /></div>
                         @endif
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-semibold">{{ $category->name }}</p>
                             <p class="text-xs text-gray-500">{{ $category->plans->count() }} plans</p>
                         </div>
                         <div class="flex shrink-0 items-center">
-                            <button wire:click="moveCategory({{ $category->id }}, -1)" class="btn-ghost btn-sm !px-1.5" @disabled($ci === 0) title="Move up">↑</button>
-                            <button wire:click="moveCategory({{ $category->id }}, 1)" class="btn-ghost btn-sm !px-1.5" @disabled($loop->last) title="Move down">↓</button>
+                            <button wire:click="moveCategory({{ $category->id }}, -1)" class="btn-ghost btn-sm !px-1.5" @disabled($ci === 0) title="Move up"><x-ui.icon name="arrow-up" class="size-4" /></button>
+                            <button wire:click="moveCategory({{ $category->id }}, 1)" class="btn-ghost btn-sm !px-1.5" @disabled($loop->last) title="Move down"><x-ui.icon name="arrow-down" class="size-4" /></button>
                             <button wire:click="editCategory({{ $category->id }})" class="btn-ghost btn-sm !px-1.5" title="Edit category"><x-ui.icon name="cog" class="size-4" /></button>
                         </div>
                     </div>
@@ -43,13 +43,13 @@
                                 <button wire:click="selectPlan({{ $p->id }})" class="min-w-0 flex-1 px-3 py-2 text-left text-sm">
                                     <span class="block truncate {{ $plan === (string) $p->id ? 'font-medium text-indigo-700' : '' }}">{{ $p->title }}</span>
                                     <span class="text-xs text-gray-400">
-                                        {{ $p->sections_count }} sections · 📷 {{ $p->photo_count + ($p->cover_image_path ? 1 : 0) }}
+                                        {{ $p->sections_count }} sections · <x-ui.icon name="camera" class="inline size-3.5" /> {{ $p->photo_count + ($p->cover_image_path ? 1 : 0) }}
                                         @unless ($p->is_published) · <span class="text-amber-600">Draft</span>@endunless
                                     </span>
                                 </button>
                                 <div class="flex shrink-0 pr-1">
-                                    <button wire:click="movePlan({{ $p->id }}, -1)" class="btn-ghost btn-sm !px-1" @disabled($pi === 0)>↑</button>
-                                    <button wire:click="movePlan({{ $p->id }}, 1)" class="btn-ghost btn-sm !px-1" @disabled($loop->last)>↓</button>
+                                    <button wire:click="movePlan({{ $p->id }}, -1)" class="btn-ghost btn-sm !px-1" @disabled($pi === 0)><x-ui.icon name="arrow-up" class="size-4" /></button>
+                                    <button wire:click="movePlan({{ $p->id }}, 1)" class="btn-ghost btn-sm !px-1" @disabled($loop->last)><x-ui.icon name="arrow-down" class="size-4" /></button>
                                 </div>
                             </li>
                         @endforeach
@@ -142,8 +142,8 @@
                             <div class="card-header !py-2.5">
                                 <span class="text-xs font-semibold tracking-wide text-gray-500 uppercase">{{ $type === 'diet' ? 'Section' : 'Exercise' }} {{ $i + 1 }}</span>
                                 <div class="flex gap-1">
-                                    <button type="button" wire:click="moveSection('{{ $section['key'] }}', -1)" class="btn-ghost btn-sm" @disabled($i === 0)>↑</button>
-                                    <button type="button" wire:click="moveSection('{{ $section['key'] }}', 1)" class="btn-ghost btn-sm" @disabled($i === count($sections) - 1)>↓</button>
+                                    <button type="button" wire:click="moveSection('{{ $section['key'] }}', -1)" class="btn-ghost btn-sm" @disabled($i === 0)><x-ui.icon name="arrow-up" class="size-4" /></button>
+                                    <button type="button" wire:click="moveSection('{{ $section['key'] }}', 1)" class="btn-ghost btn-sm" @disabled($i === count($sections) - 1)><x-ui.icon name="arrow-down" class="size-4" /></button>
                                     <button type="button" wire:click="removeSection('{{ $section['key'] }}')" wire:confirm="Remove this section?" class="btn-ghost btn-sm text-red-600" @disabled(count($sections) === 1)>Remove</button>
                                 </div>
                             </div>

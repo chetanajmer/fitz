@@ -1,6 +1,6 @@
 <div class="mx-auto max-w-4xl">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <a href="{{ route('gym.content.index', ['type' => $p->type->value, 'tab' => $p->isCustom() ? 'custom' : 'defaults']) }}" class="btn-secondary btn-sm">← {{ $p->type->pluralLabel() }}</a>
+        <a href="{{ route('gym.content.index', ['type' => $p->type->value, 'tab' => $p->isCustom() ? 'custom' : 'defaults']) }}" class="btn-secondary btn-sm"><x-ui.icon name="arrow-left" class="size-4" /> {{ $p->type->pluralLabel() }}</a>
         <div class="flex flex-wrap items-center gap-2">
             @unless ($p->is_published)<x-ui.badge color="amber">Draft — not visible to members</x-ui.badge>@endunless
             @if ($p->member)

@@ -27,7 +27,7 @@
                     @if ($c->imageUrl())
                         <img src="{{ $c->imageUrl() }}" alt="" class="aspect-[16/7] w-full object-cover">
                     @else
-                        <div class="flex aspect-[16/7] items-center justify-center bg-gradient-to-br from-indigo-50 to-sky-50 text-3xl">{{ $planType === \App\Enums\FitnessPlanType::Diet ? '🥗' : '🏋️' }}</div>
+                        <div class="flex aspect-[16/7] items-center justify-center bg-gradient-to-br from-indigo-50 to-sky-50 text-indigo-300"><x-ui.icon :name="$planType === \App\Enums\FitnessPlanType::Diet ? 'meal' : 'dumbbell'" class="size-10" /></div>
                     @endif
                     <div class="card-body">
                         <div class="flex items-start justify-between gap-2">
@@ -36,7 +36,7 @@
                         </div>
                         @if ($c->description)<p class="mt-1 text-sm text-gray-600">{{ $c->description }}</p>@endif
                         <div class="mt-4 flex items-center justify-between text-sm">
-                            <button wire:click="showCategoryPlans({{ $c->id }})" class="text-indigo-600 hover:underline">{{ $c->plans_count }} plans →</button>
+                            <button wire:click="showCategoryPlans({{ $c->id }})" class="text-indigo-600 hover:underline"><span class="inline-flex items-center gap-1">{{ $c->plans_count }} plans <x-ui.icon name="arrow-right" class="size-3.5" /></span></button>
                             <div class="flex gap-1">
                                 <button wire:click="editCategory({{ $c->id }})" class="btn-secondary btn-sm">Edit</button>
                                 <button wire:click="deleteCategory({{ $c->id }})" wire:confirm="Delete category “{{ $c->name }}”? Its plans stay, uncategorised." class="btn-ghost btn-sm text-red-600">Delete</button>
@@ -72,7 +72,7 @@
                         @if ($p->coverUrl())
                             <img src="{{ $p->coverUrl() }}" alt="" class="aspect-[16/9] w-full object-cover">
                         @else
-                            <div class="flex aspect-[16/9] items-center justify-center bg-gradient-to-br from-rose-50 to-amber-50 text-4xl">{{ $planType === \App\Enums\FitnessPlanType::Diet ? '🥗' : '🏋️' }}</div>
+                            <div class="flex aspect-[16/9] items-center justify-center bg-gradient-to-br from-rose-50 to-amber-50 text-rose-300"><x-ui.icon :name="$planType === \App\Enums\FitnessPlanType::Diet ? 'meal' : 'dumbbell'" class="size-12" /></div>
                         @endif
                     </a>
                     <div class="card-body flex flex-1 flex-col">
@@ -166,7 +166,7 @@
                             <span class="flex flex-wrap items-center gap-2">
                                 <span class="font-medium text-gray-900">{{ $cat['name'] }}</span>
                                 <x-ui.badge>{{ $cat['plans'] }} {{ $cat['plans'] === 1 ? 'plan' : 'plans' }}</x-ui.badge>
-                                @if ($cat['photos'] > 0)<x-ui.badge color="purple">📷 {{ $cat['photos'] }} photos</x-ui.badge>@endif
+                                @if ($cat['photos'] > 0)<x-ui.badge color="purple"><span class="inline-flex items-center gap-1"><x-ui.icon name="camera" class="size-3.5" /> {{ $cat['photos'] }} photos</span></x-ui.badge>@endif
                                 @if ($done)
                                     <x-ui.badge color="green">Imported{{ $cat['photos'] ? ' — re-import adds missing photos' : '' }}</x-ui.badge>
                                 @elseif ($cat['imported'] > 0)
@@ -210,7 +210,7 @@
                     <button wire:click="sendTo({{ $m->id }})" class="flex w-full items-center gap-3 px-3 py-2 text-left hover:bg-gray-50">
                         <img src="{{ $m->photoUrl() }}" alt="" class="size-8 rounded-full object-cover">
                         <span class="flex-1 text-sm"><span class="font-medium">{{ $m->name }}</span> <span class="text-xs text-gray-500">{{ $m->member_code }} · {{ $m->phone }}</span></span>
-                        <span class="text-xs text-indigo-600">Select →</span>
+                        <span class="inline-flex items-center gap-1 text-xs text-indigo-600">Select <x-ui.icon name="arrow-right" class="size-3.5" /></span>
                     </button>
                 </li>
             @empty

@@ -22,7 +22,7 @@
                 <div>
                     <h1 class="text-3xl font-bold sm:text-5xl">{{ $gym->name }}</h1>
                     @if ($gym->setting('tagline'))<p class="mt-2 text-lg text-white/85">{{ $gym->setting('tagline') }}</p>@endif
-                    @if ($gym->city)<p class="mt-2 text-sm text-white/75">📍 {{ trim($gym->address.', '.$gym->city, ', ') }}</p>@endif
+                    @if ($gym->city)<p class="mt-2 flex items-center gap-1.5 text-sm text-white/75"><x-ui.icon name="map-pin" class="size-4" /> {{ trim($gym->address.', '.$gym->city, ', ') }}</p>@endif
                 </div>
             </div>
             <div class="mt-8 flex flex-wrap gap-3">
@@ -66,9 +66,9 @@
                 <div class="rounded-2xl border border-gray-200 p-6 text-sm">
                     <h3 class="font-semibold">Contact</h3>
                     <ul class="mt-4 space-y-2 text-gray-600">
-                        @if ($gym->phone)<li>📞 <a href="tel:{{ $gym->phone }}" class="hover:underline">{{ $gym->phone }}</a></li>@endif
-                        @if ($gym->email)<li>✉️ <a href="mailto:{{ $gym->email }}" class="hover:underline">{{ $gym->email }}</a></li>@endif
-                        @if ($gym->address || $gym->city)<li>📍 {{ trim($gym->address.', '.$gym->city, ', ') }}</li>@endif
+                        @if ($gym->phone)<li class="flex items-center gap-2"><x-ui.icon name="phone" class="size-4 shrink-0 opacity-70" /> <a href="tel:{{ $gym->phone }}" class="hover:underline">{{ $gym->phone }}</a></li>@endif
+                        @if ($gym->email)<li class="flex items-center gap-2"><x-ui.icon name="mail" class="size-4 shrink-0 opacity-70" /> <a href="mailto:{{ $gym->email }}" class="hover:underline">{{ $gym->email }}</a></li>@endif
+                        @if ($gym->address || $gym->city)<li class="flex items-start gap-2"><x-ui.icon name="map-pin" class="mt-0.5 size-4 shrink-0 opacity-70" /> {{ trim($gym->address.', '.$gym->city, ', ') }}</li>@endif
                     </ul>
                     @if ($social)
                         <div class="mt-4 flex flex-wrap gap-2">
@@ -108,7 +108,7 @@
                             @if ($plan->description)<p class="mt-3 text-sm text-gray-600">{{ $plan->description }}</p>@endif
                             @if ($plan->features)
                                 <ul class="mt-4 space-y-2 text-sm text-gray-600">
-                                    @foreach ($plan->features as $f)<li class="flex gap-2"><span style="color: {{ $primary }}">✓</span>{{ $f }}</li>@endforeach
+                                    @foreach ($plan->features as $f)<li class="flex gap-2"><x-ui.icon name="check" class="mt-0.5 size-4 shrink-0" style="color: {{ $primary }}" />{{ $f }}</li>@endforeach
                                 </ul>
                             @endif
                             <a href="#enquire" class="mt-6 block rounded-lg py-2.5 text-center text-sm font-semibold text-white" style="background: {{ $primary }}">Enquire</a>

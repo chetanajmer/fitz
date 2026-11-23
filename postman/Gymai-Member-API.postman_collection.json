@@ -49,6 +49,10 @@
             "value": "Postman"
         },
         {
+            "key": "fcm_token",
+            "value": "paste-a-firebase-token-here"
+        },
+        {
             "key": "city_id",
             "value": ""
         },
@@ -641,6 +645,10 @@
                             {
                                 "key": "Accept",
                                 "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
                             }
                         ],
                         "url": {
@@ -653,7 +661,11 @@
                                 "logout"
                             ]
                         },
-                        "description": "Revokes the current token (other devices stay logged in)."
+                        "description": "Revokes the current token (other devices stay logged in).",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"device_token\": \"{{fcm_token}}\"\n}"
+                        }
                     },
                     "response": [
                         {
@@ -837,6 +849,170 @@
         {
             "name": "4. Member",
             "item": [
+                {
+                    "name": "Get my profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me"
+                            ]
+                        },
+                        "description": "Same shape as the login response \"member\": profile, membership_state and the \"membership\" card object."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get full profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "profile"
+                            ]
+                        },
+                        "description": "Everything for the profile screen: personal, address, emergency_contact, health, account, gym, trainer, membership (card), membership_history, payments (totals + last 10), attendance, streak, plans counts, check_in (qr_payload to render as QR), editable_fields. Staff-only notes are never returned."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update my profile",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "profile"
+                            ]
+                        },
+                        "description": "Send only the fields to change (null or \"\" clears). Editable: email, gender (male|female|other), date_of_birth (YYYY-MM-DD), blood_group (A+,A-,B+,B-,AB+,AB-,O+,O-), address, city, emergency_contact_name, emergency_contact_phone, emergency_contact_relation, fitness_goal, medical_notes. Name and phone are managed by the gym and ignored. Returns the full profile.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"city\": \"Mumbai\",\n  \"address\": \"12 Marine Drive\",\n  \"blood_group\": \"B+\",\n  \"emergency_contact_name\": \"Ravi\",\n  \"emergency_contact_phone\": \"9811111111\",\n  \"emergency_contact_relation\": \"Brother\",\n  \"fitness_goal\": \"Weight loss\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Upload profile photo",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/profile/photo",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "profile",
+                                "photo"
+                            ]
+                        },
+                        "description": "multipart/form-data, field \"photo\" (jpg, png, webp; max 4 MB). Replaces any existing photo.",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "photo",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Remove profile photo",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/profile/photo",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "profile",
+                                "photo"
+                            ]
+                        },
+                        "description": "Removes the photo; photo_url falls back to an initials avatar."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get my membership (card + history)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/membership",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "membership"
+                            ]
+                        },
+                        "description": "Home-screen membership card.\n\ncard.state: active | expiring_soon | upcoming | expired | none\ncard fields: state_label, plan_name, duration_label, start_date, end_date, days_left, total_days, days_used, progress_percent, starts_in_days, price, discount, total_amount, amount_paid, balance, payment_status (paid|partial|unpaid), show_renew, message, renewal (next booked membership or null).\n\nExpiring soon = 7 days or fewer left (config gymai.membership_expiring_soon_days). history: all memberships, newest first, each with status."
+                    },
+                    "response": []
+                },
                 {
                     "name": "Get my streak",
                     "request": {
@@ -1194,6 +1370,487 @@
                             "body": "{\n  \"success\": true,\n  \"message\": \"Diet chart.\",\n  \"data\": {\n    \"id\": 1,\n    \"type\": \"diet\",\n    \"title\": \"1500 kcal vegetarian fat loss\",\n    \"summary\": \"Simple Indian vegetarian meals, ~110 g protein a day.\",\n    \"cover_image_url\": \"http://localhost:8000/storage/gyms/1/plans/cover.jpg\",\n    \"is_custom\": false,\n    \"category\": { \"id\": 1, \"name\": \"Weight Loss\" },\n    \"level\": \"beginner\",\n    \"duration_weeks\": 8,\n    \"daily_calories\": 1500,\n    \"section_count\": 2,\n    \"updated_at\": \"2026-11-22T20:10:00+05:30\",\n    \"sections\": [\n      { \"id\": 1, \"position\": 1, \"title\": \"Breakfast\", \"subtitle\": \"8:30 AM · 350 kcal\", \"body\": \"Moong dal chilla (2) with mint chutney\n1 cup green tea\", \"image_url\": \"http://localhost:8000/storage/gyms/1/plans/breakfast.jpg\" },\n      { \"id\": 2, \"position\": 2, \"title\": \"Lunch\", \"subtitle\": \"1:00 PM · 450 kcal\", \"body\": \"2 phulka, 1 bowl dal\", \"image_url\": null }\n    ]\n  }\n}"
                         }
                     ]
+                },
+                {
+                    "name": "Weight progress",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/weight",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "weight"
+                            ]
+                        },
+                        "description": "Show on the progress screen. If popup is not null, show it.\n\nEvery weight response returns the full summary: current_weight_kg, last_measured_on, change_since_last_kg, change_since_start_kg, height_cm, bmi {value, category}, goal {status active|achieved, direction lose|gain, start/target/current, total_change_kg, achieved_change_kg, remaining_kg, progress_percent, is_near_target, target_date, achieved_at}, reminder {every_days, next_due_on, is_due, days_until_due, overdue_days}, popup {type goal_achieved|almost_there|weigh_in_due, title, message, acknowledge} or null, history [] (oldest → newest, for the chart)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Record weight",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/weight",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "weight"
+                            ]
+                        },
+                        "description": "weight_kg (20–350), measured_on (optional, default today, not in future), note (optional). Same date again corrects that reading. data.goal_achieved=true when this reading reached the target.\n\nEvery weight response returns the full summary: current_weight_kg, last_measured_on, change_since_last_kg, change_since_start_kg, height_cm, bmi {value, category}, goal {status active|achieved, direction lose|gain, start/target/current, total_change_kg, achieved_change_kg, remaining_kg, progress_percent, is_near_target, target_date, achieved_at}, reminder {every_days, next_due_on, is_due, days_until_due, overdue_days}, popup {type goal_achieved|almost_there|weigh_in_due, title, message, acknowledge} or null, history [] (oldest → newest, for the chart).",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"weight_kg\": 72.5,\n  \"note\": \"Morning, empty stomach\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Set weight target",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/weight/goal",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "weight",
+                                "goal"
+                            ]
+                        },
+                        "description": "target_weight_kg (required), current_weight_kg (optional; also records today's weigh-in; required if no reading yet), target_date (optional, future). Replaces any active target.\n\nEvery weight response returns the full summary: current_weight_kg, last_measured_on, change_since_last_kg, change_since_start_kg, height_cm, bmi {value, category}, goal {status active|achieved, direction lose|gain, start/target/current, total_change_kg, achieved_change_kg, remaining_kg, progress_percent, is_near_target, target_date, achieved_at}, reminder {every_days, next_due_on, is_due, days_until_due, overdue_days}, popup {type goal_achieved|almost_there|weigh_in_due, title, message, acknowledge} or null, history [] (oldest → newest, for the chart).",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"current_weight_kg\": 82,\n  \"target_weight_kg\": 72,\n  \"target_date\": \"2027-03-01\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Acknowledge popup",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/weight/popup/ack",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "weight",
+                                "popup",
+                                "ack"
+                            ]
+                        },
+                        "description": "Call when the member closes a goal_achieved or almost_there popup so it is not shown again. weigh_in_due needs no ack — it disappears once a weight is recorded.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"goal_achieved\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete weight reading",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/weight/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "weight",
+                                "1"
+                            ]
+                        },
+                        "description": "Remove a wrong reading (id from history)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "My programs (today + week)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/programs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "programs"
+                            ]
+                        },
+                        "description": "workout_program / diet_program: the assigned program (title, goal, level or diet_preference, start/end, current_day, current_week, progress_percent) or null.\ntoday: { workout, diet } — each has title, is_rest, week, cycle_day, notes and plan {title, summary, daily_calories, cover_url, sections [{title, subtitle, body, image_url}]} (exercises or meals). null when no program covers today.\nweek: next 7 days with workout/diet titles for a week strip."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Schedule for a date",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/schedule?date=2026-11-25",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "schedule"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "2026-11-25"
+                                }
+                            ]
+                        },
+                        "description": "The full workout (exercises) and diet (meals) for any date. Use it when the member taps a day in the week strip."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Log a day (done / skipped)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"workout\",\n  \"status\": \"done\",\n  \"date\": null,\n  \"note\": \"Felt strong today\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/me/schedule/log",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "schedule",
+                                "log"
+                            ]
+                        },
+                        "description": "Mark that day's workout or diet as followed (done) or skipped. type: workout | diet, status: done | skipped. date is optional (defaults to today); members can log today and up to 2 days back. Rest days cannot be logged. Returns the refreshed day (same shape as GET /me/schedule) with status and log."
+                    }
+                },
+                {
+                    "name": "Undo a day log",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"workout\",\n  \"date\": null\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/me/schedule/log",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "schedule",
+                                "log"
+                            ]
+                        },
+                        "description": "Remove the log for that day (back to not logged). date optional, defaults to today."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Push notifications",
+            "description": "Firebase Cloud Messaging HTTP v1. The app calls POST /me/devices on every launch (and on token refresh); DELETE /me/devices (or /auth/logout with device_token) on logout.\n\nEvery push: notification {title, body, image?}, android.notification.channel_id = general | reminders | membership | announcements, data (all strings) = { notification_id (= member_notifications.id), type, screen, channel, gym_id, image_url?, ...ids }; with a picture also notification.image and android.notification.image. screen: home, profile, membership, payments, progress, weight, plans, workout, diet, streak, checkin, gym.\n\nTypes: announcement, membership_expiring, membership_expired, payment_received, balance_due, plan_assigned, goal_achieved, weigh_in_due, workout_reminder, streak_at_risk, test.",
+            "item": [
+                {
+                    "name": "Register device (FCM token)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/devices",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "devices"
+                            ]
+                        },
+                        "description": "Body: token (max 512), platform android|ios, device_name?, app_version?. Response: { success, message: \"Device registered.\", data: { registered: true } }. A token used by another member moves to this member.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"{{fcm_token}}\",\n  \"platform\": \"android\",\n  \"app_version\": \"1.0.0\",\n  \"device_name\": \"moto g73 5G\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Remove device",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/devices",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "devices"
+                            ]
+                        },
+                        "description": "Removes the token only if it belongs to the current member. Always 200 \"Device removed.\"",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"{{fcm_token}}\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Notification list",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/notifications?page=1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                }
+                            ]
+                        },
+                        "description": "Newest first, with unread_count and pagination (?page=, ?per_page=20, ?unread=1). Each item: { id, type, title, body (full text), image_url (or null), screen, data { screen, channel, ... }, is_read, read_at, created_at } - dates ISO 8601 with +05:30. Open the detail page from a push with data.notification_id."
+                    }
+                },
+                {
+                    "name": "Mark notification read",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/notifications/1/read",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "notifications",
+                                "1",
+                                "read"
+                            ]
+                        },
+                        "description": "Only the member's own notifications (404 otherwise). Sets read_at once; returns unread_count."
+                    }
+                },
+                {
+                    "name": "Mark all read",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/notifications/read-all",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "notifications",
+                                "read-all"
+                            ]
+                        },
+                        "description": ""
+                    }
+                },
+                {
+                    "name": "Notification settings",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/notification-settings",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "notification-settings"
+                            ]
+                        },
+                        "description": "reminders / announcements toggles. Membership, payment and program updates are always on."
+                    }
+                },
+                {
+                    "name": "Update notification settings",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/notification-settings",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "notification-settings"
+                            ]
+                        },
+                        "description": "",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reminders\": true,\n  \"announcements\": true\n}"
+                        }
+                    }
                 }
             ]
         },

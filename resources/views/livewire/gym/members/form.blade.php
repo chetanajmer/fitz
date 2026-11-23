@@ -25,6 +25,7 @@
                             @foreach (['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as $bg)<option>{{ $bg }}</option>@endforeach
                         </select>
                     </x-ui.field>
+                    <x-ui.field label="Height (cm)" name="form.height_cm" hint="Used for BMI in weight tracking."><input wire:model="form.height_cm" type="number" step="0.1" min="50" max="250" class="input"></x-ui.field>
                     <x-ui.field label="Address" name="form.address" class="sm:col-span-2"><input wire:model="form.address" class="input"></x-ui.field>
                     <x-ui.field label="City" name="form.city"><input wire:model="form.city" class="input"></x-ui.field>
                 </div>
@@ -44,6 +45,12 @@
                 <div class="card-body grid gap-4 sm:grid-cols-2">
                     <x-ui.field label="Joining date" name="form.joining_date" required><input wire:model="form.joining_date" type="date" class="input"></x-ui.field>
                     <x-ui.field label="Fitness goal" name="form.fitness_goal"><input wire:model="form.fitness_goal" class="input" placeholder="Weight loss, muscle gain…"></x-ui.field>
+                    <x-ui.field label="Diet preference" name="form.diet_preference" hint="Used to suggest diet programs.">
+                        <select wire:model="form.diet_preference" class="input">
+                            <option value="">—</option>
+                            @foreach (\App\Enums\DietPreference::options() as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
+                        </select>
+                    </x-ui.field>
                     <x-ui.field label="Medical notes" name="form.medical_notes" class="sm:col-span-2"><textarea wire:model="form.medical_notes" rows="2" class="input" placeholder="Injuries, conditions, allergies"></textarea></x-ui.field>
                     <x-ui.field label="Internal notes" name="form.notes" class="sm:col-span-2"><textarea wire:model="form.notes" rows="2" class="input"></textarea></x-ui.field>
                 </div>

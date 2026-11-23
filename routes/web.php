@@ -83,12 +83,15 @@ Route::prefix('app')->name('gym.')
         // Diet charts & workout plans (content.custom: admins + trainers; finer rules in FitnessPlanPolicy).
         Route::middleware('permission:content.custom')->group(function () {
             Route::livewire('/content/plans/{plan}', Livewire\Gym\Content\Show::class)->name('content.show');
+            Route::livewire('/programs', Livewire\Gym\Content\Programs::class)->name('programs');
             Route::livewire('/content/plans/{plan}/edit', Livewire\Gym\Content\Editor::class)->name('content.edit');
             Route::livewire('/content/{type}', Livewire\Gym\Content\Library::class)->whereIn('type', ['diet', 'workout'])->name('content.index');
             Route::livewire('/content/{type}/create', Livewire\Gym\Content\Editor::class)->whereIn('type', ['diet', 'workout'])->name('content.create');
         });
 
+        Route::livewire('/progress', Livewire\Gym\Progress::class)->middleware('permission:members.view')->name('progress');
         Route::livewire('/streaks', Livewire\Gym\Streaks::class)->middleware('permission:attendance.reports')->name('streaks');
+        Route::livewire('/notifications', Livewire\Gym\Announcements::class)->middleware('permission:announcements.send')->name('announcements');
 
         Route::middleware('permission:trainers.manage')->group(function () {
             Route::livewire('/trainers', Livewire\Gym\Trainers\Index::class)->name('trainers.index');
@@ -137,6 +140,7 @@ Route::prefix('platform')->name('platform.')
         Route::livewire('/gyms/{gym:id}', Livewire\Platform\Gyms\Show::class)->name('gyms.show');
         Route::livewire('/leads', Livewire\Platform\Leads::class)->name('leads');
         Route::livewire('/library', Livewire\Platform\Library::class)->name('library');
+        Route::livewire('/notifications', Livewire\Platform\Notifications::class)->name('notifications');
         Route::livewire('/pricing', Livewire\Platform\Pricing::class)->name('pricing');
         Route::livewire('/cities', Livewire\Platform\Cities::class)->name('cities');
         Route::livewire('/invoices', Livewire\Platform\Invoices::class)->name('invoices');

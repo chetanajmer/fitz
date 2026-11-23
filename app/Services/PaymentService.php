@@ -31,7 +31,7 @@ class PaymentService
             throw ValidationException::withMessages(['amount' => 'Amount must be greater than zero.']);
         }
 
-        return DB::transaction(function () use ($membership, $amount, $method, $reference, $paidAt, $notes) {
+        $payment = DB::transaction(function () use ($membership, $amount, $method, $reference, $paidAt, $notes) {
             /** @var Membership $locked */
             $locked = Membership::whereKey($membership->id)->lockForUpdate()->firstOrFail();
 
@@ -67,5 +67,9 @@ class PaymentService
 
             return $payment;
         });
+
+        app(PushNotificationService::class)->paymentReceived($payment);
+
+        return $payment;
     }
 }
