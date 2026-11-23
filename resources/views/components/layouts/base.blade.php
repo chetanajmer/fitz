@@ -11,6 +11,18 @@
     {{ $head ?? '' }}
 </head>
 <body class="h-full font-sans text-gray-900 antialiased {{ $bodyClass }}">
+    @if (auth()->check() && session()->has(\App\Services\ImpersonationService::SESSION_KEY))
+        @php($imp = session(\App\Services\ImpersonationService::SESSION_KEY))
+        <div class="sticky top-0 z-[70] flex flex-wrap items-center justify-center gap-x-4 gap-y-1 bg-amber-400 px-4 py-2 text-sm font-medium text-amber-950 no-print">
+            <span>👁️ Logged in as <strong>{{ auth()->user()->name }}</strong> ({{ str_replace('_', ' ', auth()->user()->getRoleNames()->first()) }}) via Super Admin magic link</span>
+            <form method="POST" action="{{ route('impersonate.leave') }}">
+                @csrf
+                <button class="rounded-md bg-amber-950 px-3 py-1 text-xs font-semibold text-white hover:bg-black">
+                    {{ $imp['return_to'] ? 'Return to Super Admin' : 'End session' }}
+                </button>
+            </form>
+        </div>
+    @endif
     {{ $slot }}
 
     {{-- Toasts: fired by session flashes or Livewire $this->dispatch('notify', message: '...', type: 'success') --}}

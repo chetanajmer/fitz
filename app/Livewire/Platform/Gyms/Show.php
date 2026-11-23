@@ -5,12 +5,18 @@ namespace App\Livewire\Platform\Gyms;
 use App\Enums\GymStatus;
 use App\Models\Enquiry;
 use App\Models\Gym;
+use App\Models\GymPricingOverride;
+use App\Models\ImpersonationToken;
 use App\Models\Member;
+use App\Models\PricingRate;
 use App\Models\SaasInvoice;
+use App\Models\User;
 use App\Services\BillingService;
+use App\Services\ImpersonationService;
 use App\Services\PlatformGymService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -42,6 +48,7 @@ class Show extends Component
     public function mount(Gym $gym): void
     {
         $this->gym = $gym;
+        $this->customFrom = Carbon::today()->addMonthNoOverflow()->startOfMonth()->toDateString();
     }
 
     public function updatedSearch(): void
@@ -71,6 +78,56 @@ class Show extends Component
         $service->changeStatus($this->gym, GymStatus::from($this->newStatus), $this->reason ?: null);
         $this->showStatusModal = false;
         $this->dispatch('notify', message: "Gym is now {$this->gym->status->label()}.");
+    }
+
+    // ---- Magic links ("login as") ---------------------------------------------
+
+    public bool $showLink = false;
+
+    public string $linkUrl = '';
+
+    public string $linkFor = '';
+
+    public function magicLink(int $userId, ImpersonationService $impersonation): void
+    {
+        // Only accounts belonging to this gym.
+        $user = User::where('gym_id', $this->gym->id)->findOrFail($userId);
+        $link = $impersonation->createLink($user, Auth::user());
+
+        $this->linkUrl = $link['url'];
+        $this->linkFor = $user->name.' ('.str_replace('_', ' ', (string) $user->getRoleNames()->first()).')';
+        $this->showLink = true;
+    }
+
+    // ---- Custom pricing --------------------------------------------------------
+
+    public string $customPrice = '';
+
+    public string $customFrom = '';
+
+    public string $customUntil = '';
+
+    public string $customNotes = '';
+
+    public function setCustomPrice(BillingService $billing): void
+    {
+        $this->validate([
+            'customPrice' => 'required|numeric|min:0|max:10000',
+            'customFrom' => 'required|date',
+            'customUntil' => 'nullable|date|after_or_equal:customFrom',
+            'customNotes' => 'nullable|string|max:255',
+        ], [], ['customPrice' => 'price', 'customFrom' => 'start date', 'customUntil' => 'end date']);
+
+        $billing->setCustomPrice($this->gym, (float) $this->customPrice, $this->customFrom, $this->customUntil ?: null, $this->customNotes ?: null);
+        $this->reset('customPrice', 'customUntil', 'customNotes');
+        $this->dispatch('notify', message: 'Custom price saved for '.$this->gym->name.'.');
+    }
+
+    public function endCustomPrice(BillingService $billing): void
+    {
+        $this->validate(['customFrom' => 'required|date']);
+        $billing->endCustomPrice($this->gym, $this->customFrom);
+        $this->dispatch('notify', message: $this->gym->name.' returns to standard pricing from '.Carbon::parse($this->customFrom)->format('d M Y').'.');
     }
 
     public function generateInvoice(BillingService $billing): void
@@ -105,6 +162,14 @@ class Show extends Component
             'estimate' => $billing->currentMonthEstimate($gym),
             'outstanding' => $billing->outstandingFor($gym),
             'invoices' => $this->tab === 'invoices' ? SaasInvoice::where('gym_id', $gym->id)->latest('period_start')->paginate(12, pageName: 'invoices') : null,
+            'accounts' => $this->tab === 'access'
+                ? User::where('gym_id', $gym->id)->with('roles')->get()->reject(fn (User $u) => $u->isSuperAdmin())
+                    ->sortBy(fn (User $u) => [$u->id === $gym->owner_id ? 0 : ($u->isGymAdmin() ? 1 : ($u->isTrainer() ? 2 : 3)), $u->name])->values()
+                : collect(),
+            'recentLinks' => $this->tab === 'access' ? ImpersonationToken::with(['user', 'creator'])->where('gym_id', $gym->id)->latest()->limit(15)->get() : collect(),
+            'pricing' => $billing->rateForGym($gym),
+            'standardRate' => PricingRate::rateOn(),
+            'priceHistory' => $this->tab === 'pricing' ? GymPricingOverride::with('creator')->where('gym_id', $gym->id)->latest('effective_from')->latest('id')->get() : collect(),
         ])->title($gym->name);
     }
 }

@@ -6,6 +6,7 @@ use App\Enums\InvoiceStatus;
 use App\Enums\MemberStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Gym;
+use App\Models\GymPricingOverride;
 use App\Models\Member;
 use App\Models\PlatformSetting;
 use App\Models\PricingRate;
@@ -43,15 +44,33 @@ class BillingService
         return PricingRate::rateOn(Carbon::today());
     }
 
+    /**
+     * Price per active member for a gym on a date: the gym's custom price if one covers
+     * that date, otherwise the platform rate.
+     *
+     * @return array{rate: float, custom: bool, override: ?GymPricingOverride}
+     */
+    public function rateForGym(Gym $gym, $date = null): array
+    {
+        $date = Carbon::parse($date ?? Carbon::today());
+        $override = GymPricingOverride::where('gym_id', $gym->id)->activeOn($date)
+            ->orderByDesc('effective_from')->orderByDesc('id')->first();
+
+        return $override
+            ? ['rate' => (float) $override->price_per_member, 'custom' => true, 'override' => $override]
+            : ['rate' => PricingRate::rateOn($date), 'custom' => false, 'override' => null];
+    }
+
     /** Estimate for the running month (not an invoice). */
     public function currentMonthEstimate(Gym $gym): array
     {
         $start = Carbon::today()->startOfMonth();
         $end = Carbon::today()->endOfMonth();
         $count = $this->billableMemberCount($gym, $start, $end);
-        $rate = PricingRate::rateOn($start);
+        $pricing = $this->rateForGym($gym, $start);
+        $rate = $pricing['rate'];
 
-        return ['members' => $count, 'rate' => $rate, 'amount' => round($count * $rate, 2), 'period_start' => $start, 'period_end' => $end];
+        return ['members' => $count, 'rate' => $rate, 'custom' => $pricing['custom'], 'amount' => round($count * $rate, 2), 'period_start' => $start, 'period_end' => $end];
     }
 
     /**
@@ -74,7 +93,8 @@ class BillingService
             }
 
             $count = $this->billableMemberCount($gym, $start, $end);
-            $rate = PricingRate::rateOn($start);
+            $pricing = $this->rateForGym($gym, $start);
+            $rate = $pricing['rate'];
             $subtotal = round($count * $rate, 2);
 
             $invoice = new SaasInvoice;
@@ -96,6 +116,8 @@ class BillingService
                 'gym_city' => $gym->city,
                 'owner_email' => $gym->owner?->email,
                 'billing_rule' => 'Active members with a valid membership during the period',
+                'pricing' => $pricing['custom'] ? 'custom' : 'standard',
+                'standard_rate' => PricingRate::rateOn($start),
             ];
             $invoice->save();
 
@@ -192,6 +214,59 @@ class BillingService
         $rate->save();
 
         return $rate;
+    }
+
+    /**
+     * Give a gym a custom price from a date. Any open-ended earlier custom price is closed
+     * the day before, so price history stays continuous and past invoices are untouched.
+     */
+    public function setCustomPrice(Gym $gym, float $price, string $effectiveFrom, ?string $endsOn = null, ?string $notes = null): GymPricingOverride
+    {
+        $from = Carbon::parse($effectiveFrom)->startOfDay();
+
+        if ($from->lt(Carbon::today()->startOfMonth())) {
+            throw ValidationException::withMessages(['customFrom' => 'Custom pricing cannot start before the current month — past invoices must stay unchanged.']);
+        }
+
+        return DB::transaction(function () use ($gym, $price, $from, $endsOn, $notes) {
+            GymPricingOverride::where('gym_id', $gym->id)
+                ->where(fn ($q) => $q->whereNull('ends_on')->orWhereDate('ends_on', '>=', $from))
+                ->whereDate('effective_from', '<', $from)
+                ->update(['ends_on' => $from->copy()->subDay()->toDateString(), 'updated_at' => now()]);
+
+            // A later-starting override would be superseded by this one.
+            GymPricingOverride::where('gym_id', $gym->id)->whereDate('effective_from', '>=', $from)->delete();
+
+            $override = new GymPricingOverride([
+                'price_per_member' => round($price, 2),
+                'effective_from' => $from->toDateString(),
+                'ends_on' => $endsOn ?: null,
+                'notes' => $notes,
+            ]);
+            $override->gym_id = $gym->id;
+            $override->created_by = Auth::guard('web')->id();
+            $override->save();
+
+            return $override;
+        });
+    }
+
+    /** Return a gym to the standard platform price from a date (default: start of next month). */
+    public function endCustomPrice(Gym $gym, ?string $from = null): int
+    {
+        $from = Carbon::parse($from ?? Carbon::today()->addMonthNoOverflow()->startOfMonth())->startOfDay();
+
+        if ($from->lt(Carbon::today()->startOfMonth())) {
+            throw ValidationException::withMessages(['customFrom' => 'Cannot change pricing before the current month.']);
+        }
+
+        return DB::transaction(function () use ($gym, $from) {
+            GymPricingOverride::where('gym_id', $gym->id)->whereDate('effective_from', '>=', $from)->delete();
+
+            return GymPricingOverride::where('gym_id', $gym->id)
+                ->where(fn ($q) => $q->whereNull('ends_on')->orWhereDate('ends_on', '>=', $from))
+                ->update(['ends_on' => $from->copy()->subDay()->toDateString(), 'updated_at' => now()]);
+        });
     }
 
     protected function nextInvoiceNumber(Carbon $periodStart): string

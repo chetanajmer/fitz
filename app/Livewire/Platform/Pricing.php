@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Platform;
 
+use App\Models\GymPricingOverride;
 use App\Models\PricingRate;
 use App\Services\BillingService;
 use Illuminate\Contracts\View\View;
@@ -44,6 +45,7 @@ class Pricing extends Component
         return view('livewire.platform.pricing', [
             'current' => PricingRate::rateOn(),
             'default' => (float) config('gymai.default_price_per_member'),
+            'customGyms' => GymPricingOverride::with('gym:id,name,city')->activeOn(Carbon::today())->orderBy('price_per_member', 'desc')->get(),
             'rates' => PricingRate::with('creator')->orderByDesc('effective_from')->orderByDesc('id')->get(),
         ]);
     }

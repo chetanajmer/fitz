@@ -3,6 +3,7 @@
 use App\Http\Controllers\AttendanceScanController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\PublicGymController;
 use App\Http\Controllers\QrCodeController;
 use App\Livewire;
@@ -21,6 +22,10 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
+
+// Super Admin magic links ("login as"). Single-use, short-lived tokens — see ImpersonationService.
+Route::get('/login-as/{token}', [ImpersonationController::class, 'consume'])->where('token', '[A-Za-z0-9]{64}')->middleware('throttle:20,1')->name('impersonate.consume');
+Route::post('/login-as/leave', [ImpersonationController::class, 'leave'])->middleware('auth')->name('impersonate.leave');
 
 // QR registration link: always creates an Enquiry for the gym that owns the token.
 Route::get('/join/{token}', [PublicGymController::class, 'join'])->where('token', '[A-Za-z0-9]{20,64}')->name('gym.join');

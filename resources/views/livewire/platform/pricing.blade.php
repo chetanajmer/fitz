@@ -20,6 +20,21 @@
             </form>
         </div>
 
+        <div class="space-y-6 lg:col-span-2">
+            <div class="card">
+                <div class="card-header"><h2 class="card-title">Gyms on custom pricing ({{ $customGyms->count() }})</h2><span class="text-xs text-gray-500">Everyone else pays the standard price</span></div>
+                <ul class="divide-y divide-gray-100">
+                    @forelse ($customGyms as $o)
+                        <li wire:key="cg-{{ $o->id }}" class="flex items-center justify-between gap-3 px-5 py-3 text-sm">
+                            <a href="{{ route('platform.gyms.show', [$o->gym_id, 'tab' => 'pricing']) }}" class="min-w-0 hover:text-indigo-600"><span class="font-medium">{{ $o->gym?->name }}</span> <span class="text-xs text-gray-500">{{ $o->gym?->city }}</span></a>
+                            <span class="shrink-0"><strong>{{ money($o->price_per_member) }}</strong> <span class="text-xs text-gray-500">{{ $o->ends_on ? 'until '.$o->ends_on->format('d M Y') : 'ongoing' }}</span></span>
+                        </li>
+                    @empty
+                        <li><x-ui.empty message="No gym has a custom price. Set one from a gym's Pricing tab." icon="tag" /></li>
+                    @endforelse
+                </ul>
+            </div>
+
         <div class="card lg:col-span-2">
             <div class="card-header"><h2 class="card-title">Price history</h2></div>
             <div class="overflow-x-auto">
@@ -43,6 +58,7 @@
                     </tbody>
                 </table>
             </div>
+        </div>
         </div>
     </div>
 </div>

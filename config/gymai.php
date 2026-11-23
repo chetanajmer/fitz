@@ -35,6 +35,6 @@ return [
         'member', 'members', 'livewire', 'up', 'storage', 'build', 'assets', 'css', 'js', 'images',
         'password', 'forgot-password', 'reset-password', 'dashboard', 'pricing', 'about', 'contact',
         'terms', 'privacy', 'help', 'support', 'gymai', 'www', 'mail', 'checkin', 'receipt', 'invoice',
-        'suspended', 'favicon.ico', 'robots.txt',
+        'suspended', 'login-as', 'favicon.ico', 'robots.txt',
     ],
 ];

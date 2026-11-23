@@ -3,7 +3,7 @@
 
     <div class="mb-6 grid gap-4 sm:grid-cols-3">
         <x-ui.stat label="Billable members this month" :value="$estimate['members']" icon="users" :hint="'Active + valid membership in '.$estimate['period_start']->format('F')" />
-        <x-ui.stat label="Estimated this month" :value="money($estimate['amount'])" icon="receipt" color="blue" :hint="$estimate['members'].' × '.money($estimate['rate']).' per member'" />
+        <x-ui.stat label="Estimated this month" :value="money($estimate['amount'])" icon="receipt" color="blue" :hint="$estimate['members'].' × '.money($estimate['rate']).' per member'.($estimate['custom'] ? ' (your custom price)' : '')" />
         <x-ui.stat label="Outstanding balance" :value="money($outstanding)" icon="cash" :color="$outstanding > 0 ? 'red' : 'green'" :hint="$outstanding > 0 ? 'Please clear pending invoices' : 'All paid up'" />
     </div>
 
