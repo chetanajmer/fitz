@@ -175,6 +175,7 @@ class Member extends Model implements AuthenticatableContract
     {
         return (float) $this->memberships()
             ->where('status', '!=', MembershipStatus::Cancelled->value)
+            ->reorder()
             ->selectRaw('COALESCE(SUM(total_amount - amount_paid), 0) as due')
             ->value('due');
     }

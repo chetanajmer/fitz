@@ -65,7 +65,7 @@ class FitnessLibraryService
                 $plan = new LibraryPlan;
                 $plan->type = $type;
                 $plan->key = $this->uniqueKey(LibraryPlan::class, $type->value.'-'.$data['title']);
-                $plan->sort_order = (int) $category->plans()->max('sort_order') + 1;
+                $plan->sort_order = (int) $category->plans()->reorder()->max('sort_order') + 1;
             }
 
             $plan->fill([

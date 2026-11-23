@@ -242,7 +242,7 @@ class Show extends Component
             'customPlans' => $this->tab === 'plans' ? FitnessPlan::where('member_id', $member->id)->with('category')->withCount('sections')->latest('updated_at')->get() : collect(),
             'canCustomPlans' => $user->can('create', [FitnessPlan::class, $member]),
             'streak' => app(StreakService::class)->summary($member),
-            'attendanceCount30' => $member->attendances()->where('date', '>=', now()->subDays(30))->count(),
+            'attendanceCount30' => $member->attendances()->reorder()->where('date', '>=', now()->subDays(30))->count(),
             'todayAttendance' => Attendance::where('member_id', $member->id)->whereDate('date', today())->first(),
             'plans' => MembershipPlan::active()->orderBy('sort_order')->orderBy('price')->get(),
             'trainers' => $user->can('members.all') ? User::trainersOf($user->gym_id)->where('status', 'active')->orderBy('name')->get(['id', 'name']) : collect(),
