@@ -21,4 +21,7 @@
     <p class="mt-6 text-center text-sm text-gray-500">
         Own a gym? <a href="{{ route('register.gym') }}" class="font-medium text-indigo-600 hover:underline">Register it free</a>
     </p>
+    <p class="mt-2 text-center text-sm text-gray-500">
+        Gym member? <a href="{{ route('member.join') }}" class="font-medium text-indigo-600 hover:underline">Join your gym</a>
+    </p>
 </div>

@@ -30,6 +30,9 @@ Route::post('/login-as/leave', [ImpersonationController::class, 'leave'])->middl
 // QR registration link: always creates an Enquiry for the gym that owns the token.
 Route::get('/join/{token}', [PublicGymController::class, 'join'])->where('token', '[A-Za-z0-9]{20,64}')->name('gym.join');
 
+// Website sign-up for new members: city → gym → details → phone OTP. Creates a pending member.
+Route::livewire('/join-gym', Livewire\PublicSite\MemberSignup::class)->name('member.join');
+
 // Member self-registration QR (shown on the attendance desk): creates a member without a membership.
 Route::get('/register/{token}', [PublicGymController::class, 'register'])->where('token', '[A-Za-z0-9]{20,64}')->name('gym.register');
 
