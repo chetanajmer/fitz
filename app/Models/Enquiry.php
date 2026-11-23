@@ -45,7 +45,7 @@ class Enquiry extends Model
 
     public function activities(): HasMany
     {
-        return $this->hasMany(EnquiryActivity::class)->latest();
+        return $this->hasMany(EnquiryActivity::class)->latest()->latest('id'); // newest first, stable within the same second
     }
 
     public function isConverted(): bool

@@ -130,6 +130,41 @@ class GymBrandingImageTest extends TestCase
         $this->assertSame($gym->logo_path, $this->gym->fresh()->logo_path);
     }
 
+    public function test_very_large_photos_are_processed_within_a_128_mb_memory_limit(): void
+    {
+        // A 22-megapixel photo (5400x4080) needs ~88 MB once decoded. Run in a separate PHP process
+        // limited to 128 MB, like a default PHP install, so the test process itself is not affected.
+        $dir = sys_get_temp_dir();
+        $big = $dir.'/gymai-big-'.uniqid().'.jpg';
+        $script = $dir.'/gymai-opt-'.uniqid().'.php';
+        // Scripts go in files: Windows command lines mangle % and quotes.
+        $maker = $dir.'/gymai-make-'.uniqid().'.php';
+        file_put_contents($maker, '<?php $w = 5400; $h = 4080; $i = imagecreatetruecolor($w, $h);'
+            .'for ($y = 0; $y < $h; $y += 8) { imagefilledrectangle($i, 0, $y, $w, $y + 7, imagecolorallocate($i, ($y * 7) % 255, ($y * 3) % 255, ($y * 11) % 255)); }'
+            .'imagejpeg($i, $argv[1], 90); imagepng($i, $argv[2], 6);');
+        $bigPng = $dir.'/gymai-big-'.uniqid().'.png';
+        exec(escapeshellarg(PHP_BINARY).' -d memory_limit=1G '.escapeshellarg($maker).' '.escapeshellarg($big).' '.escapeshellarg($bigPng));
+        @unlink($maker);
+        $this->assertFileExists($big);
+
+        file_put_contents($script, '<?php require '.var_export(base_path('vendor/autoload.php'), true).';'
+            .'$r = (new App\Support\ImageOptimizer)->optimize($argv[1], 1920, 720, 500 * 1024);'
+            .'echo json_encode(["bytes" => $r["bytes"], "width" => $r["width"], "height" => $r["height"]]);');
+
+        // JPEG and PNG (PNG decoding needs about twice the memory).
+        foreach ([$big, $bigPng] as $file) {
+            $output = [];
+            exec(escapeshellarg(PHP_BINARY).' -d memory_limit=128M '.escapeshellarg($script).' '.escapeshellarg($file).' 2>&1', $output, $exit);
+            @unlink($file);
+
+            $this->assertSame(0, $exit, basename($file).': '.implode("\n", $output));
+            $result = json_decode(end($output), true);
+            $this->assertLessThanOrEqual(500 * 1024, $result['bytes']);
+            $this->assertSame(720, $result['height']);
+        }
+        @unlink($script);
+    }
+
     public function test_rules_are_the_requested_sizes(): void
     {
         $this->assertSame(70, GymProfileService::IMAGE_RULES['logo']['max_kb']);
