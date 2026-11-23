@@ -1,0 +1,13 @@
+---
+# cPanel Git Version Control deployment tasks.
+# Runs inside the cloned repository directory on every "Deploy HEAD Commit".
+#
+# The cPanel repository must have the "deploy" branch checked out: GitHub Actions builds it
+# with vendor/ and public/build/ included, so the server needs no Composer or Node.
+#
+# Server paths (live folder, PHP binary) are set in deploy-cpanel.sh.
+# The subdomain's document root must point to
+# /home/morethangiftz/smartai.morethangiftz.com/public
+deployment:
+  tasks:
+    - /bin/bash deploy-cpanel.sh
