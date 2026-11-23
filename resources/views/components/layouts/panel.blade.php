@@ -5,7 +5,7 @@
     $hour = (int) now()->format('G');
     $greeting = $hour < 12 ? 'Good morning' : ($hour < 17 ? 'Good afternoon' : 'Good evening');
 @endphp
-<x-layouts.base :title="$title" body-class="theme-dark">
+<x-layouts.base :title="$title" :body-class="'panel-theme bg-gray-50'.(panel_theme() === 'dark' ? ' theme-dark' : '')">
     <div x-data="{ sidebar: false }" class="min-h-full">
         {{-- Mobile overlay --}}
         <div x-cloak x-show="sidebar" x-transition.opacity class="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm lg:hidden" @click="sidebar = false"></div>
@@ -48,16 +48,17 @@
         </aside>
 
         <div class="lg:pl-64">
-            <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-ink-700 bg-ink-850/85 px-4 backdrop-blur sm:px-6 lg:px-8 no-print">
-                <button type="button" class="rounded-lg p-1.5 text-zinc-400 hover:bg-white/5 hover:text-white lg:hidden" @click="sidebar = true" aria-label="Open menu">
+            <header class="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-gray-200 bg-white/85 px-4 backdrop-blur sm:px-6 lg:px-8 dark:border-ink-700 dark:bg-ink-850/85 no-print">
+                <button type="button" class="rounded-lg p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-900 lg:hidden dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white" @click="sidebar = true" aria-label="Open menu">
                     <x-ui.icon name="menu" class="size-6" />
                 </button>
                 <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm font-semibold text-white">{{ $title ?? $greeting.', '.\Illuminate\Support\Str::of($user->name)->before(' ') }}</p>
-                    <p class="truncate text-xs text-zinc-500">{{ $greeting }}, {{ \Illuminate\Support\Str::of($user->name)->before(' ') }} · {{ now()->format('D, d M Y') }}</p>
+                    <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ $title ?? $greeting.', '.\Illuminate\Support\Str::of($user->name)->before(' ') }}</p>
+                    <p class="truncate text-xs text-gray-500 dark:text-zinc-500">{{ $greeting }}, {{ \Illuminate\Support\Str::of($user->name)->before(' ') }} · {{ now()->format('D, d M Y') }}</p>
                 </div>
+                <x-ui.theme-toggle />
                 @if ($accountRoute)
-                    <a href="{{ route($accountRoute) }}" class="flex items-center gap-2 rounded-full border border-ink-700 bg-ink-800 py-1 pr-3 pl-1 text-sm text-zinc-300 transition hover:border-brand-600/60 hover:text-white">
+                    <a href="{{ route($accountRoute) }}" class="flex items-center gap-2 rounded-full border border-gray-200 bg-white py-1 pr-3 pl-1 text-sm text-gray-700 transition hover:border-brand-600/60 hover:text-gray-900 dark:border-ink-700 dark:bg-ink-800 dark:text-zinc-300 dark:hover:text-white">
                         <img src="{{ $user->photoUrl() }}" alt="" class="size-7 rounded-full object-cover">
                         <span class="hidden max-w-32 truncate sm:inline">{{ $user->name }}</span>
                     </a>

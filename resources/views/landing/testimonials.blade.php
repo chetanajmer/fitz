@@ -1,28 +1,21 @@
 @php
     /**
-     * PLACEHOLDER testimonials — replace with real quotes from your gym owners before launch.
-     * A "Sample content" badge is shown in the local environment as a reminder.
+     * Real gym-owner testimonials only. The section stays hidden until at least one is added, e.g.
+     * ['quote' => '…', 'name' => 'Owner name', 'role' => 'Gym name · City', 'rating' => 5].
      *
      * @var list<array{quote:string, name:string, role:string, rating:int}> $testimonials
      */
-    $testimonials = [
-        ['quote' => 'We moved from a paper register to Gymai in one evening. Renewals and pending fees are finally under control.', 'name' => 'Gym Owner', 'role' => 'Strength studio · Pune', 'rating' => 5],
-        ['quote' => 'QR check-in changed our front desk. Members scan, and I can see who is inside right from my phone.', 'name' => 'Gym Owner', 'role' => 'Fitness centre · Jaipur', 'rating' => 5],
-        ['quote' => 'My trainers only see their own members, and the diet charts look professional. Members love the streaks.', 'name' => 'Studio Founder', 'role' => 'Functional training · Indore', 'rating' => 5],
-        ['quote' => 'Enquiries used to get lost. Now every walk-in has a follow-up date and we convert far more of them.', 'name' => 'Gym Manager', 'role' => 'Family gym · Ahmedabad', 'rating' => 4],
-    ];
+    $testimonials = [];
 @endphp
-<section id="testimonials" data-lp-section class="relative overflow-hidden border-y border-ink-700 bg-ink-900 py-24 sm:py-32">
+@if (count($testimonials))
+<section id="testimonials" data-lp-section class="relative overflow-hidden border-y border-ink-700 bg-ink-900 py-14 sm:py-20">
     <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <div class="mx-auto max-w-2xl text-center">
             <p class="lp-reveal text-sm font-semibold tracking-[0.2em] text-brand-500 uppercase">Testimonials</p>
-            <h2 class="lp-reveal mt-3 text-3xl font-bold tracking-tight sm:text-5xl" style="--d: 80ms">Loved by gym owners</h2>
-            @env('local')
-                <p class="mt-3 inline-flex rounded-full bg-amber-500/15 px-3 py-1 text-xs text-amber-400">Sample content — replace in views/landing/testimonials.blade.php</p>
-            @endenv
+            <h2 data-split class="lp-reveal mt-3 text-3xl font-bold tracking-tight sm:text-5xl" style="--d: 80ms">Loved by gym owners</h2>
         </div>
 
-        <div data-lp-slider class="lp-reveal relative mt-14" style="--d: 160ms" aria-roledescription="carousel" aria-label="Testimonials">
+        <div data-lp-slider class="lp-reveal relative mt-10" style="--d: 160ms" aria-roledescription="carousel" aria-label="Testimonials">
             <div class="overflow-hidden rounded-3xl">
                 <div data-lp-slider-track class="flex transition-transform duration-700 ease-[cubic-bezier(0.2,0.7,0.2,1)]">
                     @foreach ($testimonials as $i => $t)
@@ -55,3 +48,4 @@
         </div>
     </div>
 </section>
+@endif

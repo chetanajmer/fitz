@@ -26,6 +26,13 @@
         @vite('resources/js/landing.js')
     </x-slot:head>
 
+    {{-- Loader (JS-only; removed as soon as the page is ready, never longer than ~1.2s) --}}
+    <div data-lp-loader class="lp-loader fixed inset-0 z-[80] flex-col items-center justify-center gap-6 bg-ink-850" aria-hidden="true">
+        <span class="lp-loader-mark flex size-16 items-center justify-center rounded-2xl bg-brand-600 text-2xl font-bold text-white">G</span>
+        <span class="h-1 w-40 overflow-hidden rounded-full bg-ink-700"><span data-lp-loader-bar class="lp-loader-bar block h-full w-full rounded-full bg-gradient-to-r from-brand-700 to-brand-400"></span></span>
+    </div>
+    <div data-lp-progress class="lp-progress fixed inset-x-0 top-0 z-[60] h-0.5 bg-gradient-to-r from-brand-700 via-brand-500 to-brand-400" aria-hidden="true"></div>
+
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70] focus:rounded-lg focus:bg-brand-600 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold">Skip to content</a>
 
     @include('landing.nav')
@@ -33,10 +40,12 @@
     <main id="main">
         @include('landing.hero')
         @include('landing.features')
+        @include('landing.member-spotlight')
         @include('landing.how-it-works')
         @include('landing.showcase')
         @include('landing.pricing')
         @include('landing.why')
+        @include('landing.stats')
         @include('landing.testimonials')
         @include('landing.faq')
         @include('landing.cta')

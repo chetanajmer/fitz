@@ -32,6 +32,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'member.api' => SetMemberApiContext::class,
         ]);
 
+        // Panel theme preference is written by JS (light/dark), so it is stored unencrypted.
+        $middleware->encryptCookies(except: ['theme']);
+
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : route('login'));
         $middleware->redirectUsersTo(fn (Request $request) => $request->user()->homeRoute());
     })
