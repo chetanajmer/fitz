@@ -31,4 +31,14 @@ class PublicGymController extends Controller
 
         return view('public.join', ['gym' => $gym]);
     }
+
+    /** gymai.com/register/{token} — member self-registration from the gym's desk QR. */
+    public function register(string $token)
+    {
+        $gym = Gym::where('join_token', $token)->first();
+
+        abort_unless($gym && $gym->isOperational(), 404);
+
+        return view('public.register', ['gym' => $gym]);
+    }
 }

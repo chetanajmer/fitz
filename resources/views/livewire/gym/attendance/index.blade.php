@@ -43,6 +43,21 @@
                 @error('scan') <p class="input-error">{{ $message }}</p> @enderror
                 <button type="submit" class="btn-primary mt-3 w-full">Submit scan</button>
             </form>
+
+            @php($registerUrl = current_gym()->registerUrl())
+            <div class="card card-body">
+                <h2 class="card-title flex items-center gap-2"><x-ui.icon name="qr" class="size-5" /> Member registration QR</h2>
+                <p class="mt-1 text-xs text-gray-500">New members scan this at the desk to open the registration form. Assign a plan afterwards from Members.</p>
+                <img src="{{ route('gym.attendance.register-qr') }}" alt="Member registration QR code" class="mx-auto mt-3 size-48">
+                <div class="mt-3 flex gap-2" x-data="{ copied: false }">
+                    <input readonly value="{{ $registerUrl }}" class="input font-mono text-xs">
+                    <button type="button" class="btn-secondary btn-sm" @click="navigator.clipboard.writeText('{{ $registerUrl }}'); copied = true; setTimeout(() => copied = false, 1500)" x-text="copied ? 'Copied' : 'Copy'"></button>
+                </div>
+                <div class="mt-3 flex justify-center gap-2">
+                    <a href="{{ route('gym.attendance.register-qr', ['download' => 1]) }}" class="btn-primary btn-sm">Download QR</a>
+                    <a href="{{ $registerUrl }}" target="_blank" class="btn-secondary btn-sm">Open form</a>
+                </div>
+            </div>
         </div>
 
         <div class="card lg:col-span-3">

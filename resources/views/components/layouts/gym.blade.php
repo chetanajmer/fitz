@@ -9,6 +9,7 @@
         ['route' => 'gym.memberships.index', 'match' => 'gym.memberships.*', 'icon' => 'card', 'label' => 'Memberships', 'can' => 'memberships.manage'],
         ['route' => 'gym.payments.index', 'match' => 'gym.payments.*', 'icon' => 'cash', 'label' => 'Payments', 'can' => 'payments.manage'],
         ['route' => 'gym.attendance.index', 'match' => 'gym.attendance.index', 'icon' => 'calendar', 'label' => 'Attendance', 'can' => 'attendance.manage'],
+        ['route' => 'gym.qr-codes', 'match' => 'gym.qr-codes', 'icon' => 'qr', 'label' => 'QR Code', 'can' => 'attendance.manage'],
         ['route' => 'gym.streaks', 'match' => 'gym.streaks', 'icon' => 'chart', 'label' => 'Streaks', 'can' => 'attendance.reports'],
         ['route' => 'gym.attendance.reports', 'match' => 'gym.attendance.reports', 'icon' => 'chart', 'label' => 'Reports', 'can' => 'attendance.reports'],
         ['route' => 'gym.content.index', 'params' => ['type' => 'diet'], 'match' => null, 'active' => request()->routeIs('gym.content.*') && (request()->route('type') === 'diet' || request()->route('plan')?->type?->value === 'diet'), 'icon' => 'tag', 'label' => 'Diet Charts', 'can' => 'content.custom'],
@@ -29,7 +30,7 @@
             @endcan
         @endforeach
         @if ($gym)
-            <div class="mt-4 border-t border-white/10 pt-4">
+            <div class="mt-4 border-t border-ink-700 pt-4">
                 <a href="{{ $gym->publicUrl() }}" target="_blank" class="nav-link"><x-ui.icon name="globe" /> Public page ↗</a>
             </div>
         @endif

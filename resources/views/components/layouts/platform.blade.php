@@ -10,12 +10,12 @@
         ['route' => 'platform.settings', 'match' => 'platform.settings', 'icon' => 'cog', 'label' => 'Settings'],
     ];
 @endphp
-<x-layouts.panel :title="$title" brand-name="Gymai Platform" brand-sub="Super Admin" account-route="platform.account" sidebar-class="bg-slate-950">
+<x-layouts.panel :title="$title" brand-name="Gymai Platform" brand-sub="Super Admin" account-route="platform.account">
     <x-slot:nav>
         @foreach ($links as $link)
             <a href="{{ route($link['route']) }}" class="nav-link {{ request()->routeIs($link['match']) ? 'nav-link-active' : '' }}">
                 <x-ui.icon :name="$link['icon']" /> <span class="flex-1">{{ $link['label'] }}</span>
-                @if (! empty($link['badge']))<span class="rounded-full bg-indigo-500 px-2 py-0.5 text-xs font-semibold text-white">{{ $link['badge'] }}</span>@endif
+                @if (! empty($link['badge']))<span class="rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white">{{ $link['badge'] }}</span>@endif
             </a>
         @endforeach
     </x-slot:nav>

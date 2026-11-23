@@ -10,25 +10,133 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
-    --color-brand-50: #eef2ff;
-    --color-brand-100: #e0e7ff;
-    --color-brand-500: #6366f1;
-    --color-brand-600: #4f46e5;
-    --color-brand-700: #4338ca;
-    --color-brand-900: #312e81;
+    --color-brand-50: #fef2f2;
+    --color-brand-100: #fee2e2;
+    --color-brand-400: #f87171;
+    --color-brand-500: #f05252;
+    --color-brand-600: #ee4444;
+    --color-brand-700: #dc2626;
+    --color-brand-900: #7f1d1d;
+
+    /* Card / control surface: white by default, #1F1F22 under .theme-dark. */
+    --color-surface: #ffffff;
+
+    /* Panel surfaces (dark theme). */
+    --color-ink-950: #0f0f11;
+    --color-ink-900: #131315;
+    --color-ink-850: #18181a;
+    --color-ink-800: #1f1f22;
+    --color-ink-750: #26262a;
+    --color-ink-700: #2e2e33;
 }
 
 [x-cloak] { display: none !important; }
 
+/* ---- Dark panel theme ------------------------------------------------
+ * Applied with `theme-dark` on <body> by the panel, portal and auth layouts.
+ * Tailwind v4 utilities read colours from CSS variables, so remapping the
+ * palette here re-skins every existing view without touching its classes:
+ * greys become the #18181A surface scale, indigo becomes the #EE4444 accent,
+ * and light status tints become translucent tints that read on dark.
+ */
+.theme-dark {
+    color-scheme: dark;
+    background-color: var(--color-ink-850);
+    color: #f4f4f5;
+
+    --color-surface: var(--color-ink-800);
+    --color-gray-50: #202023;
+    --color-gray-100: #26262a;
+    --color-gray-200: #2e2e33;
+    --color-gray-300: #3a3a40;
+    --color-gray-400: #71717a;
+    --color-gray-500: #9a9aa3;
+    --color-gray-600: #b4b4bc;
+    --color-gray-700: #d4d4d8;
+    --color-gray-800: #e4e4e7;
+    --color-gray-900: #f4f4f5;
+
+    --color-indigo-50: rgb(238 68 68 / 0.12);
+    --color-indigo-100: rgb(238 68 68 / 0.18);
+    --color-indigo-200: rgb(238 68 68 / 0.3);
+    --color-indigo-300: rgb(238 68 68 / 0.5);
+    --color-indigo-400: #f87171;
+    --color-indigo-500: #f05252;
+    --color-indigo-600: #ee4444;
+    --color-indigo-700: #f87171;
+
+    --color-emerald-50: rgb(16 185 129 / 0.12);
+    --color-emerald-100: rgb(16 185 129 / 0.18);
+    --color-emerald-200: rgb(16 185 129 / 0.3);
+    --color-emerald-600: #34d399;
+    --color-emerald-700: #34d399;
+    --color-emerald-800: #6ee7b7;
+
+    --color-red-50: rgb(239 68 68 / 0.12);
+    --color-red-100: rgb(239 68 68 / 0.18);
+    --color-red-200: rgb(239 68 68 / 0.3);
+    --color-red-500: #f05252;
+    --color-red-600: #ee4444;
+    --color-red-700: #f87171;
+    --color-red-800: #fca5a5;
+
+    --color-amber-50: rgb(245 158 11 / 0.12);
+    --color-amber-100: rgb(245 158 11 / 0.18);
+    --color-amber-200: rgb(245 158 11 / 0.3);
+    --color-amber-600: #fbbf24;
+    --color-amber-700: #fbbf24;
+    --color-amber-800: #fcd34d;
+    --color-amber-900: #fde68a;
+
+    --color-sky-50: rgb(14 165 233 / 0.12);
+    --color-sky-200: rgb(14 165 233 / 0.3);
+    --color-sky-600: #38bdf8;
+    --color-sky-700: #7dd3fc;
+
+    --color-purple-50: rgb(168 85 247 / 0.12);
+    --color-purple-200: rgb(168 85 247 / 0.3);
+    --color-purple-700: #c084fc;
+
+    --color-rose-50: rgb(244 63 94 / 0.12);
+    --color-rose-200: rgb(244 63 94 / 0.3);
+    --color-rose-600: #fb7185;
+}
+
+/* Literal white surfaces and dark overlays that the variable remap can't express. */
+.theme-dark .bg-white { background-color: var(--color-surface); }
+.theme-dark .bg-white\/90 { background-color: rgb(24 24 26 / 0.85); }
+.theme-dark .bg-gray-900\/50,
+.theme-dark .bg-gray-900\/60 { background-color: rgb(0 0 0 / 0.65); }
+.theme-dark .bg-gray-50\/50 { background-color: rgb(255 255 255 / 0.02); }
+/* "Selected" segmented buttons and pills (bg-gray-900 text-white) become the accent. */
+.theme-dark .bg-gray-900 { background-color: var(--color-brand-600); }
+.theme-dark .from-indigo-50 { --tw-gradient-from: rgb(238 68 68 / 0.16); }
+.theme-dark .to-sky-50 { --tw-gradient-to: rgb(255 255 255 / 0.03); }
+
+.theme-dark :is(.input, select, textarea, input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'])) {
+    background-color: var(--color-ink-900);
+    border-color: var(--color-ink-700);
+    color: #f4f4f5;
+}
+.theme-dark :is(.input, select, textarea, input)::placeholder { color: #6b6b74; }
+.theme-dark :is(input[type='checkbox'], input[type='radio']) {
+    background-color: var(--color-ink-900);
+    border-color: #4a4a52;
+}
+.theme-dark :is(input[type='checkbox'], input[type='radio']):checked { background-color: var(--color-brand-600); border-color: var(--color-brand-600); }
+.theme-dark ::-webkit-scrollbar { width: 10px; height: 10px; }
+.theme-dark ::-webkit-scrollbar-thumb { background: #34343a; border-radius: 9999px; border: 2px solid var(--color-ink-850); }
+.theme-dark ::-webkit-scrollbar-track { background: transparent; }
+
 /* ---- Reusable UI utilities ------------------------------------------- */
-@utility card { @apply rounded-xl border border-gray-200 bg-white shadow-sm; }
+@utility card { @apply rounded-2xl border border-gray-200 bg-surface shadow-sm; }
 @utility card-body { @apply p-5; }
 @utility card-header { @apply flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4; }
 @utility card-title { @apply text-sm font-semibold text-gray-900; }
 
 @utility btn { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition focus:ring-2 focus:ring-offset-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60; }
-@utility btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700 focus:ring-brand-500; }
-@utility btn-secondary { @apply btn border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-300; }
+@utility btn-primary { @apply btn bg-brand-600 text-white shadow-[0_6px_20px_-6px_rgb(238_68_68/0.6)] hover:bg-brand-700 focus:ring-brand-500 focus:ring-offset-transparent; }
+@utility btn-secondary { @apply btn border border-gray-300 bg-surface text-gray-700 hover:bg-gray-50 focus:ring-gray-300 focus:ring-offset-transparent; }
 @utility btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500; }
 @utility btn-success { @apply btn bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500; }
 @utility btn-ghost { @apply btn text-gray-600 hover:bg-gray-100 focus:ring-gray-200; }
@@ -39,21 +147,109 @@
 @utility input-error { @apply mt-1 text-xs text-red-600; }
 @utility hint { @apply mt-1 text-xs text-gray-500; }
 
-@utility nav-link { @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-300 transition hover:bg-white/10 hover:text-white; }
-@utility nav-link-active { @apply bg-white/10 text-white; }
+@utility nav-link { @apply relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition hover:bg-white/5 hover:text-white; }
+@utility nav-link-active { @apply bg-brand-600/12 text-white before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-full before:bg-brand-600 [&>svg]:text-brand-500; }
 
 @utility tab { @apply border-b-2 border-transparent px-1 pb-3 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700; }
-@utility tab-active { @apply border-brand-600 text-brand-700; }
+@utility tab-active { @apply border-brand-600 text-brand-500; }
 
 @layer components {
     .table { @apply min-w-full divide-y divide-gray-200 text-sm; }
-    .table thead th { @apply bg-gray-50 px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase; }
+    .table thead th { @apply bg-gray-50 px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-gray-500 uppercase; }
     .table tbody { @apply divide-y divide-gray-100; }
     .table tbody td { @apply px-4 py-3 whitespace-nowrap text-gray-700; }
     .table tbody tr:hover { @apply bg-gray-50; }
 }
 
+/* ---- Public landing page (welcome.blade.php + views/landing) ---------
+ * Motion is CSS-driven; resources/js/landing.js only toggles classes.
+ * Reveal styles apply under html.js so content stays visible without JS.
+ */
+html:has(body.landing) { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+
+@keyframes lp-float { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -14px, 0); } }
+@keyframes lp-glow { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.85; } }
+@keyframes lp-shine { to { background-position: 200% center; } }
+@keyframes lp-rise { from { transform: translateY(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } to { transform: translateY(-110vh); opacity: 0; } }
+@keyframes lp-spin { to { transform: rotate(360deg); } }
+@keyframes lp-draw { to { stroke-dashoffset: 0; } }
+@keyframes lp-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes lp-marquee { to { transform: translateX(-50%); } }
+
+.lp-float { animation: lp-float 7s ease-in-out infinite; }
+.lp-float-slow { animation: lp-float 9s ease-in-out infinite; animation-delay: -3s; }
+.lp-glow { animation: lp-glow 5s ease-in-out infinite; }
+.lp-spin-slow { animation: lp-spin 40s linear infinite; }
+.lp-particle { position: absolute; bottom: -10px; border-radius: 9999px; background: rgb(238 68 68 / 0.7); box-shadow: 0 0 12px rgb(238 68 68 / 0.8); animation: lp-rise linear infinite; }
+.lp-marquee { animation: lp-marquee 40s linear infinite; }
+
+.lp-text-shine {
+    background: linear-gradient(90deg, #ffffff 0%, #fecaca 30%, #ee4444 50%, #fecaca 70%, #ffffff 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: lp-shine 6s linear infinite;
+}
+
+.js .lp-reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition-delay: var(--d, 0ms);
+}
+.js .lp-reveal.is-in { opacity: 1; transform: none; }
+
+.lp-tilt {
+    transform: perspective(1800px) rotateX(var(--rx, 14deg)) rotateY(var(--ry, -12deg)) rotateZ(2deg);
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.lp-line { stroke-dasharray: 700; }
+.js .lp-line { stroke-dashoffset: 700; }
+.js .is-in .lp-line { animation: lp-draw 2.2s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s forwards; }
+.lp-bar { transform-origin: bottom; }
+.js .lp-bar { transform: scaleY(0); }
+.js .is-in .lp-bar { animation: lp-grow 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: var(--d, 0ms); }
+
+/* Pointer-following glow on feature cards (--mx/--my set by landing.js). */
+.lp-glow-card { position: relative; isolation: isolate; }
+.lp-glow-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgb(238 68 68 / 0.16), transparent 45%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.lp-glow-card:hover::before { opacity: 1; }
+
+.lp-nav { transition: background-color 0.3s, border-color 0.3s, backdrop-filter 0.3s; }
+.lp-nav.is-scrolled { background-color: rgb(19 19 21 / 0.82); border-color: var(--color-ink-700); backdrop-filter: blur(14px); }
+
+.lp-range { accent-color: var(--color-brand-600); }
+
+.landing details > summary { list-style: none; }
+.landing details > summary::-webkit-details-marker { display: none; }
+.landing details[open] .lp-faq-icon { transform: rotate(45deg); }
+
+@media (prefers-reduced-motion: reduce) {
+    html:has(body.landing) { scroll-behavior: auto; }
+    .lp-float, .lp-float-slow, .lp-glow, .lp-spin-slow, .lp-particle, .lp-text-shine, .lp-marquee { animation: none !important; }
+    .lp-particle { display: none; }
+    .js .lp-reveal { opacity: 1; transform: none; transition: none; }
+    .js .lp-line { stroke-dashoffset: 0; animation: none !important; }
+    .js .lp-bar { transform: none; animation: none !important; }
+    .lp-tilt { transition: none; }
+}
+
 @media print {
     .no-print { display: none !important; }
-    body { background: white !important; }
+    body { background: white !important; color: #111 !important; }
+    .theme-dark .bg-white, .theme-dark .card { background: white !important; border-color: #e5e7eb !important; }
+    .theme-dark .lg\:pl-64 { padding-left: 0 !important; }
+    .theme-dark .text-gray-900, .theme-dark .card-title { color: #111 !important; }
 }
