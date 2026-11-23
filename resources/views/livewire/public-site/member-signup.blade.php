@@ -43,6 +43,7 @@
             @endforelse
         </div>
         <p class="mt-4 text-xs text-gray-500">Don't see your city? Gymai isn't there yet.</p>
+        <p class="mt-2 text-sm text-gray-500">Already signed up? <a href="{{ route('member.join.status') }}" class="font-medium text-brand-600 hover:underline">Check your registration status</a></p>
     @endif
 
     {{-- Step 2: gym in that city --}}
@@ -126,13 +127,19 @@
 
     {{-- Step 5: done --}}
     @if ($step === 5)
-        <div class="py-6 text-center">
+        <div class="py-6 text-center" @if ($registrationStatus === 'pending') wire:poll.10s @endif>
             <div class="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600"><x-ui.icon name="check" class="size-7" /></div>
             <h1 class="mt-4 text-xl font-semibold">Registration sent to {{ $gym?->name }}</h1>
             <p class="mt-2 text-sm text-gray-500">Your member ID</p>
             <p class="text-2xl font-bold tracking-wider">{{ $memberCode }}</p>
-            <p class="mx-auto mt-4 max-w-sm text-sm text-gray-500">The gym will confirm your registration. Once they do, log in to the Gymai app with your mobile number, and visit the front desk to choose a membership plan.</p>
-            @if ($gym)<a href="{{ $gym->publicUrl() }}" class="btn-secondary mt-6">View {{ $gym->name }}</a>@endif
+
+            <p class="mt-6 text-xs font-semibold tracking-wide text-gray-500 uppercase">Status</p>
+            <x-ui.registration-status :status="$registrationStatus" class="mt-2" />
+
+            <div class="mt-6 flex flex-wrap justify-center gap-2">
+                @if ($gym)<a href="{{ $gym->publicUrl() }}" class="btn-secondary">View {{ $gym->name }}</a>@endif
+                <a href="{{ route('member.join.status') }}" class="btn-secondary">Check status later</a>
+            </div>
         </div>
     @endif
 </div>

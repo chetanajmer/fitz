@@ -11,6 +11,7 @@ use App\Models\Member;
 use App\Models\PhoneVerification;
 use App\Models\Scopes\GymScope;
 use App\Tenancy\TenantManager;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
@@ -114,6 +115,33 @@ class MemberSignupService
         }
 
         return $token;
+    }
+
+    /**
+     * Where a sign-up stands, for the person who made it:
+     * pending (waiting for the gym) · approved (active) · inactive · declined (removed by the gym).
+     */
+    public function statusOf(Member $member): string
+    {
+        return match (true) {
+            $member->trashed() => 'declined',
+            $member->status === MemberStatus::Pending => 'pending',
+            $member->status === MemberStatus::Active => 'approved',
+            default => 'inactive',
+        };
+    }
+
+    /**
+     * Every gym registration for a verified phone number, newest first (includes ones the gym removed).
+     *
+     * @return Collection<int, Member>
+     */
+    public function registrationsFor(string $phone)
+    {
+        return Member::withoutGlobalScope(GymScope::class)->withTrashed()->with('gym')
+            ->where('phone_digits', Member::normalizePhone($phone))
+            ->latest('id')
+            ->get();
     }
 
     /**

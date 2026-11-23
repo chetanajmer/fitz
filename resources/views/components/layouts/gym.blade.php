@@ -2,9 +2,13 @@
 @php
     $gym = current_gym();
     $user = auth()->user();
+    // Waiting in Enquiries: new enquiries + website/app join requests (for staff who can approve them).
+    $newEnquiries = $user->can('enquiries.manage') ? \App\Models\Enquiry::where('status', \App\Enums\EnquiryStatus::New->value)->count() : 0;
+    $joinRequests = $user->can('members.manage') ? \App\Models\Member::where('status', \App\Enums\MemberStatus::Pending->value)->count() : 0;
     $links = [
         ['route' => 'gym.dashboard', 'match' => 'gym.dashboard', 'icon' => 'home', 'label' => 'Dashboard', 'can' => 'gym.dashboard'],
-        ['route' => 'gym.enquiries.index', 'match' => 'gym.enquiries.*', 'icon' => 'inbox', 'label' => 'Enquiries', 'can' => 'enquiries.manage'],
+        ['route' => 'gym.enquiries.index', 'match' => 'gym.enquiries.*', 'icon' => 'inbox', 'label' => 'Enquiries', 'can' => 'enquiries.manage',
+            'badge' => $newEnquiries + $joinRequests, 'badge_title' => "{$joinRequests} join ".\Illuminate\Support\Str::plural('request', $joinRequests).", {$newEnquiries} new ".\Illuminate\Support\Str::plural('enquiry', $newEnquiries)],
         ['route' => 'gym.members.index', 'match' => 'gym.members.*', 'icon' => 'users', 'label' => $user->can('members.all') ? 'Members' : 'My Members', 'can' => 'members.view'],
         ['route' => 'gym.memberships.index', 'match' => 'gym.memberships.*', 'icon' => 'card', 'label' => 'Memberships', 'can' => 'memberships.manage'],
         ['route' => 'gym.payments.index', 'match' => 'gym.payments.*', 'icon' => 'cash', 'label' => 'Payments', 'can' => 'payments.manage'],
@@ -25,7 +29,8 @@
         @foreach ($links as $link)
             @can($link['can'])
                 <a href="{{ route($link['route'], $link['params'] ?? []) }}" class="nav-link {{ ($link['active'] ?? request()->routeIs($link['match'])) ? 'nav-link-active' : '' }}">
-                    <x-ui.icon :name="$link['icon']" /> {{ $link['label'] }}
+                    <x-ui.icon :name="$link['icon']" /> <span class="flex-1">{{ $link['label'] }}</span>
+                    @if (! empty($link['badge']))<span class="rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white" title="{{ $link['badge_title'] ?? '' }}">{{ $link['badge'] }}</span>@endif
                 </a>
             @endcan
         @endforeach

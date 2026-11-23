@@ -8,8 +8,8 @@
 
     @if ($stats['pending_members'] > 0)
         @can('members.manage')
-            <a href="{{ route('gym.members.index', ['status' => 'pending']) }}" class="mb-4 flex items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100">
-                <span><strong>{{ $stats['pending_members'] }} app {{ \Illuminate\Support\Str::plural('sign-up', $stats['pending_members']) }}</strong> waiting for your approval.</span>
+            <a href="{{ route('gym.enquiries.index') }}#join-requests" class="mb-4 flex items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100">
+                <span><strong>{{ $stats['pending_members'] }} join {{ \Illuminate\Support\Str::plural('request', $stats['pending_members']) }}</strong> waiting for your approval.</span>
                 <span class="font-semibold">Review →</span>
             </a>
         @endcan

@@ -37,6 +37,9 @@ class MemberSignup extends Component
     #[Locked]
     public ?string $memberCode = null;
 
+    #[Locked]
+    public ?int $memberId = null;
+
     public string $citySearch = '';
 
     public string $gymSearch = '';
@@ -151,6 +154,7 @@ class MemberSignup extends Component
         }
 
         $this->memberCode = $member->member_code;
+        $this->memberId = $member->id;
         $this->step = 5;
     }
 
@@ -199,6 +203,15 @@ class MemberSignup extends Component
                 : collect(),
             'city' => $this->city(),
             'gym' => $this->gym(),
+            'registrationStatus' => $this->memberId ? $this->registrationStatus() : null,
         ]);
+    }
+
+    /** Live status of the sign-up just made (the done screen polls this while it is pending). */
+    protected function registrationStatus(): ?string
+    {
+        $member = Member::withoutGlobalScope(GymScope::class)->withTrashed()->find($this->memberId);
+
+        return $member ? app(MemberSignupService::class)->statusOf($member) : null;
     }
 }

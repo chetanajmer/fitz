@@ -32,6 +32,7 @@ Route::get('/join/{token}', [PublicGymController::class, 'join'])->where('token'
 
 // Website sign-up for new members: city → gym → details → phone OTP. Creates a pending member.
 Route::livewire('/join-gym', Livewire\PublicSite\MemberSignup::class)->name('member.join');
+Route::livewire('/join-gym/status', Livewire\PublicSite\JoinStatus::class)->name('member.join.status');
 
 // Member self-registration QR (shown on the attendance desk): creates a member without a membership.
 Route::get('/register/{token}', [PublicGymController::class, 'register'])->where('token', '[A-Za-z0-9]{20,64}')->name('gym.register');
