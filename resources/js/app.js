@@ -3,11 +3,32 @@ import Chart from 'chart.js/auto';
 
 window.Chart = Chart;
 
-// Panels use the dark theme: muted labels and faint grid lines.
-if (document.body.classList.contains('theme-dark')) {
-    Chart.defaults.color = '#9a9aa3';
-    Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
-}
+/** Chart label / grid colours for the current panel theme; re-applies to charts already drawn. */
+const applyChartTheme = () => {
+    const dark = document.body.classList.contains('theme-dark');
+    Chart.defaults.color = dark ? '#9a9aa3' : '#6b7280';
+    Chart.defaults.borderColor = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.08)';
+    Object.values(Chart.instances).forEach((chart) => {
+        Object.values(chart.options.scales ?? {}).forEach((scale) => {
+            if (scale.ticks) scale.ticks.color = Chart.defaults.color;
+            if (scale.grid) scale.grid.color = Chart.defaults.borderColor;
+        });
+        if (chart.options.plugins?.legend?.labels) chart.options.plugins.legend.labels.color = Chart.defaults.color;
+        chart.update('none');
+    });
+};
+applyChartTheme();
+
+/* Panel light / dark theme switch ([data-theme-toggle]); the choice is kept in a cookie for a year. */
+document.addEventListener('click', (event) => {
+    const toggle = event.target.closest('[data-theme-toggle]');
+    if (!toggle) return;
+    const dark = !document.body.classList.contains('theme-dark');
+    document.body.classList.toggle('theme-dark', dark);
+    document.cookie = `theme=${dark ? 'dark' : 'light'}; path=/; max-age=31536000; samesite=lax`;
+    document.querySelectorAll('[data-theme-toggle]').forEach((button) => button.setAttribute('aria-pressed', String(dark)));
+    applyChartTheme();
+});
 
 /**
  * Small Chart.js helper used from Alpine: x-data x-init="renderChart($refs.canvas, config)".

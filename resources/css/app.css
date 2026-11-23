@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 
+/* `dark:` utilities follow the panel theme class, not the OS setting. */
+@custom-variant dark (&:where(.theme-dark, .theme-dark *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../vendor/livewire/livewire/src/Features/SupportPagination/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -39,6 +42,19 @@
  * greys become the #18181A surface scale, indigo becomes the #EE4444 accent,
  * and light status tints become translucent tints that read on dark.
  */
+/* Panel light theme: keep the original light surfaces but use the #EE4444 brand
+ * accent instead of indigo. `.theme-dark` (declared after) overrides these. */
+.panel-theme {
+    --color-indigo-50: #fef2f2;
+    --color-indigo-100: #fee2e2;
+    --color-indigo-200: #fecaca;
+    --color-indigo-300: #fca5a5;
+    --color-indigo-400: #f87171;
+    --color-indigo-500: #f05252;
+    --color-indigo-600: #ee4444;
+    --color-indigo-700: #c81e1e;
+}
+
 .theme-dark {
     color-scheme: dark;
     background-color: var(--color-ink-850);
@@ -151,7 +167,7 @@
 @utility nav-link-active { @apply bg-brand-600/12 text-white before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-full before:bg-brand-600 [&>svg]:text-brand-500; }
 
 @utility tab { @apply border-b-2 border-transparent px-1 pb-3 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700; }
-@utility tab-active { @apply border-brand-600 text-brand-500; }
+@utility tab-active { @apply border-brand-600 text-brand-700 dark:text-brand-500; }
 
 @layer components {
     .table { @apply min-w-full divide-y divide-gray-200 text-sm; }
@@ -232,6 +248,92 @@ html:has(body.landing) { scroll-behavior: smooth; scroll-padding-top: 5rem; }
 
 .lp-range { accent-color: var(--color-brand-600); }
 
+/* Page loader: only shown when JS runs, and always fades out on its own as a safety net. */
+@keyframes lp-loader-safety { to { opacity: 0; visibility: hidden; } }
+@keyframes lp-loader-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 30px -4px rgb(238 68 68 / 0.7); } 50% { transform: scale(1.08); box-shadow: 0 0 60px 0 rgb(238 68 68 / 0.9); } }
+.lp-loader { display: none; }
+.js .lp-loader { display: flex; animation: lp-loader-safety 0.4s ease 2.6s forwards; }
+.lp-loader-mark { animation: lp-loader-pulse 1.4s ease-in-out infinite; }
+.lp-loader-bar { transform: scaleX(0.15); transform-origin: left; animation: lp-loader-fill 1s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+@keyframes lp-loader-fill { to { transform: scaleX(0.8); } }
+
+/* Scroll progress bar. */
+.lp-progress { transform: scaleX(0); transform-origin: left; }
+
+/* Subtle film-grain noise overlay. */
+.lp-noise::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Animated conic glow border (pricing card, CTA). */
+@property --lp-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes lp-rotate-angle { to { --lp-angle: 360deg; } }
+.lp-border-glow { position: relative; isolation: isolate; }
+.lp-border-glow::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    background: conic-gradient(from var(--lp-angle), transparent 0deg, #ee4444 60deg, #fca5a5 90deg, transparent 150deg, transparent 360deg);
+    animation: lp-rotate-angle 5s linear infinite;
+}
+
+/* Cursor spotlight for whole sections. */
+.lp-spotlight { position: relative; }
+.lp-spotlight::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(600px circle at var(--mx, 50%) var(--my, -20%), rgb(238 68 68 / 0.08), transparent 60%);
+}
+
+/* Dot grid backdrop. */
+.lp-dots { background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px); background-size: 22px 22px; }
+
+/* Nav link underline + hamburger morph. */
+.lp-navlink { position: relative; }
+.lp-navlink::after {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.3rem;
+    height: 2px;
+    border-radius: 9999px;
+    background: var(--color-brand-600);
+    transform: scaleX(0);
+    transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.lp-navlink:hover::after, .lp-navlink.is-active::after { transform: scaleX(1); }
+.lp-burger span { transition: transform 0.3s, opacity 0.2s; transform-origin: center; }
+.is-open.lp-burger span:nth-of-type(2) { transform: translateY(7px) rotate(45deg); }
+.is-open.lp-burger span:nth-of-type(3) { opacity: 0; }
+.is-open.lp-burger span:nth-of-type(4) { transform: translateY(-7px) rotate(-45deg); }
+
+/* Button shine sweep. */
+.lp-shine-btn { position: relative; overflow: hidden; }
+.lp-shine-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.35) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.lp-shine-btn:hover::after { transform: translateX(120%); }
+
+/* Icon micro-animation on card hover. */
+.group:hover .lp-icon-bounce { animation: lp-icon-bounce 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
+@keyframes lp-icon-bounce { 30% { transform: translateY(-4px) rotate(-8deg); } 60% { transform: translateY(1px) rotate(4deg); } }
+
 .landing details > summary { list-style: none; }
 .landing details > summary::-webkit-details-marker { display: none; }
 .landing details[open] .lp-faq-icon { transform: rotate(45deg); }
@@ -244,6 +346,9 @@ html:has(body.landing) { scroll-behavior: smooth; scroll-padding-top: 5rem; }
     .js .lp-line { stroke-dashoffset: 0; animation: none !important; }
     .js .lp-bar { transform: none; animation: none !important; }
     .lp-tilt { transition: none; }
+    .js .lp-loader { display: none; }
+    .lp-border-glow::before, .lp-loader-mark, .group:hover .lp-icon-bounce { animation: none !important; }
+    .lp-shine-btn::after { display: none; }
 }
 
 @media print {

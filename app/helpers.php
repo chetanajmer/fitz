@@ -3,6 +3,14 @@
 use App\Models\Gym;
 use App\Tenancy\TenantManager;
 
+if (! function_exists('panel_theme')) {
+    /** The viewer's panel theme from the "theme" cookie: "light" or "dark" (default). */
+    function panel_theme(): string
+    {
+        return request()->cookie('theme') === 'light' ? 'light' : 'dark';
+    }
+}
+
 if (! function_exists('money')) {
     /** Format an amount in Indian Rupees with Indian digit grouping (₹1,23,456.00). */
     function money(float|int|string|null $amount, bool $decimals = true): string

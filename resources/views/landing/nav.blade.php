@@ -10,7 +10,7 @@
 
         <nav class="hidden items-center gap-1 lg:flex" aria-label="Primary">
             @foreach ($navLinks as $id => $label)
-                <a href="#{{ $id }}" data-lp-navlink="{{ $id }}" class="rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition hover:text-white [&.is-active]:text-white">{{ $label }}</a>
+                <a href="#{{ $id }}" data-lp-navlink="{{ $id }}" class="lp-navlink rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition hover:text-white [&.is-active]:text-white">{{ $label }}</a>
             @endforeach
         </nav>
 
@@ -19,13 +19,15 @@
                 <a href="{{ auth()->user()->homeRoute() }}" class="btn-primary px-5">Open dashboard</a>
             @else
                 <a href="{{ route('login') }}" class="rounded-lg px-4 py-2 text-sm font-medium text-zinc-300 transition hover:text-white">Login</a>
-                <a href="{{ $ctaUrl }}" class="btn-primary px-5">Get Started</a>
+                <a href="{{ $ctaUrl }}" data-magnetic class="btn-primary lp-shine-btn px-5">Get Started</a>
             @endauth
         </div>
 
-        <button type="button" data-lp-menu-toggle aria-controls="lp-mobile-menu" aria-expanded="false" class="rounded-lg p-2 text-zinc-300 hover:bg-white/5 hover:text-white lg:hidden">
-            <span class="sr-only">Open menu</span>
-            <x-ui.icon name="menu" class="size-6" />
+        <button type="button" data-lp-menu-toggle aria-controls="lp-mobile-menu" aria-expanded="false" class="lp-burger flex size-10 flex-col items-center justify-center gap-[5px] rounded-lg text-zinc-300 hover:bg-white/5 hover:text-white lg:hidden">
+            <span class="sr-only">Toggle menu</span>
+            <span class="block h-0.5 w-5 rounded-full bg-current"></span>
+            <span class="block h-0.5 w-5 rounded-full bg-current"></span>
+            <span class="block h-0.5 w-5 rounded-full bg-current"></span>
         </button>
     </div>
 

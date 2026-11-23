@@ -15,11 +15,16 @@ class LandingPageTest extends TestCase
     {
         $response = $this->get('/')->assertOk();
 
-        foreach (['id="home"', 'id="features"', 'id="how-it-works"', 'id="pricing"', 'id="about"', 'id="testimonials"', 'id="faq"', 'id="contact"'] as $anchor) {
+        foreach (['id="home"', 'id="features"', 'id="how-it-works"', 'id="pricing"', 'id="about"', 'id="stats"', 'id="faq"', 'id="contact"'] as $anchor) {
             $response->assertSee($anchor, false);
         }
 
         $response->assertSee('Run Your Gym Smarter.')
+            ->assertSee('id="members"', false)
+            ->assertSee('AI Body Transformation')
+            ->assertSee('Members register themselves with a QR code')
+            ->assertSee('data-lp-period="12"', false)
+            ->assertDontSee('id="testimonials"', false)
             ->assertSee('<meta name="description"', false)
             ->assertSee('rel="canonical"', false);
     }
