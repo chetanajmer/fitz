@@ -1,0 +1,1189 @@
+{
+    "info": {
+        "name": "Gymai Member App API (v1)",
+        "_postman_id": "8f6c2b1e-4a7d-4c1e-9b8a-gymai-member-v1",
+        "description": "Member mobile app API.\n\n**Flow:** Check version → Send OTP → Verify OTP → Get gym branding.\n\nRun the requests in order. The test scripts save values into collection variables automatically:\n- **Send OTP** stores `otp` (from `debug_otp`, only returned when `OTP_EXPOSE_IN_RESPONSE=true` in a non-production environment) and `gym_id`.\n- **Verify OTP** stores `token` and `gym_id`.\n\nAll authenticated requests send `Authorization: Bearer {{token}}`.\n\n**Response format**\n- Success: `{ \"success\": true, \"message\": \"...\", \"data\": { ... } }`\n- Error: `{ \"success\": false, \"message\": \"...\", \"code\": \"ERROR_CODE\", \"data\"?: { ... }, \"errors\"?: { ... } }`\n\n**Error codes:** VALIDATION_ERROR, UNAUTHENTICATED, NO_GYM_CONNECTED, MEMBER_NOT_FOUND, MULTIPLE_GYMS, OTP_COOLDOWN, OTP_LIMIT_REACHED, OTP_NOT_FOUND, OTP_EXPIRED, OTP_INVALID, OTP_ATTEMPTS_EXCEEDED, MEMBER_INACTIVE, GYM_NOT_FOUND, GYM_INACTIVE, ALREADY_CHECKED_IN, ALREADY_CHECKED_OUT, NOT_CHECKED_IN, NO_ACTIVE_MEMBERSHIP, SELF_CHECKIN_DISABLED, PLAN_NOT_FOUND, FORBIDDEN, TOO_MANY_REQUESTS, NOT_FOUND.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://127.0.0.1:8000/api/v1"
+        },
+        {
+            "key": "platform",
+            "value": "android"
+        },
+        {
+            "key": "app_version",
+            "value": "1.0.0"
+        },
+        {
+            "key": "phone",
+            "value": "9000000000"
+        },
+        {
+            "key": "gym_id",
+            "value": ""
+        },
+        {
+            "key": "otp",
+            "value": ""
+        },
+        {
+            "key": "token",
+            "value": ""
+        },
+        {
+            "key": "device_name",
+            "value": "Postman"
+        }
+    ],
+    "item": [
+        {
+            "name": "1. App",
+            "item": [
+                {
+                    "name": "Check app version",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const d = pm.response.json().data || {};",
+                                    "pm.test('Has update flags', () => { pm.expect(d).to.have.property('force_update'); pm.expect(d).to.have.property('update_available'); });",
+                                    "if (d.force_update) { console.log('FORCE UPDATE → ' + d.store_url); } else if (d.update_available) { console.log('Optional update available: ' + d.latest_version); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/app/version?platform={{platform}}&version={{app_version}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "app",
+                                "version"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "{{platform}}",
+                                    "description": "android | ios"
+                                },
+                                {
+                                    "key": "version",
+                                    "value": "{{app_version}}",
+                                    "description": "Installed app version, e.g. 1.2.3"
+                                }
+                            ]
+                        },
+                        "description": "Call on app launch.\n\n- `force_update: true` → installed version is below the minimum supported version. Block the app and send the user to `store_url`.\n- `update_available: true` → a newer version exists. Show an optional update prompt.\n- `maintenance.enabled: true` → show `maintenance.message`.\n\nVersions are managed by the Super Admin in **Platform → Settings → Member mobile app**."
+                    },
+                    "response": [
+                        {
+                            "name": "Force update required",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/app/version?platform=android&version=0.9.0",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "app",
+                                        "version"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "platform",
+                                            "value": "android"
+                                        },
+                                        {
+                                            "key": "version",
+                                            "value": "0.9.0"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"message\": \"A required update is available. Please update the app to continue.\",\n  \"data\": {\n    \"platform\": \"android\",\n    \"current_version\": \"0.9.0\",\n    \"latest_version\": \"1.0.0\",\n    \"min_supported_version\": \"1.0.0\",\n    \"update_available\": true,\n    \"force_update\": true,\n    \"store_url\": \"https://play.google.com/store/apps/details?id=com.gymai.member\",\n    \"release_notes\": null,\n    \"maintenance\": { \"enabled\": false, \"message\": null }\n  }\n}"
+                        },
+                        {
+                            "name": "Validation error",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Accept",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/app/version?platform=windows&version=abc",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "app",
+                                        "version"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "platform",
+                                            "value": "windows"
+                                        },
+                                        {
+                                            "key": "version",
+                                            "value": "abc"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "Unprocessable Content",
+                            "code": 422,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": false,\n  \"message\": \"The selected platform is invalid. (and 1 more error)\",\n  \"code\": \"VALIDATION_ERROR\",\n  \"errors\": {\n    \"platform\": [\"The selected platform is invalid.\"],\n    \"version\": [\"Version must look like 1.2.3.\"]\n  }\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "2. Auth",
+            "item": [
+                {
+                    "name": "Send OTP",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "if (pm.response.code === 200) {",
+                                    "  pm.test('OTP sent', () => pm.expect(body.success).to.eql(true));",
+                                    "  pm.collectionVariables.set('gym_id', body.data.gym_id);",
+                                    "  if (body.data.debug_otp) {",
+                                    "    pm.collectionVariables.set('otp', body.data.debug_otp);",
+                                    "    console.log('OTP (debug): ' + body.data.debug_otp);",
+                                    "  } else {",
+                                    "    console.log('OTP not exposed — read it from the SMS (or storage/logs/laravel.log with SMS_DRIVER=log) and set the \"otp\" variable.');",
+                                    "  }",
+                                    "} else if (body.code === 'MULTIPLE_GYMS') {",
+                                    "  console.log('Number belongs to several gyms. Set gym_id to one of:', JSON.stringify(body.data.gyms));",
+                                    "}",
+                                    "if (body.code === 'NO_GYM_CONNECTED') { console.log('Not connected to any gym — saved as a lead for a support callback.'); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"name\": \"Rahul Sharma\",\n  \"city\": \"Pune\",\n  \"latitude\": 18.5204,\n  \"longitude\": 73.8567,\n  \"app_platform\": \"{{platform}}\",\n  \"app_version\": \"{{app_version}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/send-otp",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "send-otp"
+                            ]
+                        },
+                        "description": "Sends a 6-digit OTP by SMS to a registered, active member.\n\n**Body**\n- `phone` (required) — any format: `9876543210`, `+91 98765 43210`, `09876543210`.\n- `gym_id` (optional) — required only when the number belongs to members of more than one gym (see the *Send OTP — choose gym* request).\n\n**Rules:** OTP valid 5 minutes · resend allowed after 30 s · max 5 OTPs per number per hour.\n\n`debug_otp` is included only when `OTP_EXPOSE_IN_RESPONSE=true` and the app is not in production.\n\n**Not connected to any gym (fallback):** if the number is not an active member of any active gym (never registered, deactivated or removed by their gym, or their gym is suspended), the API returns `404 NO_GYM_CONNECTED` with `data.callback_requested: true`. The number is saved as a **lead** in Super Admin → App Leads and a support executive calls back with nearby gyms.\n\nOptional lead fields (used only in that case): `name`, `city`, `latitude` + `longitude` (for gyms near the user), `app_platform`, `app_version`."
+                    },
+                    "response": [
+                        {
+                            "name": "OTP sent",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"phone\": \"9000000000\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/auth/send-otp",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "send-otp"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"message\": \"OTP sent to your mobile number.\",\n  \"data\": {\n    \"phone\": \"XXXXXX0000\",\n    \"gym_id\": 1,\n    \"expires_in\": 300,\n    \"resend_after\": 30,\n    \"debug_otp\": \"220355\"\n  }\n}"
+                        },
+                        {
+                            "name": "Not connected to any gym (saved as lead)",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"phone\": \"9111111111\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/auth/send-otp",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "send-otp"
+                                    ]
+                                }
+                            },
+                            "status": "Not Found",
+                            "code": 404,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": false,\n  \"message\": \"You are not connected with any gym on our network yet. We will share the available gym options near you — our support executive will call you shortly.\",\n  \"code\": \"NO_GYM_CONNECTED\",\n  \"data\": {\n    \"callback_requested\": true\n  }\n}"
+                        },
+                        {
+                            "name": "Number registered at multiple gyms",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"phone\": \"9000000005\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/auth/send-otp",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "send-otp"
+                                    ]
+                                }
+                            },
+                            "status": "Conflict",
+                            "code": 409,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": false,\n  \"message\": \"This mobile number is registered with more than one gym. Please choose your gym.\",\n  \"code\": \"MULTIPLE_GYMS\",\n  \"data\": {\n    \"gyms\": [\n      { \"gym_id\": 1, \"name\": \"Iron Temple Fitness\", \"city\": \"Pune\", \"logo_url\": null },\n      { \"gym_id\": 2, \"name\": \"Beta Gym\", \"city\": \"Mumbai\", \"logo_url\": null }\n    ]\n  }\n}"
+                        },
+                        {
+                            "name": "Resend too soon",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"phone\": \"9000000000\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/auth/send-otp",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "send-otp"
+                                    ]
+                                }
+                            },
+                            "status": "Too Many Requests",
+                            "code": 429,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": false,\n  \"message\": \"Please wait before requesting another OTP.\",\n  \"code\": \"OTP_COOLDOWN\",\n  \"data\": { \"retry_after\": 24 }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Send OTP — choose gym",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "if (pm.response.code === 200 && body.data.debug_otp) { pm.collectionVariables.set('otp', body.data.debug_otp); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"gym_id\": {{gym_id}}\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/send-otp",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "send-otp"
+                            ]
+                        },
+                        "description": "Use after a `409 MULTIPLE_GYMS` response: set `gym_id` to the gym the member picked, then send again. Pass the same `gym_id` to *Verify OTP*."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Verify OTP",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "if (pm.response.code === 200) {",
+                                    "  pm.test('Token returned', () => pm.expect(body.data.token).to.be.a('string'));",
+                                    "  pm.collectionVariables.set('token', body.data.token);",
+                                    "  pm.collectionVariables.set('gym_id', body.data.gym_id);",
+                                    "  console.log('Logged in. gym_id = ' + body.data.gym_id);",
+                                    "} else {",
+                                    "  console.log(body.code + ': ' + body.message);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"phone\": \"{{phone}}\",\n  \"otp\": \"{{otp}}\",\n  \"device_name\": \"{{device_name}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/verify-otp",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "verify-otp"
+                            ]
+                        },
+                        "description": "Verifies the OTP and returns a Sanctum **Bearer token** plus the member's `gym_id` (use it for the branding API).\n\n**Body**\n- `phone` (required)\n- `otp` (required, 6 digits)\n- `gym_id` (optional — only if it was needed for Send OTP)\n- `device_name` (optional — shown when listing/revoking tokens)\n\nAn OTP can be used once. After 5 wrong attempts it is locked; request a new one."
+                    },
+                    "response": [
+                        {
+                            "name": "Login successful",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"phone\": \"9000000000\",\n  \"otp\": \"220355\",\n  \"device_name\": \"Pixel 8\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/auth/verify-otp",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "verify-otp"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"message\": \"Login successful.\",\n  \"data\": {\n    \"token\": \"1|prirFElQJfW702CKnR2vZp1PduXgueZFvuz4nmvZ31c77a52\",\n    \"token_type\": \"Bearer\",\n    \"gym_id\": 1,\n    \"member\": {\n      \"id\": 1,\n      \"gym_id\": 1,\n      \"member_code\": \"M0001\",\n      \"name\": \"Aarav Shah\",\n      \"phone\": \"9000000000\",\n      \"email\": \"member@demo.gymai.test\",\n      \"gender\": \"male\",\n      \"date_of_birth\": null,\n      \"joining_date\": \"2026-10-06\",\n      \"fitness_goal\": \"Weight loss\",\n      \"photo_url\": \"https://ui-avatars.com/api/?background=dcfce7&color=166534&name=Aarav+Shah\",\n      \"status\": \"active\",\n      \"membership_state\": \"active\"\n    }\n  }\n}"
+                        },
+                        {
+                            "name": "Wrong OTP",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"phone\": \"9000000000\",\n  \"otp\": \"000001\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/auth/verify-otp",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "verify-otp"
+                                    ]
+                                }
+                            },
+                            "status": "Unprocessable Content",
+                            "code": 422,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": false,\n  \"message\": \"Incorrect OTP.\",\n  \"code\": \"OTP_INVALID\",\n  \"data\": { \"attempts_left\": 4 }\n}"
+                        },
+                        {
+                            "name": "OTP expired",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Content-Type",
+                                        "value": "application/json"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"phone\": \"9000000000\",\n  \"otp\": \"220355\"\n}"
+                                },
+                                "url": {
+                                    "raw": "{{base_url}}/auth/verify-otp",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "verify-otp"
+                                    ]
+                                }
+                            },
+                            "status": "Unprocessable Content",
+                            "code": 422,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": false,\n  \"message\": \"OTP has expired. Please request a new one.\",\n  \"code\": \"OTP_EXPIRED\"\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Logout",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "if (pm.response.code === 200) { pm.collectionVariables.set('token', ''); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/auth/logout",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "logout"
+                            ]
+                        },
+                        "description": "Revokes the current token (other devices stay logged in)."
+                    },
+                    "response": [
+                        {
+                            "name": "Logged out",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/auth/logout",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "auth",
+                                        "logout"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"message\": \"Logged out.\",\n  \"data\": null\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "3. Gym",
+            "item": [
+                {
+                    "name": "Get gym branding",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "if (pm.response.code === 200) {",
+                                    "  pm.test('Gym is active', () => pm.expect(body.data.is_active).to.eql(true));",
+                                    "  pm.test('Has colours', () => pm.expect(body.data.colors).to.have.property('primary'));",
+                                    "} else {",
+                                    "  console.log(body.code + ': ' + body.message);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/gyms/{{gym_id}}/branding",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "gyms",
+                                "{{gym_id}}",
+                                "branding"
+                            ]
+                        },
+                        "description": "Branding for the member's gym (`gym_id` from Verify OTP). Requires the Bearer token.\n\nReturns logo, banner, colours, tagline, description, contact, social links, opening hours, facilities and photos.\n\n**Errors**\n- `401 UNAUTHENTICATED` — missing/invalid/revoked token\n- `403 FORBIDDEN` — `gym_id` is not the member's gym\n- `403 GYM_INACTIVE` — gym is suspended/deactivated (`data.gym_status`)\n- `403 MEMBER_INACTIVE` — the gym deactivated this member (token is revoked)\n- `404 GYM_NOT_FOUND` — no such gym"
+                    },
+                    "response": [
+                        {
+                            "name": "Branding",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/gyms/1/branding",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "gyms",
+                                        "1",
+                                        "branding"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"message\": \"Gym branding.\",\n  \"data\": {\n    \"gym_id\": 1,\n    \"name\": \"Iron Temple Fitness\",\n    \"slug\": \"iron-temple-fitness\",\n    \"status\": \"active\",\n    \"is_active\": true,\n    \"tagline\": \"Stronger every day\",\n    \"description\": \"Pune's friendliest strength and conditioning gym.\",\n    \"logo_url\": \"http://localhost:8000/storage/gyms/1/branding/logo.webp\",\n    \"banner_url\": \"http://localhost:8000/storage/gyms/1/branding/banner.jpg\",\n    \"colors\": { \"primary\": \"#4f46e5\", \"secondary\": \"#0ea5e9\" },\n    \"contact\": {\n      \"phone\": \"9876500000\",\n      \"email\": \"owner@demo.gymai.test\",\n      \"address\": \"21 FC Road, Shivajinagar\",\n      \"city\": \"Pune\",\n      \"whatsapp\": \"919876500000\"\n    },\n    \"social\": { \"website\": null, \"instagram\": \"https://instagram.com/\", \"facebook\": null, \"youtube\": null },\n    \"opening_hours\": [\n      { \"day\": \"monday\", \"open\": \"06:00\", \"close\": \"22:00\", \"closed\": false },\n      { \"day\": \"sunday\", \"open\": null, \"close\": null, \"closed\": true }\n    ],\n    \"facilities\": [\"Free weights & racks\", \"Cardio zone\", \"Steam room\"],\n    \"photos\": [{ \"url\": \"http://localhost:8000/storage/gyms/1/photos/1.jpg\", \"caption\": \"Main floor\" }],\n    \"public_url\": \"http://localhost:8000/iron-temple-fitness\",\n    \"updated_at\": \"2026-11-22T10:15:00+00:00\"\n  }\n}"
+                        },
+                        {
+                            "name": "Gym suspended",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/gyms/1/branding",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "gyms",
+                                        "1",
+                                        "branding"
+                                    ]
+                                }
+                            },
+                            "status": "Forbidden",
+                            "code": 403,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": false,\n  \"message\": \"This gym is currently Suspended on Gymai. Please contact your gym.\",\n  \"code\": \"GYM_INACTIVE\",\n  \"data\": { \"gym_id\": 1, \"gym_status\": \"suspended\", \"is_active\": false }\n}"
+                        },
+                        {
+                            "name": "Not logged in",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [],
+                                "url": {
+                                    "raw": "{{base_url}}/gyms/1/branding",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "gyms",
+                                        "1",
+                                        "branding"
+                                    ]
+                                }
+                            },
+                            "status": "Unauthorized",
+                            "code": 401,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": false,\n  \"message\": \"Unauthenticated. Please log in again.\",\n  \"code\": \"UNAUTHENTICATED\"\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "4. Member",
+            "item": [
+                {
+                    "name": "Get my streak",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/streak",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "streak"
+                            ]
+                        },
+                        "description": "Data for the home-screen streak card. Requires the Bearer token and an active gym.\n\n- `current_streak` — visit days in the live streak (\"12 DAY STREAK\")\n- `visits_this_month` — \"18 visits this month\"\n- `week` — Mon→Sun dots. `status`: `attended` (filled ✓), `missed` (empty), `closed` (gym closed that day), `today` (dashed — not checked in yet), `upcoming`\n- `at_risk` — true when skipping today would break the streak (show a nudge)\n- `next_milestone` — e.g. 2 more visit days to reach 14\n- `rules.grace_days` — rest days allowed between visits (set by the gym)\n\nStreaks update automatically on every check-in."
+                    },
+                    "response": [
+                        {
+                            "name": "Streak",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/me/streak",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "me",
+                                        "streak"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"message\": \"Streak.\",\n  \"data\": {\n    \"current_streak\": 12,\n    \"longest_streak\": 21,\n    \"is_active\": true,\n    \"at_risk\": false,\n    \"checked_in_today\": false,\n    \"current_started_on\": \"2026-11-12\",\n    \"last_visit_on\": \"2026-11-27\",\n    \"visits_this_month\": 18,\n    \"total_visit_days\": 64,\n    \"next_milestone\": { \"target\": 14, \"remaining\": 2 },\n    \"highest_milestone\": 7,\n    \"milestones\": [7, 14, 30, 60, 100],\n    \"week\": [\n      { \"date\": \"2026-11-23\", \"day\": \"monday\", \"label\": \"M\", \"status\": \"attended\" },\n      { \"date\": \"2026-11-24\", \"day\": \"tuesday\", \"label\": \"T\", \"status\": \"attended\" },\n      { \"date\": \"2026-11-25\", \"day\": \"wednesday\", \"label\": \"W\", \"status\": \"missed\" },\n      { \"date\": \"2026-11-26\", \"day\": \"thursday\", \"label\": \"T\", \"status\": \"attended\" },\n      { \"date\": \"2026-11-27\", \"day\": \"friday\", \"label\": \"F\", \"status\": \"attended\" },\n      { \"date\": \"2026-11-28\", \"day\": \"saturday\", \"label\": \"S\", \"status\": \"today\" },\n      { \"date\": \"2026-11-29\", \"day\": \"sunday\", \"label\": \"S\", \"status\": \"upcoming\" }\n    ],\n    \"rules\": { \"grace_days\": 1, \"skip_closed_days\": true }\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Check-in status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/check-in",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "check-in"
+                            ]
+                        },
+                        "description": "State for the CHECK IN NOW button.\n\n`state`: `not_checked_in` → show **Check in now** · `checked_in` → show **Check out** · `checked_out` → visit done.\n`self_checkin_enabled: false` → hide the button and ask the member to show their QR at the desk."
+                    },
+                    "response": [
+                        {
+                            "name": "Not checked in yet",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/me/check-in",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "me",
+                                        "check-in"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"message\": \"Check-in status.\",\n  \"data\": {\n    \"self_checkin_enabled\": true,\n    \"has_active_membership\": true,\n    \"state\": \"not_checked_in\",\n    \"attendance\": null\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Check in now",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/check-in",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "check-in"
+                            ]
+                        },
+                        "description": "Member checks themselves in (the CHECK IN NOW button). Returns the attendance and the refreshed streak so the card updates immediately.\n\n**Errors:** `409 ALREADY_CHECKED_IN` · `403 NO_ACTIVE_MEMBERSHIP` · `403 SELF_CHECKIN_DISABLED` (gym turned it off) · `403 GYM_INACTIVE`."
+                    },
+                    "response": [
+                        {
+                            "name": "Checked in",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/me/check-in",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "me",
+                                        "check-in"
+                                    ]
+                                }
+                            },
+                            "status": "Created",
+                            "code": 201,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"message\": \"Checked in. Have a great workout!\",\n  \"data\": {\n    \"attendance\": { \"date\": \"2026-11-28\", \"check_in_at\": \"2026-11-28T07:02:11+05:30\", \"check_out_at\": null, \"duration\": null, \"method\": \"self\" },\n    \"streak\": { \"current_streak\": 13, \"visits_this_month\": 19, \"checked_in_today\": true, \"at_risk\": false, \"week\": [\"…same as Get my streak…\"] }\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Check out",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/check-out",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "check-out"
+                            ]
+                        },
+                        "description": "Ends today's visit.\n\n**Errors:** `409 NOT_CHECKED_IN` · `409 ALREADY_CHECKED_OUT`."
+                    },
+                    "response": [
+                        {
+                            "name": "Checked out",
+                            "originalRequest": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/me/check-out",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "me",
+                                        "check-out"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"message\": \"Checked out. See you next time!\",\n  \"data\": {\n    \"attendance\": { \"date\": \"2026-11-28\", \"check_in_at\": \"2026-11-28T07:02:11+05:30\", \"check_out_at\": \"2026-11-28T08:15:40+05:30\", \"duration\": \"1h 13m\", \"method\": \"self\" },\n    \"streak\": { \"current_streak\": 13 }\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "List diet charts / workout plans",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/plans?type=diet",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "plans"
+                            ],
+                            "query": [
+                                {
+                                    "key": "type",
+                                    "value": "diet",
+                                    "description": "diet | workout"
+                                }
+                            ]
+                        },
+                        "description": "Everything the member can see for one type:\n- `custom` — plans made only for this member (show first, e.g. \"Made for you\")\n- `categories` — the gym's categories, each with its default plans\n- `uncategorized` — default plans without a (visible) category\n\nOnly published plans are returned. Plans are summaries; open one with *Get plan detail*."
+                    },
+                    "response": [
+                        {
+                            "name": "Example",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/me/plans?type=diet",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "me",
+                                        "plans"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "type",
+                                            "value": "diet",
+                                            "description": "diet | workout"
+                                        }
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"message\": \"Diet charts.\",\n  \"data\": {\n    \"type\": \"diet\",\n    \"custom\": [ { \"id\": 5, \"type\": \"diet\", \"title\": \"Aarav — personal cut plan\", \"summary\": \"Adjusted for your lactose intolerance.\", \"cover_image_url\": null, \"is_custom\": true, \"category\": { \"id\": 1, \"name\": \"Weight Loss\" }, \"level\": null, \"duration_weeks\": null, \"daily_calories\": 1700, \"section_count\": 3, \"updated_at\": \"2026-11-22T20:10:00+05:30\" } ],\n    \"categories\": [\n      { \"id\": 1, \"name\": \"Weight Loss\", \"description\": \"Calorie-controlled, high-protein charts\", \"image_url\": null, \"plans\": [ { \"id\": 1, \"type\": \"diet\", \"title\": \"1500 kcal vegetarian fat loss\", \"is_custom\": false, \"section_count\": 5, \"daily_calories\": 1500 } ] }\n    ],\n    \"uncategorized\": []\n  }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Get plan detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/plans/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "plans",
+                                "1"
+                            ]
+                        },
+                        "description": "Full plan with its sections in order. Each section can have a title, subtitle (time / sets × reps), text (`body`, keep line breaks) and a photo (`image_url`).\n\n`404 PLAN_NOT_FOUND` — the plan doesn't exist, is unpublished, belongs to another member, or another gym."
+                    },
+                    "response": [
+                        {
+                            "name": "Example",
+                            "originalRequest": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{base_url}}/me/plans/1",
+                                    "host": [
+                                        "{{base_url}}"
+                                    ],
+                                    "path": [
+                                        "me",
+                                        "plans",
+                                        "1"
+                                    ]
+                                }
+                            },
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n  \"success\": true,\n  \"message\": \"Diet chart.\",\n  \"data\": {\n    \"id\": 1,\n    \"type\": \"diet\",\n    \"title\": \"1500 kcal vegetarian fat loss\",\n    \"summary\": \"Simple Indian vegetarian meals, ~110 g protein a day.\",\n    \"cover_image_url\": \"http://localhost:8000/storage/gyms/1/plans/cover.jpg\",\n    \"is_custom\": false,\n    \"category\": { \"id\": 1, \"name\": \"Weight Loss\" },\n    \"level\": \"beginner\",\n    \"duration_weeks\": 8,\n    \"daily_calories\": 1500,\n    \"section_count\": 2,\n    \"updated_at\": \"2026-11-22T20:10:00+05:30\",\n    \"sections\": [\n      { \"id\": 1, \"position\": 1, \"title\": \"Breakfast\", \"subtitle\": \"8:30 AM · 350 kcal\", \"body\": \"Moong dal chilla (2) with mint chutney\n1 cup green tea\", \"image_url\": \"http://localhost:8000/storage/gyms/1/plans/breakfast.jpg\" },\n      { \"id\": 2, \"position\": 2, \"title\": \"Lunch\", \"subtitle\": \"1:00 PM · 450 kcal\", \"body\": \"2 phulka, 1 bowl dal\", \"image_url\": null }\n    ]\n  }\n}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
