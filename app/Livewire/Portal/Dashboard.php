@@ -58,7 +58,7 @@ class Dashboard extends Component
             'selfCheckIn' => $member->gym->allowsSelfCheckIn(),
             'streak' => app(StreakService::class)->summary($member),
             'programs' => app(ProgramService::class)->overview($member),
-            'visitsThisMonth' => $member->attendances()->where('date', '>=', now()->startOfMonth())->count(),
+            'visitsThisMonth' => $member->attendances()->reorder()->where('date', '>=', now()->startOfMonth())->count(),
         ]);
     }
 }
