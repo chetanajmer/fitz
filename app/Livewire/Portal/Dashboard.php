@@ -2,8 +2,10 @@
 
 namespace App\Livewire\Portal;
 
+use App\Livewire\Portal\Concerns\LogsProgramDays;
 use App\Models\Member;
 use App\Services\AttendanceService;
+use App\Services\ProgramService;
 use App\Services\StreakService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +17,8 @@ use Livewire\Component;
 #[Title('My membership')]
 class Dashboard extends Component
 {
+    use LogsProgramDays;
+
     /** The signed-in member's own profile — never taken from request input. */
     protected function member(): Member
     {
@@ -53,6 +57,7 @@ class Dashboard extends Component
             'todayVisit' => app(AttendanceService::class)->today($member),
             'selfCheckIn' => $member->gym->allowsSelfCheckIn(),
             'streak' => app(StreakService::class)->summary($member),
+            'programs' => app(ProgramService::class)->overview($member),
             'visitsThisMonth' => $member->attendances()->where('date', '>=', now()->startOfMonth())->count(),
         ]);
     }

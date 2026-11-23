@@ -28,6 +28,13 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    // Firebase Cloud Messaging (push notifications to the member app).
+    // FIREBASE_CREDENTIALS = service-account JSON, absolute or relative to the project folder
+    // (e.g. storage/app/firebase/service-account.json). Never commit it.
+    'fcm' => [
+        'credentials' => env('FIREBASE_CREDENTIALS'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),

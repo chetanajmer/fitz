@@ -33,6 +33,9 @@ class TrainerAccess
             'content.custom' => ['label' => 'Diet charts & workout plans', 'hint' => 'View the library and send custom plans to their assigned members.'],
             'content.manage' => ['label' => 'Manage the library', 'hint' => 'Edit default plans and categories for the whole gym.'],
         ],
+        'Communication' => [
+            'announcements.send' => ['label' => 'Send notifications', 'hint' => 'Send app notifications to members. Only their assigned members unless "See all members" is on.'],
+        ],
     ];
 
     /** What every trainer gets unless the admin changes it. */

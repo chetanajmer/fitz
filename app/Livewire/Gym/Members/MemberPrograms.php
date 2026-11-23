@@ -120,6 +120,7 @@ class MemberPrograms extends Component
             'summaries' => $current->mapWithKeys(fn ($a) => [$a->id => $programs->assignmentSummary($a)]),
             'today' => $programs->scheduleOn($this->member, $today, false),
             'week' => $programs->week($this->member, $today),
+            'recent' => $programs->week($this->member, $today->copy()->subDays(6)),
             'history' => MemberProgram::with('program:id,title', 'assigner:id,name')->where('member_id', $this->member->id)
                 ->whereNotIn('id', $current->pluck('id'))->latest('start_date')->limit(10)->get(),
             'canAssign' => Auth::user()->can('create', [FitnessPlan::class, $this->member]),

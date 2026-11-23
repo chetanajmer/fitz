@@ -23,7 +23,7 @@ enum Role: string
                 'members.view', 'members.all', 'members.manage', 'members.import',
                 'enquiries.manage', 'plans.manage', 'memberships.manage', 'payments.manage',
                 'attendance.manage', 'attendance.reports', 'trainers.manage',
-                'content.manage', 'content.custom',
+                'content.manage', 'content.custom', 'announcements.send',
             ],
             // Trainers get their sections as direct, per-trainer grants (see App\Support\TrainerAccess).
             self::Trainer => ['gym.dashboard'],

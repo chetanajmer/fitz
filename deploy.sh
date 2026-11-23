@@ -14,10 +14,15 @@ set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")" && pwd)"
 DEPLOYPATH="${DEPLOYPATH:?Set DEPLOYPATH to the live app folder}"
-PHP_BIN="${PHP_BIN:-/opt/cpanel/ea-php83/root/usr/bin/php}"
-[ -x "$PHP_BIN" ] || PHP_BIN="php"
+PHP_BIN="${PHP_BIN:-php}"
 
-echo "==> Deploying $REPO -> $DEPLOYPATH (PHP $($PHP_BIN -r 'echo PHP_VERSION;'))"
+PHP_VERSION="$($PHP_BIN -d error_reporting=0 -r 'echo PHP_VERSION;' 2>/dev/null)"
+echo "==> Deploying $REPO -> $DEPLOYPATH (PHP $PHP_VERSION at $PHP_BIN)"
+
+if ! $PHP_BIN -d error_reporting=0 -r 'exit(PHP_VERSION_ID >= 80300 ? 0 : 1);' 2>/dev/null; then
+    echo "ERROR: PHP 8.3 or newer is required, but $PHP_BIN is PHP $PHP_VERSION. Set PHP_BIN in deploy-cpanel.sh." >&2
+    exit 1
+fi
 
 if [ ! -f "$REPO/vendor/autoload.php" ] || [ ! -f "$REPO/public/build/manifest.json" ]; then
     echo "ERROR: vendor/ or public/build/ is missing. cPanel must track the 'deploy' branch built by GitHub Actions." >&2

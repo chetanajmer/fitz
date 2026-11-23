@@ -17,10 +17,19 @@
                         @if ($s['state'] === 'upcoming')<x-ui.badge color="blue">Starts {{ \Illuminate\Support\Carbon::parse($s['start_date'])->format('d M') }}</x-ui.badge>@endif
                     </p>
                     <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-indigo-500" style="width: {{ $s['progress_percent'] }}%"></div></div>
-                    <p class="mt-1 text-xs text-gray-500">Day {{ $s['current_day'] }} of {{ $s['total_days'] }} · week {{ $s['current_week'] }}</p>
+                    <p class="mt-1 flex flex-wrap justify-between gap-x-3 text-xs text-gray-500">
+                        <span>Day {{ $s['current_day'] }} of {{ $s['total_days'] }} · week {{ $s['current_week'] }}</span>
+                        @php $ad = $s['adherence']; @endphp
+                        @if ($ad['planned_days'])
+                            <span class="font-medium {{ $ad['percent'] >= 70 ? 'text-emerald-600' : ($ad['percent'] >= 40 ? 'text-amber-600' : 'text-red-600') }}">
+                                Followed {{ $ad['done_days'] }}/{{ $ad['planned_days'] }} days ({{ round($ad['percent']) }}%)@if ($ad['skipped_days']) · {{ $ad['skipped_days'] }} skipped @endif @if ($ad['missed_days']) · {{ $ad['missed_days'] }} not logged @endif
+                            </span>
+                        @endif
+                    </p>
                     @if ($t)
                         <div class="mt-3 rounded-lg {{ $t['is_rest'] ? 'bg-gray-50' : 'bg-indigo-50' }} p-3 text-sm">
                             <span class="font-medium">Today:</span> {{ $t['title'] }}
+                            @if ($t['status'] === 'done')<x-ui.badge color="green">Done</x-ui.badge>@elseif ($t['status'] === 'skipped')<x-ui.badge color="gray">Skipped</x-ui.badge>@endif
                             @if ($t['plan'])<a href="{{ route('gym.content.show', $t['plan']['id']) }}" class="ml-1 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline">View plan <x-ui.icon name="arrow-right" class="size-3.5" /></a>@endif
                         </div>
                     @endif
@@ -43,6 +52,38 @@
                         <p class="font-semibold {{ $d['is_today'] ? 'text-indigo-700' : 'text-gray-700' }}">{{ $d['weekday'] }} {{ \Illuminate\Support\Carbon::parse($d['date'])->format('d') }}</p>
                         @if ($d['workout'])<p class="mt-1 flex items-start gap-1 {{ $d['workout']['is_rest'] ? 'text-gray-400' : 'text-gray-800' }}"><x-ui.icon :name="$d['workout']['is_rest'] ? 'moon' : 'dumbbell'" class="mt-px size-3.5 shrink-0" /> {{ $d['workout']['title'] }}</p>@endif
                         @if ($d['diet'])<p class="mt-1 flex items-start gap-1 text-gray-600"><x-ui.icon name="meal" class="mt-px size-3.5 shrink-0" /> {{ $d['diet']['title'] }}</p>@endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    @if ($current->filter()->isNotEmpty())
+        <div class="card overflow-x-auto">
+            <div class="card-header flex items-center justify-between gap-3">
+                <h2 class="card-title">Last 7 days</h2>
+                <p class="flex items-center gap-3 text-xs text-gray-500">
+                    <span class="inline-flex items-center gap-1"><x-ui.icon name="check" class="size-3.5 text-emerald-600" /> done</span>
+                    <span class="inline-flex items-center gap-1"><x-ui.icon name="x" class="size-3.5 text-gray-400" /> skipped</span>
+                    <span class="inline-flex items-center gap-1"><x-ui.icon name="x" class="size-3.5 text-red-500" /> not logged</span>
+                </p>
+            </div>
+            <div class="grid min-w-[42rem] grid-cols-7 divide-x divide-gray-100">
+                @foreach ($recent as $d)
+                    <div wire:key="rc-{{ $d['date'] }}" class="p-3 text-xs">
+                        <p class="font-semibold text-gray-700">{{ $d['weekday'] }} {{ \Illuminate\Support\Carbon::parse($d['date'])->format('d') }}</p>
+                        @foreach (['workout' => 'dumbbell', 'diet' => 'meal'] as $kind => $kindIcon)
+                            @if ($d[$kind])
+                                @php $st = $d[$kind]['status']; @endphp
+                                <p class="mt-1 flex items-start gap-1 {{ $d[$kind]['is_rest'] ? 'text-gray-400' : 'text-gray-700' }}">
+                                    <x-ui.icon :name="$d[$kind]['is_rest'] ? 'moon' : $kindIcon" class="mt-px size-3.5 shrink-0" />
+                                    <span class="flex-1">{{ $d[$kind]['title'] }}</span>
+                                    @if ($st === 'done')<x-ui.icon name="check" class="mt-px size-3.5 shrink-0 text-emerald-600" />
+                                    @elseif ($st === 'skipped')<x-ui.icon name="x" class="mt-px size-3.5 shrink-0 text-gray-400" />
+                                    @elseif ($st === 'missed')<x-ui.icon name="x" class="mt-px size-3.5 shrink-0 text-red-500" />@endif
+                                </p>
+                            @endif
+                        @endforeach
                     </div>
                 @endforeach
             </div>

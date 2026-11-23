@@ -5,11 +5,13 @@ namespace Tests\Feature;
 use App\Enums\FitnessPlanType;
 use App\Livewire\Gym\Content\Programs;
 use App\Livewire\Gym\Members\MemberPrograms;
+use App\Livewire\Portal\Dashboard;
 use App\Models\FitnessPlan;
 use App\Models\FitnessProgram;
 use App\Models\FitnessProgramDay;
 use App\Models\Gym;
 use App\Models\MemberProgram;
+use App\Models\ProgramDayLog;
 use App\Models\User;
 use App\Services\ProgramService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -156,6 +158,102 @@ class FitnessProgramTest extends TestCase
 
         $this->withToken($token)->getJson('/api/v1/me/schedule?date=2030-01-01')->assertOk()
             ->assertJsonPath('data.workout', null)->assertJsonPath('data.diet', null);
+    }
+
+    public function test_member_portal_shows_assigned_programs_today_and_schedule(): void
+    {
+        $this->importAll();
+        $member = $this->createMember($this->gym, ['email' => 'prog@example.test'], ['portal_password' => 'password']);
+        $this->inGym($this->gym, function () use ($member) {
+            app(ProgramService::class)->assign($member, $this->program('prog-wo-wl-beginner'), '2026-11-23');
+            app(ProgramService::class)->assign($member, $this->program('prog-diet-wl-egg'), '2026-11-23');
+        });
+
+        $this->actingAs($member->user);
+        $this->get(route('portal.dashboard'))->assertOk()
+            ->assertSee('My workout program')->assertSee('My diet program')
+            ->assertSee('Weight Loss')->assertSee('Full body strength A')
+            ->assertSee('My schedule')->assertSee('Rest & recovery');
+
+        $this->get(route('portal.plans', 'workout'))->assertOk()
+            ->assertSee('My workout program')->assertDontSee('My diet program')
+            ->assertSee('Full body strength A')->assertSee('Open full plan');
+
+        $this->get(route('portal.plans', 'diet'))->assertOk()
+            ->assertSee('My diet program')->assertSee('1500 kcal Eggetarian Fat Loss')->assertSee('Breakfast');
+    }
+
+    public function test_members_log_program_days_from_the_app_and_adherence_is_tracked(): void
+    {
+        $this->importAll();
+        $member = $this->createMember($this->gym);
+        $this->inGym($this->gym, fn () => app(ProgramService::class)->assign($member, $this->program('prog-wo-wl-beginner'), '2026-11-23'));
+        $this->app['auth']->forgetGuards();
+        $token = $member->createToken('app', ['member'])->plainTextToken;
+
+        // Day 1 (Mon): done.
+        $this->withToken($token)->postJson('/api/v1/me/schedule/log', ['type' => 'workout', 'status' => 'done', 'note' => 'Felt good'])
+            ->assertCreated()->assertJsonPath('data.workout.status', 'done')->assertJsonPath('data.workout.log.note', 'Felt good');
+
+        // Future days, rest days and other program types are rejected.
+        $this->withToken($token)->postJson('/api/v1/me/schedule/log', ['type' => 'workout', 'status' => 'done', 'date' => '2026-11-24'])->assertUnprocessable();
+        $this->withToken($token)->postJson('/api/v1/me/schedule/log', ['type' => 'diet', 'status' => 'done'])->assertUnprocessable()->assertJsonValidationErrors('type');
+
+        // Wed: skipped. Tue: not logged. Thu: rest day.
+        $this->travelTo(Carbon::parse('2026-11-26 09:00'));
+        $this->withToken($token)->postJson('/api/v1/me/schedule/log', ['type' => 'workout', 'status' => 'skipped', 'date' => '2026-11-25'])->assertCreated();
+        $this->withToken($token)->postJson('/api/v1/me/schedule/log', ['type' => 'workout', 'status' => 'done'])->assertUnprocessable();
+        $this->withToken($token)->postJson('/api/v1/me/schedule/log', ['type' => 'workout', 'status' => 'done', 'date' => '2026-11-23'])
+            ->assertUnprocessable()->assertJsonValidationErrors('date'); // more than 2 days back
+
+        $this->withToken($token)->getJson('/api/v1/me/programs')->assertOk()
+            ->assertJsonPath('data.workout_program.adherence.planned_days', 3)
+            ->assertJsonPath('data.workout_program.adherence.done_days', 1)
+            ->assertJsonPath('data.workout_program.adherence.skipped_days', 1)
+            ->assertJsonPath('data.workout_program.adherence.missed_days', 1)
+            ->assertJsonPath('data.today.workout.status', 'rest')
+            ->assertJsonPath('data.week.1.workout.status', 'upcoming');
+
+        $this->withToken($token)->getJson('/api/v1/me/schedule?date=2026-11-24')->assertJsonPath('data.workout.status', 'missed');
+
+        // Undo.
+        $this->withToken($token)->deleteJson('/api/v1/me/schedule/log', ['type' => 'workout', 'date' => '2026-11-25'])->assertOk()
+            ->assertJsonPath('data.workout.status', 'missed');
+        $this->assertSame(1, $this->inGym($this->gym, fn () => ProgramDayLog::count()));
+    }
+
+    public function test_member_marks_today_done_in_the_portal_and_staff_see_it(): void
+    {
+        $this->importAll();
+        $member = $this->createMember($this->gym, ['name' => 'Portal Logger', 'email' => 'log@example.test'], ['portal_password' => 'password']);
+        $this->inGym($this->gym, function () use ($member) {
+            app(ProgramService::class)->assign($member, $this->program('prog-wo-wl-beginner'), '2026-11-23');
+            app(ProgramService::class)->assign($member, $this->program('prog-diet-wl-egg'), '2026-11-23');
+        });
+
+        $this->actingAs($member->user);
+        Livewire::test(Dashboard::class)
+            ->assertSee('Workout done')
+            ->call('logProgramDay', 'workout', 'done')->assertHasNoErrors()
+            ->assertSee('workout done')
+            ->call('logProgramDay', 'diet', 'skipped')->assertSee('Skipped today')
+            ->call('undoProgramDay', 'diet')->assertSee('I followed my diet');
+
+        $this->assertSame('done', $this->inGym($this->gym, fn () => ProgramDayLog::sole()->status));
+
+        $this->get(route('portal.plans', 'workout'))->assertOk()->assertSee('Other workout plans');
+
+        $this->actingAs($this->owner);
+        Livewire::test(MemberPrograms::class, ['member' => $member])
+            ->assertSee('Followed 1/1 days (100%)')->assertSee('Last 7 days')->assertSee('Done');
+    }
+
+    public function test_member_portal_without_programs_hides_the_section(): void
+    {
+        $member = $this->createMember($this->gym, ['email' => 'none@example.test'], ['portal_password' => 'password']);
+
+        $this->actingAs($member->user);
+        $this->get(route('portal.dashboard'))->assertOk()->assertDontSee('My schedule');
     }
 
     public function test_staff_assign_from_member_page_with_diet_preference_suggested(): void

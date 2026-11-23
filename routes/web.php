@@ -82,6 +82,7 @@ Route::prefix('app')->name('gym.')
 
         Route::livewire('/progress', Livewire\Gym\Progress::class)->middleware('permission:members.view')->name('progress');
         Route::livewire('/streaks', Livewire\Gym\Streaks::class)->middleware('permission:attendance.reports')->name('streaks');
+        Route::livewire('/notifications', Livewire\Gym\Announcements::class)->middleware('permission:announcements.send')->name('announcements');
 
         Route::middleware('permission:trainers.manage')->group(function () {
             Route::livewire('/trainers', Livewire\Gym\Trainers\Index::class)->name('trainers.index');
@@ -130,6 +131,7 @@ Route::prefix('platform')->name('platform.')
         Route::livewire('/gyms/{gym:id}', Livewire\Platform\Gyms\Show::class)->name('gyms.show');
         Route::livewire('/leads', Livewire\Platform\Leads::class)->name('leads');
         Route::livewire('/library', Livewire\Platform\Library::class)->name('library');
+        Route::livewire('/notifications', Livewire\Platform\Notifications::class)->name('notifications');
         Route::livewire('/pricing', Livewire\Platform\Pricing::class)->name('pricing');
         Route::livewire('/invoices', Livewire\Platform\Invoices::class)->name('invoices');
         Route::get('/invoices/{invoice}', [DocumentController::class, 'platformSaasInvoice'])->name('invoices.show');

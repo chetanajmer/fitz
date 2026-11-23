@@ -47,6 +47,10 @@
         {
             "key": "device_name",
             "value": "Postman"
+        },
+        {
+            "key": "fcm_token",
+            "value": "paste-a-firebase-token-here"
         }
     ],
     "item": [
@@ -629,6 +633,10 @@
                             {
                                 "key": "Accept",
                                 "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
                             }
                         ],
                         "url": {
@@ -641,7 +649,11 @@
                                 "logout"
                             ]
                         },
-                        "description": "Revokes the current token (other devices stay logged in)."
+                        "description": "Revokes the current token (other devices stay logged in).",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"device_token\": \"{{fcm_token}}\"\n}"
+                        }
                     },
                     "response": [
                         {
@@ -1563,6 +1575,270 @@
                         "description": "The full workout (exercises) and diet (meals) for any date. Use it when the member taps a day in the week strip."
                     },
                     "response": []
+                },
+                {
+                    "name": "Log a day (done / skipped)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"workout\",\n  \"status\": \"done\",\n  \"date\": null,\n  \"note\": \"Felt strong today\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/me/schedule/log",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "schedule",
+                                "log"
+                            ]
+                        },
+                        "description": "Mark that day's workout or diet as followed (done) or skipped. type: workout | diet, status: done | skipped. date is optional (defaults to today); members can log today and up to 2 days back. Rest days cannot be logged. Returns the refreshed day (same shape as GET /me/schedule) with status and log."
+                    }
+                },
+                {
+                    "name": "Undo a day log",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"workout\",\n  \"date\": null\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/me/schedule/log",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "schedule",
+                                "log"
+                            ]
+                        },
+                        "description": "Remove the log for that day (back to not logged). date optional, defaults to today."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Push notifications",
+            "description": "Firebase Cloud Messaging HTTP v1. The app calls POST /me/devices on every launch (and on token refresh); DELETE /me/devices (or /auth/logout with device_token) on logout.\n\nEvery push: notification {title, body, image?}, android.notification.channel_id = general | reminders | membership | announcements, data (all strings) = { notification_id (= member_notifications.id), type, screen, channel, gym_id, image_url?, ...ids }; with a picture also notification.image and android.notification.image. screen: home, profile, membership, payments, progress, weight, plans, workout, diet, streak, checkin, gym.\n\nTypes: announcement, membership_expiring, membership_expired, payment_received, balance_due, plan_assigned, goal_achieved, weigh_in_due, workout_reminder, streak_at_risk, test.",
+            "item": [
+                {
+                    "name": "Register device (FCM token)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/devices",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "devices"
+                            ]
+                        },
+                        "description": "Body: token (max 512), platform android|ios, device_name?, app_version?. Response: { success, message: \"Device registered.\", data: { registered: true } }. A token used by another member moves to this member.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"{{fcm_token}}\",\n  \"platform\": \"android\",\n  \"app_version\": \"1.0.0\",\n  \"device_name\": \"moto g73 5G\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Remove device",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/devices",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "devices"
+                            ]
+                        },
+                        "description": "Removes the token only if it belongs to the current member. Always 200 \"Device removed.\"",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"token\": \"{{fcm_token}}\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Notification list",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/notifications?page=1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                }
+                            ]
+                        },
+                        "description": "Newest first, with unread_count and pagination (?page=, ?per_page=20, ?unread=1). Each item: { id, type, title, body (full text), image_url (or null), screen, data { screen, channel, ... }, is_read, read_at, created_at } - dates ISO 8601 with +05:30. Open the detail page from a push with data.notification_id."
+                    }
+                },
+                {
+                    "name": "Mark notification read",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/notifications/1/read",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "notifications",
+                                "1",
+                                "read"
+                            ]
+                        },
+                        "description": "Only the member's own notifications (404 otherwise). Sets read_at once; returns unread_count."
+                    }
+                },
+                {
+                    "name": "Mark all read",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/notifications/read-all",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "notifications",
+                                "read-all"
+                            ]
+                        },
+                        "description": ""
+                    }
+                },
+                {
+                    "name": "Notification settings",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/notification-settings",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "notification-settings"
+                            ]
+                        },
+                        "description": "reminders / announcements toggles. Membership, payment and program updates are always on."
+                    }
+                },
+                {
+                    "name": "Update notification settings",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/notification-settings",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "notification-settings"
+                            ]
+                        },
+                        "description": "",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reminders\": true,\n  \"announcements\": true\n}"
+                        }
+                    }
                 }
             ]
         }

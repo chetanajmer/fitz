@@ -8,6 +8,7 @@ use App\Models\FitnessProgram;
 use App\Models\FitnessProgramDay;
 use App\Models\Member;
 use App\Models\MemberProgram;
+use App\Models\ProgramDayLog;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -21,6 +22,12 @@ use Illuminate\Validation\ValidationException;
  */
 class ProgramService
 {
+    /** Members can log today and this many days back; staff can log any day of the program. */
+    public const MEMBER_LOG_DAYS_BACK = 2;
+
+    /** @var array<int, Collection<string, ProgramDayLog>> day logs per assignment, keyed by date */
+    protected array $logCache = [];
+
     public function __construct(protected FitnessLibraryImporter $library) {}
 
     /** @return array<string, list<array<string, mixed>>> */
@@ -164,7 +171,7 @@ class ProgramService
             throw ValidationException::withMessages(['start_date' => 'The start date can be at most 7 days in the past.']);
         }
 
-        return DB::transaction(function () use ($member, $program, $start, $by, $notes) {
+        $assignment = DB::transaction(function () use ($member, $program, $start, $by, $notes) {
             MemberProgram::where('member_id', $member->id)->where('type', $program->type->value)->current()
                 ->update(['status' => 'stopped', 'stopped_at' => now()]);
 
@@ -181,6 +188,10 @@ class ProgramService
 
             return $assignment;
         });
+
+        app(PushNotificationService::class)->programAssigned($assignment->setRelation('member', $member)->setRelation('program', $program));
+
+        return $assignment;
     }
 
     public function stop(MemberProgram $assignment): void
@@ -220,6 +231,156 @@ class ProgramService
     }
 
     /**
+     * Record whether the member followed (done) or skipped a day's workout / diet.
+     * $by = staff user logging for the member; null when the member logs it themselves.
+     */
+    public function logDay(Member $member, FitnessPlanType $type, Carbon $date, string $status, ?string $note = null, ?User $by = null): ProgramDayLog
+    {
+        if (! in_array($status, ProgramDayLog::STATUSES, true)) {
+            throw ValidationException::withMessages(['status' => 'Choose done or skipped.']);
+        }
+
+        [$assignment, $slot] = $this->loggableSlot($member, $type, $date, $by);
+        $day = $slot['day'];
+
+        $log = $this->findLog($member, $type, $date) ?? new ProgramDayLog;
+        $log->forceFill([
+            'member_id' => $member->id,
+            'member_program_id' => $assignment->id,
+            'type' => $type,
+            'date' => $date->toDateString(),
+            'status' => $status,
+            'program_day' => $slot['program_day'],
+            'fitness_plan_id' => $day->fitness_plan_id,
+            'title' => mb_substr($day->title ?: ($day->plan?->title ?? ucfirst($type->value)), 0, 150),
+            'note' => $note !== null && trim($note) !== '' ? mb_substr(trim($note), 0, 500) : null,
+            'logged_by' => $by ? 'staff' : 'member',
+            'recorded_by' => $by?->id,
+        ])->save();
+
+        $this->logCache = [];
+
+        return $log;
+    }
+
+    /** Undo a day's log (back to "not logged"). */
+    public function clearDay(Member $member, FitnessPlanType $type, Carbon $date, ?User $by = null): void
+    {
+        $this->loggableSlot($member, $type, $date, $by);
+        $this->findLog($member, $type, $date)?->delete();
+        $this->logCache = [];
+    }
+
+    /**
+     * How well the member has followed an assignment so far.
+     * Planned = training / diet days (not rest days) up to yesterday, plus today once logged.
+     *
+     * @return array{planned_days: int, done_days: int, skipped_days: int, missed_days: int, percent: float}
+     */
+    public function adherence(MemberProgram $assignment): array
+    {
+        $today = Carbon::today();
+        $logs = $this->logsFor($assignment);
+        $last = $assignment->end_date->lt($today) ? $assignment->end_date->copy() : $today->copy();
+        $days = $assignment->program->days->keyBy('day_number');
+        $cycle = $assignment->program->cycleLength();
+        $planned = 0;
+
+        if ($assignment->start_date->lte($last)) {
+            $total = (int) $assignment->start_date->diffInDays($last);
+            for ($offset = 0; $offset <= $total; $offset++) {
+                $day = $days->get($offset % $cycle + 1);
+                if (! $day || $day->is_rest || ! $day->fitness_plan_id) {
+                    continue;
+                }
+                $date = $assignment->start_date->copy()->addDays($offset)->toDateString();
+                if ($date < $today->toDateString() || $logs->has($date)) {
+                    $planned++;
+                }
+            }
+        }
+
+        $done = $logs->where('status', 'done')->count();
+        $skipped = $logs->where('status', 'skipped')->count();
+
+        return [
+            'planned_days' => $planned,
+            'done_days' => $done,
+            'skipped_days' => $skipped,
+            'missed_days' => max(0, $planned - $done - $skipped),
+            'percent' => $planned ? round(min(100, $done / $planned * 100), 1) : 0.0,
+        ];
+    }
+
+    /**
+     * The assignment and program day a log may be written for, or a validation error.
+     *
+     * @return array{0: MemberProgram, 1: array<string, mixed>}
+     */
+    protected function loggableSlot(Member $member, FitnessPlanType $type, Carbon $date, ?User $by): array
+    {
+        $date = $date->copy()->startOfDay();
+
+        if ($date->gt(Carbon::today())) {
+            throw ValidationException::withMessages(['date' => 'You can only log today or earlier days.']);
+        }
+
+        if (! $by && $date->lt(Carbon::today()->subDays(self::MEMBER_LOG_DAYS_BACK))) {
+            throw ValidationException::withMessages(['date' => 'Days older than '.self::MEMBER_LOG_DAYS_BACK.' days can no longer be changed.']);
+        }
+
+        $assignment = $this->assignmentOn($member, $type, $date);
+        $slot = $assignment ? $this->dayOn($assignment, $date) : null;
+
+        if (! $slot) {
+            throw ValidationException::withMessages(['type' => 'There is no '.$type->value.' program on this day.']);
+        }
+
+        if (! $slot['day'] || $slot['day']->is_rest || ! $slot['day']->fitness_plan_id) {
+            throw ValidationException::withMessages(['type' => 'This is a rest day, nothing to log.']);
+        }
+
+        return [$assignment, $slot];
+    }
+
+    protected function findLog(Member $member, FitnessPlanType $type, Carbon $date): ?ProgramDayLog
+    {
+        return ProgramDayLog::where('member_id', $member->id)->where('type', $type->value)
+            ->whereDate('date', $date->toDateString())->first();
+    }
+
+    /** @return Collection<string, ProgramDayLog> */
+    protected function logsFor(MemberProgram $assignment): Collection
+    {
+        return $this->logCache[$assignment->id] ??= ProgramDayLog::where('member_program_id', $assignment->id)->get()
+            ->keyBy(fn (ProgramDayLog $log) => $log->date->toDateString());
+    }
+
+    /**
+     * The member's current programs (or the next upcoming one), today's full plans and the next 7 days.
+     *
+     * @return array{workout: ?array, diet: ?array, today: array, week: list<array<string, mixed>>}
+     */
+    public function overview(Member $member, ?Carbon $today = null): array
+    {
+        $today ??= Carbon::today();
+        $current = [];
+
+        foreach ([FitnessPlanType::Workout, FitnessPlanType::Diet] as $type) {
+            $assignment = $this->assignmentOn($member, $type, $today)
+                ?? $member->programs()->where('type', $type->value)->current()->with('program.days')->oldest('start_date')->first();
+            $current[$type->value] = $assignment ? $this->assignmentSummary($assignment) : null;
+        }
+
+        return [
+            'workout' => $current['workout'],
+            'diet' => $current['diet'],
+            'today' => $this->scheduleOn($member, $today),
+            'week' => $this->week($member, $today),
+        ];
+    }
+
+    /**
      * What the member should do / eat on a date, for both program types.
      *
      * @return array{date: string, workout: ?array, diet: ?array}
@@ -255,8 +416,8 @@ class ProgramService
                 'date' => $date->toDateString(),
                 'weekday' => $date->format('D'),
                 'is_today' => $date->isToday(),
-                'workout' => $day['workout'] ? ['title' => $day['workout']['title'], 'is_rest' => $day['workout']['is_rest']] : null,
-                'diet' => $day['diet'] ? ['title' => $day['diet']['title']] : null,
+                'workout' => $day['workout'] ? ['title' => $day['workout']['title'], 'is_rest' => $day['workout']['is_rest'], 'status' => $day['workout']['status']] : null,
+                'diet' => $day['diet'] ? ['title' => $day['diet']['title'], 'is_rest' => $day['diet']['is_rest'], 'status' => $day['diet']['status']] : null,
             ];
         })->all();
     }
@@ -291,6 +452,7 @@ class ProgramService
             'current_day' => $done,
             'current_week' => $done ? intdiv($done - 1, 7) + 1 : 0,
             'progress_percent' => round($done / max(1, $total) * 100, 1),
+            'adherence' => $this->adherence($assignment),
             'notes' => $assignment->notes,
         ];
     }
@@ -316,6 +478,15 @@ class ProgramService
             'title' => $day?->title ?: ($plan?->title ?? 'Rest & recovery'),
             'is_rest' => ! $plan,
             'notes' => $day?->notes,
+            'status' => $this->dayStatus($assignment, $slot['date'], ! $plan),
+            'log' => ($log = $this->logsFor($assignment)->get($slot['date'])) ? [
+                'status' => $log->status,
+                'note' => $log->note,
+                'logged_by' => $log->logged_by,
+                'logged_at' => $log->updated_at?->toIso8601String(),
+            ] : null,
+            'can_log' => (bool) $plan && $slot['date'] <= Carbon::today()->toDateString()
+                && $slot['date'] >= Carbon::today()->subDays(self::MEMBER_LOG_DAYS_BACK)->toDateString(),
             'plan' => $plan ? array_filter([
                 'id' => $plan->id,
                 'title' => $plan->title,
@@ -332,5 +503,18 @@ class ProgramService
                 ])->all() : null,
             ], fn ($v) => $v !== null) : null,
         ];
+    }
+
+    /** done | skipped | missed (past, not logged) | pending (today, not logged) | upcoming | rest */
+    protected function dayStatus(MemberProgram $assignment, string $date, bool $isRest): string
+    {
+        if ($isRest) {
+            return 'rest';
+        }
+
+        $today = Carbon::today()->toDateString();
+
+        return $this->logsFor($assignment)->get($date)?->status
+            ?? ($date < $today ? 'missed' : ($date === $today ? 'pending' : 'upcoming'));
     }
 }

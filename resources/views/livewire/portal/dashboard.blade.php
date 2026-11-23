@@ -46,6 +46,8 @@
         @if ($streak['next_milestone'])<p class="mt-4 text-sm text-gray-500">{{ $streak['next_milestone']['remaining'] }} more visit days to your {{ $streak['next_milestone']['target'] }}-day milestone.</p>@endif
     </div>
 
+    @include('livewire.portal.partials.programs', ['programs' => $programs, 'types' => ['workout', 'diet'], 'detailed' => false])
+
     <div class="grid gap-6 md:grid-cols-3">
         <div class="card card-body md:col-span-2">
             <h2 class="card-title">Current membership</h2>

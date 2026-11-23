@@ -125,6 +125,7 @@ class WeightTrackingService
         }
 
         $goal->forceFill(['status' => WeightGoal::ACHIEVED, 'achieved_at' => now(), 'achieved_weight_kg' => $latest->weight_kg])->save();
+        app(PushNotificationService::class)->goalAchieved($member, $goal);
 
         return true;
     }

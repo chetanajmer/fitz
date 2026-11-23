@@ -69,6 +69,7 @@ class Member extends Model implements AuthenticatableContract
             'joining_date' => 'date',
             'height_cm' => 'decimal:1',
             'diet_preference' => DietPreference::class,
+            'notification_settings' => 'array',
             'status' => MemberStatus::class,
         ];
     }
@@ -86,6 +87,17 @@ class Member extends Model implements AuthenticatableContract
     public function enquiry(): BelongsTo
     {
         return $this->belongsTo(Enquiry::class);
+    }
+
+    public function devices(): HasMany
+    {
+        return $this->hasMany(MemberDevice::class);
+    }
+
+    /** The member's in-app notification list (newest first). */
+    public function appNotifications(): HasMany
+    {
+        return $this->hasMany(MemberNotification::class)->latest('id');
     }
 
     public function weightLogs(): HasMany

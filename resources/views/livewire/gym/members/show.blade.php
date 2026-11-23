@@ -128,6 +128,10 @@
                     </div>
                 </div>
 
+                @can('gym.settings')
+                    <livewire:gym.members.member-devices :member="$m" :key="'md-'.$m->id" />
+                @endcan
+
                 @if ($canManage)
                     <div class="card card-body space-y-2">
                         <button wire:click="toggleStatus" class="btn-secondary w-full">Mark as {{ $m->status->value === 'active' ? 'inactive' : 'active' }}</button>

@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\FitnessPlanType;
 use App\Models\Member;
+use App\Models\ProgramDayLog;
 use App\Services\ProgramService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
 
 /** The member's assigned workout / diet programs and their day-by-day schedule. */
 class ProgramController extends ApiController
@@ -21,20 +23,13 @@ class ProgramController extends ApiController
     {
         /** @var Member $member */
         $member = $request->user('member');
-        $today = Carbon::today();
-        $current = [];
-
-        foreach ([FitnessPlanType::Workout, FitnessPlanType::Diet] as $type) {
-            $assignment = $this->programs->assignmentOn($member, $type, $today)
-                ?? $member->programs()->where('type', $type->value)->current()->with('program.days')->oldest('start_date')->first();
-            $current[$type->value] = $assignment ? $this->programs->assignmentSummary($assignment) : null;
-        }
+        $overview = $this->programs->overview($member);
 
         return $this->success([
-            'workout_program' => $current['workout'],
-            'diet_program' => $current['diet'],
-            'today' => $this->programs->scheduleOn($member, $today),
-            'week' => $this->programs->week($member, $today),
+            'workout_program' => $overview['workout'],
+            'diet_program' => $overview['diet'],
+            'today' => $overview['today'],
+            'week' => $overview['week'],
         ], 'Programs.');
     }
 
@@ -47,5 +42,44 @@ class ProgramController extends ApiController
         $date = Carbon::parse($data['date'] ?? Carbon::today())->startOfDay();
 
         return $this->success($this->programs->scheduleOn($request->user('member'), $date), 'Schedule.');
+    }
+
+    /**
+     * POST /api/v1/me/schedule/log  { type: workout|diet, status: done|skipped, date?, note? }
+     * Marks that day's workout / diet as followed or skipped. Returns the refreshed day.
+     */
+    public function logDay(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'type' => ['required', Rule::in(FitnessPlanType::values())],
+            'status' => ['required', Rule::in(ProgramDayLog::STATUSES)],
+            'date' => ['nullable', 'date', 'before_or_equal:today', 'after:2000-01-01'],
+            'note' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $member = $request->user('member');
+        $date = Carbon::parse($data['date'] ?? Carbon::today())->startOfDay();
+        $this->programs->logDay($member, FitnessPlanType::from($data['type']), $date, $data['status'], $data['note'] ?? null);
+
+        return $this->success(
+            $this->programs->scheduleOn($member, $date),
+            $data['status'] === 'done' ? 'Great job! Day marked as done.' : 'Day marked as skipped.',
+            201,
+        );
+    }
+
+    /** DELETE /api/v1/me/schedule/log  { type, date? } — undo a day's log. */
+    public function clearDay(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'type' => ['required', Rule::in(FitnessPlanType::values())],
+            'date' => ['nullable', 'date', 'before_or_equal:today', 'after:2000-01-01'],
+        ]);
+
+        $member = $request->user('member');
+        $date = Carbon::parse($data['date'] ?? Carbon::today())->startOfDay();
+        $this->programs->clearDay($member, FitnessPlanType::from($data['type']), $date);
+
+        return $this->success($this->programs->scheduleOn($member, $date), 'Log removed.');
     }
 }

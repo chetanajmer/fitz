@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -124,6 +125,14 @@ class Gym extends Model
     }
 
     /** Days between weigh-in reminders for members (7, 15 or 30). */
+    /** Whether the gym is open on that day of the week (opening hours). */
+    public function isOpenOn(Carbon $date): bool
+    {
+        $day = $this->allSettings()['opening_hours'][strtolower($date->format('l'))] ?? null;
+
+        return ! ($day['closed'] ?? false);
+    }
+
     public function weighInEveryDays(): int
     {
         $days = (int) ($this->settings['progress']['weigh_in_every_days'] ?? self::DEFAULT_SETTINGS['progress']['weigh_in_every_days']);

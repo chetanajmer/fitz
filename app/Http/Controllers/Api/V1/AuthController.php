@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Resources\V1\MemberResource;
 use App\Services\MemberOtpService;
+use App\Services\PushNotificationService;
 use App\Tenancy\TenantManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -85,7 +86,14 @@ class AuthController extends ApiController
      */
     public function logout(Request $request): JsonResponse
     {
-        $request->user('member')->currentAccessToken()?->delete();
+        $member = $request->user('member');
+
+        // Optional: the app sends its Firebase token so this phone stops receiving notifications.
+        if (is_string($token = $request->input('device_token')) && $token !== '') {
+            $this->tenant->runAs($member->gym, fn () => app(PushNotificationService::class)->removeDevice($member, $token));
+        }
+
+        $member->currentAccessToken()?->delete();
 
         return $this->success(null, 'Logged out.');
     }
