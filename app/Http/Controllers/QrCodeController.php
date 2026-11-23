@@ -19,6 +19,14 @@ class QrCodeController extends Controller
         return $this->svgResponse($this->qr->svg($gym->joinUrl(), 600), $request->boolean('download') ? "{$gym->slug}-join-qr.svg" : null);
     }
 
+    /** The gym's member self-registration QR (encodes /register/{token}). */
+    public function register(Request $request)
+    {
+        $gym = current_gym();
+
+        return $this->svgResponse($this->qr->svg($gym->registerUrl(), 600), $request->boolean('download') ? "{$gym->slug}-register-qr.svg" : null);
+    }
+
     /** A member's attendance QR (encodes the staff scan URL). */
     public function member(Request $request, Member $member)
     {

@@ -144,6 +144,7 @@ class Member extends Model implements AuthenticatableContract
     public function pendingAmount(): float
     {
         return (float) $this->memberships()
+            ->reorder()
             ->where('status', '!=', MembershipStatus::Cancelled->value)
             ->selectRaw('COALESCE(SUM(total_amount - amount_paid), 0) as due')
             ->value('due');
@@ -153,7 +154,7 @@ class Member extends Model implements AuthenticatableContract
     {
         return $this->photo_path
             ? Storage::disk('public')->url($this->photo_path)
-            : 'https://ui-avatars.com/api/?background=dcfce7&color=166534&name='.urlencode($this->name);
+            : 'https://ui-avatars.com/api/?background=1f2a24&color=34d399&name='.urlencode($this->name);
     }
 
     // ---- Scopes ------------------------------------------------------------

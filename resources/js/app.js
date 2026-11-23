@@ -3,6 +3,12 @@ import Chart from 'chart.js/auto';
 
 window.Chart = Chart;
 
+// Panels use the dark theme: muted labels and faint grid lines.
+if (document.body.classList.contains('theme-dark')) {
+    Chart.defaults.color = '#9a9aa3';
+    Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+}
+
 /**
  * Small Chart.js helper used from Alpine: x-data x-init="renderChart($refs.canvas, config)".
  * Destroys any previous chart on the same canvas (Livewire re-renders).

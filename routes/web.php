@@ -30,6 +30,9 @@ Route::post('/login-as/leave', [ImpersonationController::class, 'leave'])->middl
 // QR registration link: always creates an Enquiry for the gym that owns the token.
 Route::get('/join/{token}', [PublicGymController::class, 'join'])->where('token', '[A-Za-z0-9]{20,64}')->name('gym.join');
 
+// Member self-registration QR (shown on the attendance desk): creates a member without a membership.
+Route::get('/register/{token}', [PublicGymController::class, 'register'])->where('token', '[A-Za-z0-9]{20,64}')->name('gym.register');
+
 Route::view('/suspended', 'gym-suspended')->middleware('auth')->name('gym.suspended');
 
 /*
@@ -67,6 +70,8 @@ Route::prefix('app')->name('gym.')
 
         Route::middleware('permission:attendance.manage')->group(function () {
             Route::livewire('/attendance', Livewire\Gym\Attendance\Index::class)->name('attendance.index');
+            Route::get('/attendance/register-qr', [QrCodeController::class, 'register'])->name('attendance.register-qr');
+            Route::livewire('/qr-codes', Livewire\Gym\QrCodes::class)->name('qr-codes');
             // Staff scan a member's QR with any phone camera: the QR encodes this URL.
             Route::get('/attendance/scan/{token}', AttendanceScanController::class)->where('token', '[A-Za-z0-9]{20,64}')->name('attendance.scan');
         });

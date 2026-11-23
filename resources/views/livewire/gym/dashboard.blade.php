@@ -24,8 +24,8 @@
                 <div class="h-64" wire:ignore x-data x-init="renderChart($refs.canvas, {
                     type: 'bar',
                     data: { labels: @js($growth['labels']), datasets: [
-                        { type: 'line', label: 'Total members', data: @js($growth['total']), borderColor: '#4f46e5', backgroundColor: '#4f46e5', tension: .3 },
-                        { label: 'New members', data: @js($growth['new']), backgroundColor: '#a5b4fc', borderRadius: 6 },
+                        { type: 'line', label: 'Total members', data: @js($growth['total']), borderColor: '#EE4444', backgroundColor: '#EE4444', tension: .3 },
+                        { label: 'New members', data: @js($growth['new']), backgroundColor: 'rgba(238,68,68,.35)', borderRadius: 6 },
                     ] }
                 })"><canvas x-ref="canvas"></canvas></div>
             </div>

@@ -12,8 +12,8 @@
         <div class="card lg:col-span-2">
             <div class="card-header"><h2 class="card-title">Platform revenue</h2><span class="text-xs text-gray-500">Billed vs collected</span></div>
             <div class="card-body"><div class="h-64" wire:ignore x-data x-init="renderChart($refs.c, { type: 'bar', data: { labels: @js($revenue['labels']), datasets: [
-                { label: 'Billed', data: @js($revenue['billed']), backgroundColor: '#c7d2fe', borderRadius: 6 },
-                { label: 'Collected', data: @js($revenue['collected']), backgroundColor: '#4f46e5', borderRadius: 6 },
+                { label: 'Billed', data: @js($revenue['billed']), backgroundColor: 'rgba(238,68,68,.3)', borderRadius: 6 },
+                { label: 'Collected', data: @js($revenue['collected']), backgroundColor: '#EE4444', borderRadius: 6 },
             ] } })"><canvas x-ref="c"></canvas></div></div>
         </div>
         <div class="card">

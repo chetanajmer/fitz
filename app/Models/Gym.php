@@ -158,6 +158,12 @@ class Gym extends Model
         return route('gym.join', $this->join_token);
     }
 
+    /** Self-registration form that creates a member (encoded in the attendance-desk QR). */
+    public function registerUrl(): string
+    {
+        return route('gym.register', $this->join_token);
+    }
+
     public function logoUrl(): ?string
     {
         return $this->logo_path ? Storage::disk('public')->url($this->logo_path) : null;
