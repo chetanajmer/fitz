@@ -28,3 +28,7 @@ Thumbs.db
 
 # Local AI-assistant settings
 /.claude/settings.local.json
+
+# Database dumps contain real password hashes, sessions and tokens
+*.sql
+*.sql.gz
