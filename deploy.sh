@@ -41,6 +41,26 @@ if [ -f "$DEPLOYPATH/artisan" ]; then
 fi
 trap '$PHP_BIN "$DEPLOYPATH/artisan" up >/dev/null 2>&1 || true' EXIT
 
+# Keep the PHP version chosen in cPanel (MultiPHP Manager / .htaccess handler) across deploys:
+# the repository's public/.htaccess would otherwise overwrite it and the site would fall back to old PHP.
+PHP_HANDLER=""
+if [ -f "$DEPLOYPATH/public/.htaccess" ]; then
+    # 1) cPanel MultiPHP block, 2) a <FilesMatch> block that sets a PHP handler (kept whole: a bare
+    # SetHandler would send every file, CSS and images included, to PHP), 3) plain AddHandler lines.
+    PHP_HANDLER="$(awk '
+        /# php -- BEGIN cPanel-generated handler/ { inside = 1 }
+        inside { print; if (/# php -- END cPanel-generated handler/) inside = 0; next }
+        /<FilesMatch/ { block = $0; collecting = 1; found = 0; next }
+        collecting {
+            block = block "\n" $0
+            if (tolower($0) ~ /(sethandler|addhandler).*(php)/) found = 1
+            if ($0 ~ /<\/FilesMatch>/) { if (found) print block; collecting = 0 }
+            next
+        }
+        tolower($0) ~ /^[[:space:]]*addhandler[[:space:]].*php/ { print }
+    ' "$DEPLOYPATH/public/.htaccess")"
+fi
+
 echo "==> Copying application files"
 /usr/bin/rsync -a \
     --exclude='.git/' --exclude='.github/' --exclude='.cpanel.yml' \
@@ -52,6 +72,11 @@ echo "==> Copying application files"
 # Packages and compiled assets are replaced exactly (old files removed).
 /usr/bin/rsync -a --delete "$REPO/vendor/" "$DEPLOYPATH/vendor/"
 /usr/bin/rsync -a --delete "$REPO/public/build/" "$DEPLOYPATH/public/build/"
+
+if [ -n "$PHP_HANDLER" ] && ! grep -qF "$(printf '%s' "$PHP_HANDLER" | head -n 1)" "$DEPLOYPATH/public/.htaccess"; then
+    printf '\n%s\n' "$PHP_HANDLER" >> "$DEPLOYPATH/public/.htaccess"
+    echo "==> Kept the cPanel PHP version setting in public/.htaccess"
+fi
 
 echo "==> Preparing storage (uploads, logs and sessions are kept between deploys)"
 mkdir -p "$DEPLOYPATH"/storage/app/public "$DEPLOYPATH"/storage/framework/{cache/data,sessions,views} \

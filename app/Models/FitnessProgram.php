@@ -41,7 +41,7 @@ class FitnessProgram extends Model
     /** Days in one cycle (usually 7; the cycle repeats for the whole duration). */
     public function cycleLength(): int
     {
-        return max(1, (int) ($this->relationLoaded('days') ? $this->days->max('day_number') : $this->days()->max('day_number')));
+        return max(1, (int) ($this->relationLoaded('days') ? $this->days->max('day_number') : $this->days()->reorder()->max('day_number')));
     }
 
     public function scopeOfType(Builder $query, FitnessPlanType|string $type): Builder
