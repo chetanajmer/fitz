@@ -1,3 +1,7 @@
+@php
+    $fileKb = fn (?string $path) => $path && \Illuminate\Support\Facades\Storage::disk('public')->exists($path)
+        ? (int) ceil(\Illuminate\Support\Facades\Storage::disk('public')->size($path) / 1024) : null;
+@endphp
 <div>
     <x-ui.page-header title="Gym profile" subtitle="Branding and details shown on your public page.">
         <x-slot:actions><a href="{{ $gym->publicUrl() }}" target="_blank" class="btn-secondary"><x-ui.icon name="globe" class="size-4" /> View public page</a></x-slot:actions>
@@ -29,7 +33,7 @@
                         <div class="card card-body space-y-4">
                             <h2 class="card-title">Logo</h2>
                             <div class="flex items-center gap-4">
-                                @if ($logo)
+                                @if ($logo && $logo->isPreviewable())
                                     <img src="{{ $logo->temporaryUrl() }}" class="size-16 rounded-lg object-contain ring-1 ring-gray-200" alt="">
                                 @elseif ($gym->logoUrl())
                                     <img src="{{ $gym->logoUrl() }}" class="size-16 rounded-lg object-contain ring-1 ring-gray-200" alt="">
@@ -41,12 +45,14 @@
                                     @if ($gym->logo_path)<button type="button" wire:click="removeLogo" class="text-xs text-red-600 hover:underline">Remove logo</button>@endif
                                 </div>
                             </div>
+                            <p class="hint">Square works best. We resize and compress it automatically (under 70 KB).@if ($gym->logo_path && ($logoKb = $fileKb($gym->logo_path))) Current file: {{ $logoKb }} KB.@endif</p>
                             @error('logo') <p class="input-error">{{ $message }}</p> @enderror
                         </div>
                         <div class="card card-body space-y-3">
                             <h2 class="card-title">Banner image</h2>
-                            <p class="hint !mt-0">Shown at the top of your public page and member app. Wide image, e.g. 1600×600.</p>
-                            @if ($banner)
+                            <p class="hint !mt-0">Shown at the top of your public page and member app. Wide image, e.g. 1920×720. We resize and compress it automatically (under 500 KB).</p>
+                            @if ($gym->banner_path && ($bannerKb = $fileKb($gym->banner_path)))<p class="hint !mt-0">Current file: {{ $bannerKb }} KB</p>@endif
+                            @if ($banner && $banner->isPreviewable())
                                 <img src="{{ $banner->temporaryUrl() }}" class="aspect-[8/3] w-full rounded-lg object-cover ring-1 ring-gray-200" alt="">
                             @elseif ($gym->bannerUrl())
                                 <img src="{{ $gym->bannerUrl() }}" class="aspect-[8/3] w-full rounded-lg object-cover ring-1 ring-gray-200" alt="">

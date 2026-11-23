@@ -5,6 +5,7 @@ use App\Models\Gym;
 use App\Models\Member;
 use App\Models\Scopes\GymScope;
 use App\Services\BillingService;
+use App\Services\GymProfileService;
 use App\Services\MembershipService;
 use App\Services\Push\FcmClient;
 use App\Services\Push\PushMessage;
@@ -15,6 +16,8 @@ use App\Tenancy\TenantManager;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 Artisan::command('gymai:refresh-memberships', function (MembershipService $memberships) {
     $result = $memberships->refreshStatuses();
@@ -114,6 +117,34 @@ Artisan::command('gymai:send-announcements', function (PushNotificationService $
     }
     $this->info("Announcements sent: {$due->count()} to {$members} member(s).");
 })->purpose('Send scheduled gym announcements that are due');
+
+Artisan::command('gymai:optimize-branding {gym? : Gym id (defaults to all gyms)}', function (GymProfileService $profiles) {
+    $disk = Storage::disk('public');
+    $gyms = Gym::query()->when($this->argument('gym'), fn ($q, $id) => $q->whereKey($id))->get();
+    $done = 0;
+    foreach ($gyms as $gym) {
+        foreach (['logo' => 'logo_path', 'banner' => 'banner_path'] as $kind => $column) {
+            $path = $gym->{$column};
+            if (! $path || ! $disk->exists($path)) {
+                continue;
+            }
+            $before = $disk->size($path);
+            if ($before <= GymProfileService::IMAGE_RULES[$kind]['max_kb'] * 1024) {
+                continue; // already within its budget
+            }
+            try {
+                $gym->{$column} = $profiles->storeOptimized($gym, $disk->path($path), $kind, $path);
+                $gym->save();
+                $after = $disk->size($gym->{$column});
+                $this->info("{$gym->name}: {$kind} ".round($before / 1024).' KB -> '.round($after / 1024).' KB');
+                $done++;
+            } catch (Throwable $e) {
+                $this->warn("{$gym->name}: {$kind} skipped (".$e->getMessage().')');
+            }
+        }
+    }
+    $this->info("Compressed {$done} picture(s).");
+})->purpose('Compress existing gym logos (max 70 KB) and banners (max 500 KB)');
 
 Schedule::command('gymai:refresh-memberships')->dailyAt('00:10');
 Schedule::command('gymai:refresh-streaks')->dailyAt('00:20');
