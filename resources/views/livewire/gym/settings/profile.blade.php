@@ -21,6 +21,7 @@
                             <x-ui.field label="Phone" name="profile.phone"><input wire:model="profile.phone" class="input"></x-ui.field>
                             <x-ui.field label="Email" name="profile.email"><input wire:model="profile.email" type="email" class="input"></x-ui.field>
                             <x-ui.field label="Address" name="profile.address"><input wire:model="profile.address" class="input"></x-ui.field>
+                            <x-ui.field label="Google Maps link" name="profile.map_url" hint="Paste your gym's location link from Google Maps."><input wire:model="profile.map_url" type="url" class="input" placeholder="https://maps.app.goo.gl/…"></x-ui.field>
                             <x-ui.field label="City" name="profile.city_id" required hint="Missing your city? Ask Gymai support to add it.">
                                 <select wire:model="profile.city_id" class="input">
                                     <option value="">Select city</option>

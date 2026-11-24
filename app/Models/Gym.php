@@ -46,7 +46,7 @@ class Gym extends Model
     ];
 
     // owner_id, slug, join_token, register_token, city_id and status are set by services only.
-    protected $fillable = ['name', 'phone', 'email', 'address', 'city', 'logo_path', 'description'];
+    protected $fillable = ['name', 'phone', 'email', 'address', 'map_url', 'city', 'logo_path', 'description'];
 
     protected function casts(): array
     {
