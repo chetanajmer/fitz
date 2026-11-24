@@ -249,10 +249,89 @@ function heroEntrance() {
         const split = SplitText.create(headline, { type: 'words', mask: 'words' });
         tl.from(split.words, { yPercent: 115, duration: 1.1, stagger: 0.06 });
     }
-    tl.from('[data-lp-hero-shine]', { yPercent: 40, autoAlpha: 0, filter: 'blur(12px)', duration: 1.2 }, '-=0.8')
+    // clearProps: the CSS copy-swap (hero slider) owns this line's transform / opacity afterwards.
+    tl.from('[data-lp-hero-shine]', { yPercent: 40, autoAlpha: 0, filter: 'blur(12px)', duration: 1.2, clearProps: 'transform,opacity,visibility,filter' }, '-=0.8')
         .from('[data-lp-hero-mockup]', { y: 60, autoAlpha: 0, rotationY: -25, duration: 1.4 }, '-=1.1')
         .from('[data-depth] > *', { scale: 0.6, autoAlpha: 0, duration: 0.8, stagger: 0.12, ease: 'back.out(1.8)' }, '-=0.9');
 }
+
+/* ------------------------------------------------- Hero showcase slider */
+// Rotates dashboard → AI transform → streaks. The tab's CSS progress bar is the timer: when its animation ends we
+// advance, so pausing the animation (hover / off-screen) pauses the slider too. Reduced motion: no auto-advance.
+$$('[data-lp-hero-slider]').forEach((slider) => {
+    const slides = $$('[data-hero-slide]', slider);
+    const floats = $$('[data-hero-floats]', slider);
+    const tabs = $$('[data-hero-tab]', slider);
+    if (slides.length < 2) return;
+    let index = 0;
+
+    // Headline + sub-copy blocks (left column) come in groups of slides.length, in slide order.
+    const copies = $$('[data-hero-copy]', slider.closest('section') ?? document);
+    const swapCopy = (from, to) => copies.forEach((copy, i) => {
+        const slideOf = i % slides.length;
+        if (slideOf === from) {
+            copy.classList.remove('is-active');
+            copy.classList.add('is-leaving');
+            copy.setAttribute('aria-hidden', 'true');
+            setTimeout(() => copy.classList.remove('is-leaving'), 800);
+        } else if (slideOf === to) {
+            copy.classList.remove('is-leaving');
+            copy.classList.add('is-active');
+            copy.removeAttribute('aria-hidden');
+        }
+    });
+
+    const show = (next) => {
+        next = (next + slides.length) % slides.length;
+        if (next === index) return;
+        const leaving = slides[index];
+        leaving.classList.remove('is-active');
+        leaving.classList.add('is-leaving');
+        setTimeout(() => leaving.classList.remove('is-leaving'), 1000);
+        swapCopy(index, next);
+        index = next;
+        slides[index].classList.remove('is-leaving');
+        slides[index].classList.add('is-active');
+        floats.forEach((group, i) => group.classList.toggle('is-active', i === index));
+        tabs.forEach((tab, i) => {
+            tab.classList.toggle('is-active', i === index);
+            tab.setAttribute('aria-pressed', String(i === index));
+        });
+        moveIndicator();
+    };
+
+    // Sliding pill under the active tab.
+    const tabBar = $('[data-hero-tabs]', slider);
+    const indicator = $('[data-hero-indicator]', slider);
+    const moveIndicator = () => {
+        if (!tabBar || !indicator) return;
+        const tab = tabs[index];
+        indicator.style.setProperty('--x', `${tab.offsetLeft}px`);
+        indicator.style.setProperty('--w', `${tab.offsetWidth}px`);
+        tabBar.classList.add('is-ready');
+    };
+    moveIndicator();
+    window.addEventListener('resize', moveIndicator);
+    document.fonts?.ready.then(moveIndicator);
+
+    tabs.forEach((tab, i) => {
+        tab.addEventListener('click', () => show(i));
+        tab.querySelector('[data-hero-progress]')?.addEventListener('animationend', () => {
+            if (tab.classList.contains('is-active')) show(index + 1);
+        });
+    });
+
+    const setPaused = (paused) => slider.classList.toggle('is-paused', paused);
+    slider.addEventListener('pointerenter', () => setPaused(true));
+    slider.addEventListener('pointerleave', () => setPaused(false));
+    slider.addEventListener('focusin', () => setPaused(true));
+    slider.addEventListener('focusout', () => setPaused(false));
+    new IntersectionObserver(([entry]) => slider.classList.toggle('is-offscreen', !entry.isIntersecting)).observe(slider);
+
+    // Off-stage slides sit outside the hero; never let focus / scrollIntoView pan the overflow-hidden section.
+    const section = slider.closest('section');
+    section?.addEventListener('scroll', () => { section.scrollLeft = 0; section.scrollTop = 0; });
+});
 
 /* ------------------------------------------------------ Testimonial slider */
 $$('[data-lp-slider]').forEach((slider) => {
