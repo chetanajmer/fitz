@@ -8,6 +8,7 @@
         ['route' => 'platform.notifications', 'match' => 'platform.notifications', 'icon' => 'bell', 'label' => 'App Notifications', 'badge' => \App\Models\Announcement::withoutGlobalScope(\App\Models\Scopes\GymScope::class)->where('status', 'pending')->count()],
         ['route' => 'platform.library', 'match' => 'platform.library', 'icon' => 'tag', 'label' => 'Default Library'],
         ['route' => 'platform.invoices', 'match' => 'platform.invoices*', 'icon' => 'receipt', 'label' => 'Invoices & Payments'],
+        ['route' => 'platform.ai-coach', 'match' => 'platform.ai-coach', 'icon' => 'sparkles', 'label' => 'AI Coach'],
         ['route' => 'platform.pricing', 'match' => 'platform.pricing', 'icon' => 'tag', 'label' => 'Pricing'],
         ['route' => 'platform.settings', 'match' => 'platform.settings', 'icon' => 'cog', 'label' => 'Settings'],
     ];

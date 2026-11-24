@@ -4,6 +4,7 @@ use App\Http\Controllers\AttendanceScanController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ImpersonationController;
+use App\Http\Controllers\ProgressPhotoController;
 use App\Http\Controllers\PublicGymController;
 use App\Http\Controllers\QrCodeController;
 use App\Livewire;
@@ -57,6 +58,7 @@ Route::prefix('app')->name('gym.')
         Route::livewire('/members/{member}', Livewire\Gym\Members\Show::class)->middleware('permission:members.view')->name('members.show');
         Route::livewire('/members/{member}/edit', Livewire\Gym\Members\Form::class)->middleware('permission:members.manage')->name('members.edit');
         Route::get('/members/{member}/qr', [QrCodeController::class, 'member'])->middleware('permission:members.view')->name('members.qr');
+        Route::get('/members/{member}/progress-photos/{photoId}', ProgressPhotoController::class)->whereNumber('photoId')->middleware('permission:ai.view')->name('members.progress-photo');
 
         Route::middleware('permission:enquiries.manage')->group(function () {
             Route::livewire('/enquiries', Livewire\Gym\Enquiries\Index::class)->name('enquiries.index');
@@ -91,6 +93,7 @@ Route::prefix('app')->name('gym.')
 
         Route::livewire('/progress', Livewire\Gym\Progress::class)->middleware('permission:members.view')->name('progress');
         Route::livewire('/streaks', Livewire\Gym\Streaks::class)->middleware('permission:attendance.reports')->name('streaks');
+        Route::livewire('/ai-coach', Livewire\Gym\AiCoach::class)->middleware('permission:ai.manage')->name('ai-coach');
         Route::livewire('/notifications', Livewire\Gym\Announcements::class)->middleware('permission:announcements.send')->name('announcements');
 
         Route::middleware('permission:trainers.manage')->group(function () {
@@ -141,6 +144,7 @@ Route::prefix('platform')->name('platform.')
         Route::livewire('/leads', Livewire\Platform\Leads::class)->name('leads');
         Route::livewire('/library', Livewire\Platform\Library::class)->name('library');
         Route::livewire('/notifications', Livewire\Platform\Notifications::class)->name('notifications');
+        Route::livewire('/ai-coach', Livewire\Platform\AiCoach::class)->name('ai-coach');
         Route::livewire('/pricing', Livewire\Platform\Pricing::class)->name('pricing');
         Route::livewire('/cities', Livewire\Platform\Cities::class)->name('cities');
         Route::livewire('/invoices', Livewire\Platform\Invoices::class)->name('invoices');

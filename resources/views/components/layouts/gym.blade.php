@@ -20,6 +20,7 @@
         ['route' => 'gym.content.index', 'params' => ['type' => 'diet'], 'match' => null, 'active' => request()->routeIs('gym.content.*') && (request()->route('type') === 'diet' || request()->route('plan')?->type?->value === 'diet'), 'icon' => 'tag', 'label' => 'Diet Charts', 'can' => 'content.custom'],
         ['route' => 'gym.content.index', 'params' => ['type' => 'workout'], 'match' => null, 'active' => request()->routeIs('gym.content.*') && (request()->route('type') === 'workout' || request()->route('plan')?->type?->value === 'workout'), 'icon' => 'whistle', 'label' => 'Workout Plans', 'can' => 'content.custom'],
         ['route' => 'gym.programs', 'match' => 'gym.programs', 'icon' => 'calendar', 'label' => 'Programs', 'can' => 'content.custom'],
+        ['route' => 'gym.ai-coach', 'match' => 'gym.ai-coach', 'icon' => 'sparkles', 'label' => 'AI Coach', 'can' => 'ai.manage'],
         ['route' => 'gym.announcements', 'match' => 'gym.announcements', 'icon' => 'bell', 'label' => 'Notifications', 'can' => 'announcements.send'],
         ['route' => 'gym.plans.index', 'match' => 'gym.plans.*', 'icon' => 'tag', 'label' => 'Membership Plans', 'can' => 'plans.manage'],
         ['route' => 'gym.trainers.index', 'match' => 'gym.trainers.*', 'icon' => 'whistle', 'label' => 'Trainers', 'can' => 'trainers.manage'],

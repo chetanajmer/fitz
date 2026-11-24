@@ -1,7 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AiCoachController;
 use App\Http\Controllers\Api\V1\AppVersionController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BodyProgressController;
 use App\Http\Controllers\Api\V1\CheckInController;
 use App\Http\Controllers\Api\V1\CityController;
 use App\Http\Controllers\Api\V1\FitnessPlanController;
@@ -75,6 +77,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::delete('schedule/log', [ProgramController::class, 'clearDay'])->middleware('throttle:30,1')->name('schedule.log.clear');
             Route::get('plans', [FitnessPlanController::class, 'index'])->name('plans.index');
             Route::get('plans/{planId}', [FitnessPlanController::class, 'show'])->whereNumber('planId')->name('plans.show');
+            Route::get('measurements', [BodyProgressController::class, 'measurements'])->name('measurements.index');
+            Route::post('measurements', [BodyProgressController::class, 'storeMeasurement'])->middleware('throttle:20,1')->name('measurements.store');
+            Route::delete('measurements/{measurementId}', [BodyProgressController::class, 'destroyMeasurement'])->whereNumber('measurementId')->name('measurements.destroy');
+            Route::get('progress-photos', [BodyProgressController::class, 'photos'])->name('progress-photos.index');
+            Route::post('progress-photos', [BodyProgressController::class, 'storePhoto'])->middleware('throttle:10,1')->name('progress-photos.store');
+            Route::delete('progress-photos/{photoId}', [BodyProgressController::class, 'destroyPhoto'])->whereNumber('photoId')->name('progress-photos.destroy');
+            Route::get('progress-photos/{photoId}/image', [BodyProgressController::class, 'photoImage'])->whereNumber('photoId')->name('progress-photos.image');
+            Route::get('ai', [AiCoachController::class, 'status'])->name('ai.status');
+            Route::post('ai/consent', [AiCoachController::class, 'consent'])->middleware('throttle:20,1')->name('ai.consent');
+            Route::get('ai/reports', [AiCoachController::class, 'index'])->name('ai.reports.index');
+            Route::post('ai/reports', [AiCoachController::class, 'store'])->middleware('throttle:10,1')->name('ai.reports.store');
+            Route::get('ai/reports/{reportId}', [AiCoachController::class, 'show'])->whereNumber('reportId')->name('ai.reports.show');
             Route::get('check-in', [CheckInController::class, 'status'])->name('check-in.status');
             Route::post('check-in', [CheckInController::class, 'checkIn'])->middleware('throttle:10,1')->name('check-in');
             Route::post('check-out', [CheckInController::class, 'checkOut'])->middleware('throttle:10,1')->name('check-out');

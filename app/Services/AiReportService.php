@@ -1,0 +1,215 @@
+<?php
+
+namespace App\Services;
+
+use App\Jobs\GenerateAiReport;
+use App\Models\AiReport;
+use App\Models\Attendance;
+use App\Models\GymAiSetting;
+use App\Models\Member;
+use App\Models\MemberMeasurement;
+use App\Models\ProgressPhoto;
+use App\Models\User;
+use App\Services\Ai\OpenRouterClient;
+use App\Services\Push\PushMessage;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Throwable;
+
+/**
+ * AI progress reports and photo comparisons. A request reserves credits (a pending report) under a
+ * lock and queues the generation; a failed generation releases them. Runs inside the gym tenant.
+ */
+class AiReportService
+{
+    protected const SYSTEM_PROMPT = <<<'TXT'
+        You are a friendly, encouraging fitness coach inside an Indian gym's member app.
+        You write a short progress report for one gym member from the data you are given (JSON).
+        Rules:
+        - Speak to the member as "you". Simple English, short sentences. Use kg, cm and Indian context.
+        - Base every statement on the data. If data is missing or too little, say what to log next instead of guessing.
+        - Structure in Markdown with these headings: "Summary", "What's working", "What to focus on next", "Motivation".
+        - Give 2 to 4 specific, practical suggestions about training consistency, weigh-ins, measurements and general healthy habits.
+        - Never diagnose, never mention diseases or medication, never prescribe calorie numbers or supplements.
+        - Be body-positive. No shaming language.
+        - Keep it under 300 words.
+        TXT;
+
+    protected const PHOTO_PROMPT = <<<'TXT'
+        You are a friendly, encouraging fitness coach inside an Indian gym's member app.
+        You compare two progress photos of the same gym member (first = before, second = after) together with their data (JSON).
+        Rules:
+        - Speak to the member as "you". Simple English, short sentences.
+        - Describe only visible, fitness-related changes (posture, muscle definition, waist/shape). If the photos differ in pose, light or angle, or are unclear, say so and keep conclusions modest.
+        - Never comment on attractiveness, skin, identity or anything not related to fitness. Never diagnose.
+        - Be body-positive. No shaming language.
+        - Structure in Markdown with these headings: "Visible changes", "What the numbers say", "Tips for your next photo", "Motivation".
+        - Keep it under 250 words.
+        TXT;
+
+    public function __construct(
+        protected AiAccessService $access,
+        protected OpenRouterClient $client,
+        protected BodyProgressService $body,
+        protected WeightTrackingService $weights,
+        protected StreakService $streaks,
+        protected ProgramService $programs,
+        protected PushNotificationService $notifications,
+    ) {}
+
+    /**
+     * Reserve credits and queue a report. $requestedBy is "member", "staff" (with $staff) or "auto".
+     */
+    public function request(Member $member, string $type, string $requestedBy = 'member', ?User $staff = null, ?int $beforePhotoId = null, ?int $afterPhotoId = null): AiReport
+    {
+        [$before, $after] = $type === AiReport::PHOTO_COMPARISON ? $this->comparisonPhotos($member, $beforePhotoId, $afterPhotoId) : [null, null];
+
+        return DB::transaction(function () use ($member, $type, $requestedBy, $staff, $before, $after) {
+            // Lock the gym's AI settings row: concurrent requests are checked one at a time.
+            $settings = GymAiSetting::forGym($member->gym_id)->lockForUpdate()->first() ?? $this->access->defaultsFor($member->gym);
+            $this->access->authorize($member, $type, $settings);
+
+            $report = new AiReport;
+            $report->forceFill([
+                'member_id' => $member->id,
+                'type' => $type,
+                'status' => AiReport::PENDING,
+                'credits' => $this->access->cost($type),
+                'before_photo_id' => $before?->id,
+                'after_photo_id' => $after?->id,
+                'requested_by' => $requestedBy,
+                'requested_by_user' => $staff?->id,
+            ])->save();
+
+            GenerateAiReport::dispatch($report->id, (int) $member->gym_id)->afterCommit();
+
+            return $report;
+        });
+    }
+
+    /** Call the AI model and store the result. Failures release the credits. */
+    public function generate(AiReport $report): void
+    {
+        if ($report->status !== AiReport::PENDING) {
+            return;
+        }
+
+        $member = $report->member;
+
+        try {
+            $result = $report->type === AiReport::PHOTO_COMPARISON
+                ? $this->client->complete(self::PHOTO_PROMPT, [
+                    ['type' => 'text', 'text' => json_encode($this->progressData($member) + ['before_photo_taken_on' => $report->beforePhoto->taken_on->toDateString(), 'after_photo_taken_on' => $report->afterPhoto->taken_on->toDateString()], JSON_UNESCAPED_UNICODE)],
+                    ['type' => 'image_url', 'image_url' => ['url' => $this->body->photoDataUrl($report->beforePhoto)]],
+                    ['type' => 'image_url', 'image_url' => ['url' => $this->body->photoDataUrl($report->afterPhoto)]],
+                ])
+                : $this->client->complete(self::SYSTEM_PROMPT, json_encode($this->progressData($member), JSON_UNESCAPED_UNICODE));
+        } catch (Throwable $e) {
+            Log::warning('AI report failed', ['report' => $report->id, 'error' => $e->getMessage()]);
+            $report->forceFill(['status' => AiReport::FAILED, 'error' => mb_substr($e->getMessage(), 0, 255)])->save();
+
+            return;
+        }
+
+        $report->forceFill([
+            'status' => AiReport::COMPLETED,
+            'content' => $result['content'],
+            'model' => $result['model'],
+            'input_tokens' => $result['input_tokens'],
+            'output_tokens' => $result['output_tokens'],
+            'cost_usd' => $result['cost_usd'],
+            'completed_at' => now(),
+        ])->save();
+
+        $this->notifications->notify($member, PushMessage::make(
+            'ai_report_ready',
+            'Your AI '.($report->type === AiReport::PHOTO_COMPARISON ? 'photo comparison' : 'progress report').' is ready',
+            'Open the app to read what is working and what to focus on next.',
+            ['report_id' => $report->id],
+        ));
+    }
+
+    /**
+     * The member's data sent to the AI model. Never includes name, phone, medical or staff notes.
+     *
+     * @return array<string, mixed>
+     */
+    public function progressData(Member $member): array
+    {
+        $today = Carbon::today();
+        $weight = $this->weights->summary($member, 40);
+        $streak = $this->streaks->summary($member);
+        $programs = $this->programs->overview($member);
+        $visits = Attendance::where('member_id', $member->id)->whereDate('check_in_at', '>=', $today->copy()->subWeeks(8)->startOfWeek())
+            ->pluck('check_in_at')->countBy(fn (Carbon $at) => $at->copy()->startOfWeek()->toDateString());
+
+        return [
+            'today' => $today->toDateString(),
+            'member' => [
+                'gender' => $member->gender,
+                'age' => $member->date_of_birth?->age,
+                'height_cm' => $weight['height_cm'],
+                'fitness_goal' => $member->fitness_goal,
+                'member_since' => $member->joining_date?->toDateString(),
+            ],
+            'weight' => [
+                'current_kg' => $weight['current_weight_kg'],
+                'change_since_start_kg' => $weight['change_since_start_kg'],
+                'bmi' => $weight['bmi'],
+                'goal' => $weight['goal'] ? array_intersect_key($weight['goal'], array_flip(['direction', 'start_weight_kg', 'target_weight_kg', 'target_date', 'progress_percent', 'remaining_kg', 'status'])) : null,
+                'readings' => collect($weight['history'])->map(fn ($h) => [$h['measured_on'], $h['weight_kg']])->all(),
+            ],
+            'measurements' => MemberMeasurement::where('member_id', $member->id)->orderByDesc('measured_on')->limit(10)->get()->sortBy('measured_on')
+                ->map(fn (MemberMeasurement $m) => ['date' => $m->measured_on->toDateString()] + array_filter($m->only(array_keys(MemberMeasurement::FIELDS)), fn ($v) => $v !== null))
+                ->values()->all(),
+            'attendance' => [
+                'visits_per_week_last_8_weeks' => $visits->all(),
+                'current_streak_days' => $streak['current_streak'],
+                'longest_streak_days' => $streak['longest_streak'],
+                'visits_this_month' => $streak['visits_this_month'],
+            ],
+            'programs' => collect(['workout', 'diet'])->mapWithKeys(fn ($type) => [$type => $programs[$type] ? [
+                'title' => $programs[$type]['program']['title'],
+                'goal' => $programs[$type]['program']['goal_label'],
+                'progress_percent' => $programs[$type]['progress_percent'],
+                'adherence' => $programs[$type]['adherence'],
+            ] : null])->all(),
+        ];
+    }
+
+    /** @return array{0: ProgressPhoto, 1: ProgressPhoto} */
+    protected function comparisonPhotos(Member $member, ?int $beforeId, ?int $afterId): array
+    {
+        $photos = ProgressPhoto::where('member_id', $member->id)->whereIn('id', array_filter([$beforeId, $afterId]))->get()->keyBy('id');
+        $before = $photos->get((int) $beforeId);
+        $after = $photos->get((int) $afterId);
+
+        if (! $before || ! $after || $before->id === $after->id) {
+            throw ValidationException::withMessages(['after_photo_id' => 'Choose two different progress photos.']);
+        }
+
+        // Always compare older → newer.
+        return $before->taken_on->gt($after->taken_on) ? [$after, $before] : [$before, $after];
+    }
+
+    /** @return array<string, mixed> */
+    public function toArray(AiReport $report): array
+    {
+        return [
+            'id' => $report->id,
+            'type' => $report->type,
+            'type_label' => AiReport::TYPES[$report->type] ?? $report->type,
+            'status' => $report->status,
+            'credits' => $report->credits,
+            'content' => $report->content,
+            'before_photo_id' => $report->before_photo_id,
+            'after_photo_id' => $report->after_photo_id,
+            'requested_by' => $report->requested_by,
+            'created_at' => $report->created_at->toIso8601String(),
+            'completed_at' => $report->completed_at?->toIso8601String(),
+            'disclaimer' => AiReport::DISCLAIMER,
+        ];
+    }
+}

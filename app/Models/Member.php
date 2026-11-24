@@ -71,6 +71,8 @@ class Member extends Model implements AuthenticatableContract
             'diet_preference' => DietPreference::class,
             'notification_settings' => 'array',
             'status' => MemberStatus::class,
+            'ai_access' => 'boolean',
+            'ai_consent_at' => 'datetime',
         ];
     }
 
@@ -108,6 +110,21 @@ class Member extends Model implements AuthenticatableContract
     public function weightGoals(): HasMany
     {
         return $this->hasMany(WeightGoal::class)->orderByDesc('id');
+    }
+
+    public function measurements(): HasMany
+    {
+        return $this->hasMany(MemberMeasurement::class)->orderBy('measured_on');
+    }
+
+    public function progressPhotos(): HasMany
+    {
+        return $this->hasMany(ProgressPhoto::class)->orderBy('taken_on');
+    }
+
+    public function aiReports(): HasMany
+    {
+        return $this->hasMany(AiReport::class)->latest('id');
     }
 
     public function programs(): HasMany

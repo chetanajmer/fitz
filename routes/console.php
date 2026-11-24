@@ -1,9 +1,14 @@
 <?php
 
+use App\Exceptions\ApiException;
+use App\Models\AiReport;
 use App\Models\Announcement;
 use App\Models\Gym;
+use App\Models\GymAiSetting;
 use App\Models\Member;
 use App\Models\Scopes\GymScope;
+use App\Services\AiAccessService;
+use App\Services\AiReportService;
 use App\Services\BillingService;
 use App\Services\MembershipService;
 use App\Services\Push\FcmClient;
@@ -115,9 +120,37 @@ Artisan::command('gymai:send-announcements', function (PushNotificationService $
     $this->info("Announcements sent: {$due->count()} to {$members} member(s).");
 })->purpose('Send scheduled gym announcements that are due');
 
+Artisan::command('gymai:ai-monthly-reports', function (AiAccessService $access, AiReportService $reports) {
+    if (! $access->platformEnabled()) {
+        $this->info('AI coach is switched off for the platform.');
+
+        return;
+    }
+
+    $requested = 0;
+    $gymIds = GymAiSetting::withoutGlobalScope(GymScope::class)->where(['allowed' => true, 'enabled' => true, 'auto_monthly_report' => true])->pluck('gym_id');
+    foreach (Gym::query()->operational()->whereIn('id', $gymIds)->get() as $gym) {
+        $requested += app(TenantManager::class)->runAs($gym, function () use ($reports) {
+            $count = 0;
+            Member::active()->whereNotNull('ai_consent_at')->each(function (Member $member) use ($reports, &$count) {
+                try {
+                    $reports->request($member, AiReport::PROGRESS, 'auto');
+                    $count++;
+                } catch (ApiException) {
+                    // Not eligible, or a limit is reached: skip this member.
+                }
+            });
+
+            return $count;
+        });
+    }
+    $this->info("AI progress reports requested: {$requested}.");
+})->purpose('Queue the monthly AI progress report for consenting members of gyms that switched it on');
+
 Schedule::command('gymai:refresh-memberships')->dailyAt('00:10');
 Schedule::command('gymai:refresh-streaks')->dailyAt('00:20');
 Schedule::command('gymai:generate-invoices')->monthlyOn(1, '02:00');
+Schedule::command('gymai:ai-monthly-reports')->monthlyOn(1, '07:00');
 // Member notifications: each gym's own times (Notifications page), checked every 5 minutes.
 Schedule::command('push:run')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('gymai:send-announcements')->everyMinute()->withoutOverlapping();

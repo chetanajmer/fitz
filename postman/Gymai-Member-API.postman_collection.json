@@ -2176,6 +2176,407 @@
                     ]
                 }
             ]
+        },
+        {
+            "name": "6. AI coach & body progress",
+            "description": "Measurements, progress photos and AI reports. AI is controlled by the Super Admin and the gym admin; members need to accept the consent text once.",
+            "item": [
+                {
+                    "name": "AI coach status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai"
+                            ]
+                        },
+                        "description": "Show on the AI coach screen. available (gym switched AI on and the member is eligible), has_consented, consent_text (show it with an Accept checkbox before first use), credits {limit, used, remaining, resets_on}, features {progress, photo_comparison: {available, credits}}, disclaimer (show under every report)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Accept / withdraw AI consent",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai/consent",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai",
+                                "consent"
+                            ]
+                        },
+                        "description": "accepted: true | false. Returns the same data as AI coach status.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"accepted\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Request AI progress report",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai/reports",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai",
+                                "reports"
+                            ]
+                        },
+                        "description": "type: progress (uses weight, goal, measurements, attendance, streak and program adherence) or photo_comparison (also before_photo_id and after_photo_id from GET /me/progress-photos; always compared older → newer).\n\n202 Accepted with data.report {id, type, status pending|completed|failed, content (Markdown), credits, created_at, completed_at, disclaimer} and data.credits. Generation runs in the background: poll GET /me/ai/reports/{id} until status is completed or failed, or wait for the push (type ai_report_ready, data.report_id). Failed reports use no credits.\n\nErrors (code): AI_DISABLED (platform switched off), AI_NOT_AVAILABLE (gym has not switched AI on), AI_FEATURE_DISABLED (photo comparison off for this gym), AI_NOT_ELIGIBLE (no valid membership, or not on an AI plan / not picked by the gym), AI_CONSENT_REQUIRED (call POST /me/ai/consent first), AI_LIMIT_REACHED (429, member used this month's credits), AI_GYM_LIMIT_REACHED (429, gym's monthly pool used). Error responses carry data.credits.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"progress\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Request AI photo comparison",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai/reports",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai",
+                                "reports"
+                            ]
+                        },
+                        "description": "Compares two of the member's own progress photos. Costs more credits than a progress report (see features.photo_comparison.credits).\n\nErrors (code): AI_DISABLED (platform switched off), AI_NOT_AVAILABLE (gym has not switched AI on), AI_FEATURE_DISABLED (photo comparison off for this gym), AI_NOT_ELIGIBLE (no valid membership, or not on an AI plan / not picked by the gym), AI_CONSENT_REQUIRED (call POST /me/ai/consent first), AI_LIMIT_REACHED (429, member used this month's credits), AI_GYM_LIMIT_REACHED (429, gym's monthly pool used). Error responses carry data.credits.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"photo_comparison\",\n  \"before_photo_id\": 1,\n  \"after_photo_id\": 2\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "AI report list",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai/reports",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai",
+                                "reports"
+                            ]
+                        },
+                        "description": "Latest 50 reports, newest first. Reports are also visible to the member's gym admin and trainer."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "AI report detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai/reports/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai",
+                                "reports",
+                                "1"
+                            ]
+                        },
+                        "description": "One report (poll this after requesting one)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Body measurements",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/measurements",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "measurements"
+                            ]
+                        },
+                        "description": "fields {key: label} and measurements [] (oldest → newest): id, measured_on, source app|staff, chest_cm, waist_cm, hips_cm, arm_cm, thigh_cm, body_fat_percent (null when not measured)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Record measurements",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/measurements",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "measurements"
+                            ]
+                        },
+                        "description": "Any of chest_cm, waist_cm, hips_cm, arm_cm, thigh_cm (10–300) and body_fat_percent (2–70); at least one. measured_on optional (default today). Same date again updates that entry. Returns the full list.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"waist_cm\": 88.5,\n  \"chest_cm\": 100,\n  \"body_fat_percent\": 22.4\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete measurements",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/measurements/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "measurements",
+                                "1"
+                            ]
+                        },
+                        "description": "Removes one day's measurements. Returns the full list."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Progress photos",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/progress-photos",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "progress-photos"
+                            ]
+                        },
+                        "description": "photos [] (oldest → newest): id, pose front|side|back, taken_on, source, image_url. image_url is private: load it with the same Authorization: Bearer token."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Upload progress photo",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/progress-photos",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "progress-photos"
+                            ]
+                        },
+                        "description": "Multipart: photo (jpg/png/webp, max 6 MB), pose front|side|back, taken_on (optional, default today). Returns the full list.",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "photo",
+                                    "type": "file",
+                                    "src": []
+                                },
+                                {
+                                    "key": "pose",
+                                    "value": "front",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "taken_on",
+                                    "value": "",
+                                    "type": "text",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Progress photo image",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/progress-photos/1/image",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "progress-photos",
+                                "1",
+                                "image"
+                            ]
+                        },
+                        "description": "The image file. Only the member's own photos (404 otherwise)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete progress photo",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/progress-photos/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "progress-photos",
+                                "1"
+                            ]
+                        },
+                        "description": "Deletes the photo and its file. Returns the full list."
+                    },
+                    "response": []
+                }
+            ]
         }
     ]
 }

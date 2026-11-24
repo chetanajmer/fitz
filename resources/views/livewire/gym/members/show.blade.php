@@ -37,7 +37,7 @@
 
     {{-- Tabs --}}
     <div class="mb-6 flex gap-6 overflow-x-auto border-b border-gray-200">
-        @foreach (['overview' => 'Overview', 'memberships' => 'Memberships', 'payments' => 'Payments', 'attendance' => 'Attendance', 'progress' => 'Progress', 'plans' => 'Diet & Workout'] as $key => $label)
+        @foreach (['overview' => 'Overview', 'memberships' => 'Memberships', 'payments' => 'Payments', 'attendance' => 'Attendance', 'progress' => 'Progress', 'plans' => 'Diet & Workout'] + (auth()->user()->can('useAi', $m) ? ['ai' => 'AI Progress'] : []) as $key => $label)
             <button wire:click="$set('tab', '{{ $key }}')" class="tab {{ $tab === $key ? 'tab-active' : '' }}">{{ $label }}</button>
         @endforeach
     </div>
@@ -228,6 +228,10 @@
 
     @if ($tab === 'progress')
         <livewire:gym.members.weight-progress :member="$m" :key="'wp-'.$m->id" />
+    @endif
+
+    @if ($tab === 'ai')
+        <livewire:gym.members.ai-progress :member="$m" :key="'ai-'.$m->id" />
     @endif
 
     @if ($tab === 'plans')

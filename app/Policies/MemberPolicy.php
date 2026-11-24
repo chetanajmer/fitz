@@ -43,6 +43,12 @@ class MemberPolicy
         return $this->view($user, $member);
     }
 
+    /** Measurements, progress photos and AI reports: anyone who can see the member and has AI access. */
+    public function useAi(User $user, Member $member): bool
+    {
+        return $this->view($user, $member) && $user->can('ai.view');
+    }
+
     public function checkIn(User $user, Member $member): bool
     {
         return $this->view($user, $member) && $user->can('attendance.manage');
