@@ -49,7 +49,7 @@ class GymBrandingImageTest extends TestCase
         }
 
         ob_start();
-        $transparent ? imagepng($image, null, 0) : imagejpeg($image, null, 98);
+        $transparent ? imagepng($image, null, 0) : imagejpeg($image, null, 90);
         imagedestroy($image);
 
         return UploadedFile::fake()->createWithContent($name, (string) ob_get_clean());
@@ -57,9 +57,12 @@ class GymBrandingImageTest extends TestCase
 
     public function test_uploaded_logo_and_banner_are_resized_and_compressed_to_their_budget(): void
     {
-        $logo = $this->photo('logo.jpg', 2400, 2400);
-        $banner = $this->photo('banner.jpg', 4000, 1500);
+        $logo = $this->photo('logo.jpg', 2000, 2000);
+        $banner = $this->photo('banner.jpg', 3200, 1200);
+        // Big enough to need real compression, small enough for the 10 MB upload limit on any OS
+        // (JPEG encoders differ: the same picture is larger on Linux than on Windows).
         $this->assertGreaterThan(1024 * 1024, $logo->getSize(), 'test logo should be over 1 MB');
+        $this->assertLessThan(10 * 1024 * 1024, max($logo->getSize(), $banner->getSize()), 'test pictures must stay under the upload limit');
 
         $this->actingAs($this->owner);
         Livewire::test(Profile::class)
@@ -113,7 +116,7 @@ class GymBrandingImageTest extends TestCase
     public function test_existing_large_logos_are_compressed_by_the_command(): void
     {
         $disk = Storage::disk('public');
-        $big = $this->photo('old.jpg', 2400, 2400);
+        $big = $this->photo('old.jpg', 2000, 2000);
         $path = 'gyms/'.$this->gym->id.'/branding/old-logo.jpg';
         $disk->put($path, $big->getContent());
         $this->gym->forceFill(['logo_path' => $path])->save();
