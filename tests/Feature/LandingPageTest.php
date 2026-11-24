@@ -15,18 +15,30 @@ class LandingPageTest extends TestCase
     {
         $response = $this->get('/')->assertOk();
 
-        foreach (['id="home"', 'id="features"', 'id="how-it-works"', 'id="pricing"', 'id="about"', 'id="stats"', 'id="faq"', 'id="contact"'] as $anchor) {
-            $response->assertSee($anchor, false);
+        foreach (['home', 'features', 'stats', 'members', 'ai-coach', 'how-it-works', 'discover', 'pricing', 'about', 'faq', 'contact'] as $anchor) {
+            $response->assertSee('id="'.$anchor.'"', false);
         }
 
-        $response->assertSee('Run Your Gym Smarter.')
-            ->assertSee('id="members"', false)
-            ->assertSee('AI Body Transformation')
-            ->assertSee('Members register themselves with a QR code')
+        $response->assertSee('Lift your')
+            ->assertSee('14 modules.')
+            ->assertSee('Your members get')
+            ->assertSee('Progress report')
+            ->assertSee('Get found.')
             ->assertSee('data-lp-period="12"', false)
-            ->assertDontSee('id="testimonials"', false)
             ->assertSee('<meta name="description"', false)
             ->assertSee('rel="canonical"', false);
+    }
+
+    public function test_every_call_to_action_links_to_its_page(): void
+    {
+        $this->get('/')->assertOk()
+            ->assertSee(route('register.gym'), false)
+            ->assertSee(route('member.join'), false)
+            ->assertSee(route('gyms.browse'), false)
+            ->assertSee(route('login'), false)
+            ->assertSee('Register Your Gym')
+            ->assertSee('Register as Member')
+            ->assertSee('Browse gyms');
     }
 
     public function test_pricing_uses_the_live_per_member_rate(): void

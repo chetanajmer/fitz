@@ -8,6 +8,7 @@
 @source '../../vendor/livewire/livewire/src/Features/SupportPagination/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../views/**/*.blade.php';
+@source not '../views/landing-v1'; /* backup of the old landing page, not rendered */
 @source '../../app/**/*.php';
 
 @theme {
@@ -31,6 +32,17 @@
     --color-ink-800: #1f1f22;
     --color-ink-750: #26262a;
     --color-ink-700: #2e2e33;
+
+    /* Public landing page ("Chalk & Volt"). */
+    --color-chalk: #eee9dc;
+    --color-chalk-dim: #e2dbc8;
+    --color-forest: #14231a;
+    --color-forest-soft: #1e3427;
+    --color-volt: #d7ff3a;
+    --color-clay: #e2673b;
+    --font-display: 'Anton', 'Impact', 'Arial Narrow', sans-serif;
+    --font-tight: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+    --font-code: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 }
 
 [x-cloak] { display: none !important; }
@@ -177,294 +189,305 @@
     .table tbody tr:hover { @apply bg-gray-50; }
 }
 
-/* ---- Public landing page (welcome.blade.php + views/landing) ---------
- * Motion is CSS-driven; resources/js/landing.js only toggles classes.
- * Reveal styles apply under html.js so content stays visible without JS.
+/* ---- Public landing page — "Chalk & Volt" (welcome.blade.php + views/landing) ----
+ * Light chalk paper, forest ink, volt-lime and clay. Anton for display type, Inter Tight
+ * for copy, JetBrains Mono for labels. resources/js/landing.js adds the motion; every
+ * section reads fine without JS, and prefers-reduced-motion turns all motion off.
  */
-html:has(body.landing) { scroll-behavior: smooth; scroll-padding-top: 5rem; }
+/* Display type stays unlayered so its tight line-height beats Tailwind's text-* sizes. */
+.lp-display { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; line-height: 0.88; letter-spacing: 0; }
 
-@keyframes lp-float { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -14px, 0); } }
-@keyframes lp-glow { 0%, 100% { opacity: 0.45; } 50% { opacity: 0.85; } }
-@keyframes lp-shine { to { background-position: 200% center; } }
-@keyframes lp-rise { from { transform: translateY(0); opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } to { transform: translateY(-110vh); opacity: 0; } }
-@keyframes lp-spin { to { transform: rotate(360deg); } }
-@keyframes lp-draw { to { stroke-dashoffset: 0; } }
-@keyframes lp-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-@keyframes lp-marquee { to { transform: translateX(-50%); } }
-
-.lp-float { animation: lp-float 7s ease-in-out infinite; }
-.lp-float-slow { animation: lp-float 9s ease-in-out infinite; animation-delay: -3s; }
-.lp-glow { animation: lp-glow 5s ease-in-out infinite; }
-.lp-spin-slow { animation: lp-spin 40s linear infinite; }
-.lp-particle { position: absolute; bottom: -10px; border-radius: 9999px; background: rgb(238 68 68 / 0.7); box-shadow: 0 0 12px rgb(238 68 68 / 0.8); animation: lp-rise linear infinite; }
-.lp-marquee { animation: lp-marquee 40s linear infinite; }
-
-.lp-text-shine {
-    background: linear-gradient(90deg, #ffffff 0%, #fecaca 30%, #ee4444 50%, #fecaca 70%, #ffffff 100%);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: lp-shine 6s linear infinite;
+/* Unlayered so it beats the layout's font-sans / text-gray-900 utilities on <body>. */
+.landing {
+    background-color: var(--color-chalk);
+    /* Paper grain: an inline SVG noise tile, rendered once. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .08 0 0 0 0 .14 0 0 0 0 .1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    color: var(--color-forest);
+    font-family: var(--font-tight);
 }
 
-.js .lp-reveal {
-    opacity: 0;
-    transform: translateY(28px);
-    transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
-    transition-delay: var(--d, 0ms);
+/* Components sit in a layer so Tailwind utilities on the same element can override them. */
+@layer components {
+html:has(body.landing) { scroll-padding-top: 5rem; }
+html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
+
+.landing ::selection { background: var(--color-volt); color: var(--color-forest); }
+.landing :focus-visible { outline: 3px solid var(--color-clay); outline-offset: 3px; }
+
+.lp-mono { font-family: var(--font-code); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; }
+.lp-hl {
+    background: linear-gradient(var(--color-volt), var(--color-volt)) no-repeat left / 100% 100%;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding: 0 0.08em;
 }
+.lp-outline { color: transparent; -webkit-text-stroke: 2px var(--lp-stroke, var(--color-forest)); }
+
+/* Buttons: hard offset shadows, like a printed sticker. */
+.lp-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+    border: 2px solid var(--color-forest); padding: 0.85rem 1.35rem;
+    font-weight: 700; font-size: 0.95rem; line-height: 1.2;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+.lp-btn svg { transition: transform 0.18s ease; }
+.lp-btn:hover svg { transform: translateX(3px); }
+.lp-btn-solid { background: var(--color-forest); color: var(--color-volt); box-shadow: 6px 6px 0 -2px var(--color-volt), 6px 6px 0 0 var(--color-forest); }
+.lp-btn-solid:hover { transform: translate(-2px, -2px); box-shadow: 9px 9px 0 -2px var(--color-volt), 9px 9px 0 0 var(--color-forest); }
+.lp-btn-solid:active { transform: translate(4px, 4px); box-shadow: 0 0 0 0 var(--color-forest); }
+.lp-btn-volt { background: var(--color-volt); color: var(--color-forest); border-color: var(--color-volt); box-shadow: 6px 6px 0 0 var(--color-chalk); }
+.lp-btn-volt:hover { transform: translate(-2px, -2px); box-shadow: 9px 9px 0 0 var(--color-chalk); }
+.lp-btn-volt:active { transform: translate(4px, 4px); box-shadow: none; }
+.lp-btn-ghost { background: transparent; color: inherit; border-color: currentColor; }
+.lp-btn-ghost:hover { background: var(--color-forest); border-color: var(--color-forest); color: var(--color-chalk); }
+
+/* Page loader: a roller shutter (horizontal slats) with a CSS-3D dumbbell. Only shown with JS; a failsafe
+ * hides it after 4 s in case landing.js never runs. */
+.lp-loader {
+    display: none;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 46px, rgb(0 0 0 / 0.25) 46px 48px, rgb(238 233 220 / 0.06) 48px 50px);
+}
+.js .lp-loader { display: flex; animation: lp-loader-failsafe 0.4s ease 4s forwards; }
+@keyframes lp-loader-failsafe { to { opacity: 0; visibility: hidden; } }
+.lp-db-scene { position: relative; width: 16rem; height: 10rem; perspective: 900px; }
+.lp-db-lift { position: absolute; inset: 0; transform-style: preserve-3d; scale: 1.15; animation: lp-db-lift 1.1s ease-in-out infinite; }
+@media (width >= 40rem) {
+    .lp-db-scene { height: 13rem; }
+    .lp-db-lift { scale: 1.6; }
+}
+.lp-db { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; animation: lp-db-spin 3.2s linear infinite; }
+.lp-db > span { position: absolute; left: 0; top: 0; }
+@keyframes lp-db-spin { from { transform: rotateZ(-10deg) rotateX(-20deg) rotateY(0deg); } to { transform: rotateZ(-10deg) rotateX(-20deg) rotateY(360deg); } }
+@keyframes lp-db-lift { 0%, 100% { transform: translateY(16px); } 50% { transform: translateY(-16px); } }
+.lp-db-bar {
+    width: 220px; height: 9px; margin: -4.5px 0 0 -110px;
+    background: linear-gradient(90deg, #bdb6a2, var(--color-chalk) 30% 70%, #bdb6a2);
+    transform: rotateX(calc(var(--i) * 45deg)) translateZ(4.5px);
+}
+.lp-db-bar:nth-child(odd) { filter: brightness(0.82); }
+.lp-db-plate { border: 2px solid var(--color-forest); border-radius: 9999px; transform: translateX(var(--x)) rotateY(90deg); }
+.lp-db-plate.is-big { width: 104px; height: 104px; margin: -52px 0 0 -52px; }
+.lp-db-plate.is-small { width: 76px; height: 76px; margin: -38px 0 0 -38px; }
+.lp-db-plate.is-collar { width: 30px; height: 30px; margin: -15px 0 0 -15px; }
+.lp-db-plate.is-clay { background: radial-gradient(circle, var(--color-forest) 0 13%, var(--color-clay) 14% 100%); }
+.lp-db-plate.is-volt { background: radial-gradient(circle, var(--color-forest) 0 17%, var(--color-volt) 18% 100%); }
+.lp-db-plate.is-chalk { background: var(--color-chalk); }
+.lp-db-shadow {
+    position: absolute; left: 50%; bottom: -0.5rem; width: 9rem; height: 14px; margin-left: -4.5rem;
+    border-radius: 50%; background: rgb(0 0 0 / 0.5); filter: blur(6px);
+    animation: lp-db-shadow 1.1s ease-in-out infinite;
+}
+@keyframes lp-db-shadow { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(0.7); opacity: 0.3; } }
+.lp-loader-bar { transform: scaleX(0); }
+
+/* Top progress bar + navigation. */
+.lp-progress { transform: scaleX(0); transform-origin: left; }
+.lp-nav { transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.35s ease; border-bottom: 2px solid transparent; }
+.lp-nav.is-scrolled { background: rgb(238 233 220 / 0.9); border-color: var(--color-forest); backdrop-filter: blur(10px); }
+.lp-navlink { position: relative; }
+.lp-navlink::after { content: ''; position: absolute; left: 0.75rem; right: 0.75rem; bottom: 0.3rem; height: 3px; background: var(--color-forest); transform: scaleX(0); transform-origin: left; transition: transform 0.25s ease; }
+.lp-navlink:hover::after, .lp-navlink.is-active::after { transform: scaleX(1); }
+.lp-burger span { transition: transform 0.25s ease, opacity 0.2s ease; }
+.lp-burger.is-open span:nth-child(2) { transform: translateY(7px) rotate(45deg); }
+.lp-burger.is-open span:nth-child(3) { opacity: 0; }
+.lp-burger.is-open span:nth-child(4) { transform: translateY(-7px) rotate(-45deg); }
+
+/* Hero */
+.lp-hero-title { font-size: clamp(5rem, 29vw, 9rem); }
+@media (width >= 40rem) { .lp-hero-title { font-size: clamp(5rem, 15.5vw, 15rem); } }
+.js .lp-hero-title { visibility: hidden; animation: lp-unhide 0s 2.5s forwards; } /* landing.js reveals it; failsafe after 2.5s */
+@keyframes lp-unhide { to { visibility: visible; } }
+.lp-hero-title .lp-hl { transition: background-size 0.6s cubic-bezier(0.7, 0, 0.2, 1); }
+.js .lp-hero-title:not(.is-lit) .lp-hl { background-size: 0% 100%; }
+.lp-badge { animation: lp-spin 22s linear infinite; }
+.lp-tile { box-shadow: 6px 6px 0 0 var(--color-forest); }
+
+/* Heartbeat lines: paths use pathLength="1" so the dash maths never needs measuring. */
+.lp-ecg path { stroke-dasharray: 1; }
+.js .lp-ecg path { stroke-dashoffset: 1; }
+.lp-ecg-pen { box-shadow: 0 0 0 5px rgb(215 255 58 / 0.35), 0 0 26px 8px rgb(215 255 58 / 0.85); }
+.lp-spine { pointer-events: none; }
+.lp-spine path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+/* "A day at your gym": a timeline the scroll position plays through. Cards are absolutely placed along the
+ * line on desktop (each shifted by its own --x so the card edge never leaves the line; the width keeps
+ * neighbours in a row from overlapping) and stacked on phones. */
+/* Anton has no tabular digits, so every clock character gets a fixed-width cell. */
+.lp-clock-ch { display: inline-block; width: 0.5em; text-align: center; }
+.lp-clock-ch.is-narrow { width: 0.22em; }
+.lp-event-card { transition: opacity 0.4s ease, filter 0.4s ease, box-shadow 0.3s ease, transform 0.4s cubic-bezier(0.3, 1.5, 0.5, 1); }
+.js .lp-dayline.is-scrubbing .lp-event:not(.is-on) .lp-event-card { opacity: 0.2; filter: grayscale(1); transform: scale(0.96); }
+.lp-event.is-on .lp-event-card { box-shadow: 5px 5px 0 0 var(--color-volt), 5px 5px 0 2px var(--color-forest); }
+.lp-event-dot { transition: background-color 0.3s ease, transform 0.3s ease; }
+.lp-event-dot.is-on { background: var(--color-volt); transform: translate(-50%, -50%) scale(1.35); }
+@media (width >= 64rem) {
+    .lp-event { position: absolute; left: var(--x); width: min(12rem, 15.5vw); transform: translateX(calc(var(--x) * -1)); }
+    .lp-event.is-up { bottom: calc(50% + 2.25rem); }
+    .lp-event.is-down { top: calc(50% + 2.25rem); }
+    .lp-event::after { content: ''; position: absolute; left: var(--x); width: 2px; height: 2.25rem; background: var(--color-forest); }
+    .lp-event.is-up::after { top: 100%; }
+    .lp-event.is-down::after { bottom: 100%; }
+}
+
+/* Reveal on scroll */
+.js .lp-reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--d, 0ms); }
 .js .lp-reveal.is-in { opacity: 1; transform: none; }
 
-.lp-tilt {
-    transform: perspective(1800px) rotateX(var(--rx, 14deg)) rotateY(var(--ry, -12deg)) rotateZ(2deg);
+/* Pause looping mini-animations while their section is off screen. */
+.js [data-lp-live]:not(.is-live) * { animation-play-state: paused !important; }
+
+/* ---- Feature tour (horizontal on desktop, swipe row on phones) ---- */
+.lp-tour-viewport { overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.lp-tour-viewport::-webkit-scrollbar { display: none; }
+.lp-tour-viewport > .lp-track > * { scroll-snap-align: start; }
+.lp-tour.is-pinned .lp-tour-viewport { overflow: visible; scroll-snap-type: none; }
+.lp-card { box-shadow: 8px 8px 0 0 rgb(0 0 0 / 0.35); }
+.lp-vis { position: relative; overflow: hidden; border: 2px solid currentColor; }
+
+@keyframes lp-spin { to { transform: rotate(360deg); } }
+@keyframes lp-scan { 0%, 100% { top: 0; } 50% { top: calc(100% - 4px); } }
+@keyframes lp-print { 0% { transform: translateY(-100%); } 55%, 85% { transform: translateY(0); } 100% { transform: translateY(0); opacity: 0; } }
+@keyframes lp-rows { 0%, 20% { transform: translateY(0); } 33%, 53% { transform: translateY(-2.25rem); } 66%, 86% { transform: translateY(-4.5rem); } 100% { transform: translateY(-6.75rem); } }
+@keyframes lp-fill { from { width: 8%; } to { width: 86%; } }
+@keyframes lp-day { 0%, 8% { background: transparent; color: inherit; } 12%, 100% { background: var(--color-forest); color: var(--color-volt); } }
+@keyframes lp-flame { from { transform: scale(1) rotate(-3deg); } to { transform: scale(1.08, 1.14) rotate(3deg); } }
+@keyframes lp-draw-loop { 0% { stroke-dashoffset: 1; } 60%, 100% { stroke-dashoffset: 0; } }
+@keyframes lp-tick { 0%, 15% { transform: scale(0); } 25%, 100% { transform: scale(1); } }
+@keyframes lp-lane { 0%, 18% { left: 6%; } 33%, 51% { left: 40%; } 66%, 100% { left: 74%; } }
+@keyframes lp-drop { 0%, 10% { transform: translateY(-140%); opacity: 0; } 22%, 80% { transform: translateY(0); opacity: 1; } 92%, 100% { transform: translateY(0) scale(0.92); opacity: 0; } }
+@keyframes lp-bar { from { transform: scaleY(0.25); } to { transform: scaleY(1); } }
+@keyframes lp-lock { 0%, 45% { opacity: 1; } 50%, 95% { opacity: 0.25; } }
+@keyframes lp-pulse { 0% { transform: scale(0.8); opacity: 0.7; } 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes lp-blink { 50% { opacity: 0; } }
+
+.lp-qr { background: repeating-conic-gradient(currentColor 0 25%, transparent 0 50%) 0 0 / 1.25rem 1.25rem; }
+.lp-scanline { position: absolute; left: 0; right: 0; height: 4px; background: var(--color-clay); box-shadow: 0 0 14px 2px var(--color-clay); animation: lp-scan 2.4s ease-in-out infinite; }
+.lp-receipt { animation: lp-print 3.6s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
+.lp-rows { animation: lp-rows 6s cubic-bezier(0.7, 0, 0.2, 1) infinite; }
+.lp-fill { animation: lp-fill 3s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate; }
+.lp-day { animation: lp-day 5s steps(1) infinite; animation-delay: calc(var(--i) * 0.45s); }
+.lp-flame { transform-origin: 50% 90%; animation: lp-flame 0.45s ease-in-out infinite alternate; }
+.lp-draw-loop { stroke-dasharray: 1; animation: lp-draw-loop 3.2s ease-in-out infinite; }
+.lp-tick { animation: lp-tick 4s ease-out infinite; animation-delay: calc(var(--i) * 0.6s); }
+.lp-lane { animation: lp-lane 4.5s cubic-bezier(0.7, 0, 0.2, 1) infinite; }
+.lp-drop { animation: lp-drop 3.8s cubic-bezier(0.3, 1.4, 0.5, 1) infinite; animation-delay: calc(var(--i) * 0.9s); }
+.lp-bars > * { transform-origin: bottom; animation: lp-bar 1.6s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -0.3s); }
+.lp-lock { animation: lp-lock 3s steps(1) infinite; animation-delay: calc(var(--i) * 0.5s); }
+.lp-caret { animation: lp-blink 1s steps(1) infinite; }
+
+/* ---- Split-flap scoreboard ---- */
+.lp-flap {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    min-width: 0.78em; padding: 0.06em 0.08em 0; border-radius: 0.08em;
+    background: linear-gradient(#0d1811 0 50%, #13221a 50% 100%); color: var(--color-volt);
+    box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.4);
+}
+.lp-flap::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--color-chalk); opacity: 0.85; }
+.lp-flap.is-flip { animation: lp-flip 0.09s linear; }
+@keyframes lp-flip { 50% { transform: scaleY(0.6); } }
+
+/* ---- Member app phone ---- */
+.lp-phone { box-shadow: 14px 14px 0 0 var(--color-volt), 14px 14px 0 2px var(--color-forest); }
+.lp-screen { position: absolute; inset: 0; clip-path: inset(100% 0 0 0); transition: clip-path 0.7s cubic-bezier(0.7, 0, 0.2, 1); }
+.lp-screen.is-active { clip-path: inset(0 0 0 0); z-index: 1; }
+.lp-step { transition: background-color 0.3s ease, color 0.3s ease, padding 0.3s ease; }
+.lp-step[aria-pressed='true'] { background: var(--color-forest); color: var(--color-chalk); }
+.lp-step[aria-pressed='true'] .lp-step-no { color: var(--color-volt); }
+.lp-ring-pulse::before { content: ''; position: absolute; inset: 0; border-radius: 9999px; border: 3px solid var(--color-volt); animation: lp-pulse 1.8s ease-out infinite; }
+.lp-otp { animation: lp-tick 3.5s ease-out infinite; animation-delay: calc(var(--i) * 0.25s); }
+
+/* ---- AI Coach photo comparison ---- */
+.lp-compare { --pos: 50%; }
+.lp-compare-after { clip-path: inset(0 0 0 var(--pos)); }
+.lp-compare-handle { left: var(--pos); }
+.lp-compare input[type='range'] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+.lp-compare:has(input:focus-visible) .lp-compare-handle span { outline: 3px solid var(--color-clay); outline-offset: 3px; }
+.lp-typeline { display: block; }
+.js .lp-report:not(.is-in) .lp-typeline { opacity: 0; transform: translateY(6px); }
+.lp-report .lp-typeline { transition: opacity 0.5s ease, transform 0.5s ease; transition-delay: calc(var(--i) * 180ms + 300ms); }
+
+/* ---- How it works: steps fill in as you scroll past ---- */
+.lp-set-no { -webkit-text-stroke: 2px var(--color-forest); color: transparent; background: linear-gradient(var(--color-forest), var(--color-forest)) no-repeat bottom / 100% 100%; -webkit-background-clip: text; background-clip: text; transition: background-size 0.9s cubic-bezier(0.7, 0, 0.2, 1); transition-delay: var(--d, 0ms); }
+.js .lp-reveal:not(.is-in) .lp-set-no { background-size: 100% 0%; }
+
+/* ---- Gym discovery: tilted 3D street map ----
+ * The plane is spun (--spin) then tilted (--tilt); landing.js animates those variables and nudges --spin-o /
+ * --tilt-o with the pointer. Pins apply the inverse rotation so they always stand upright facing the viewer. */
+.lp-map-fit {
+    perspective: 1500px;
+    -webkit-mask-image: radial-gradient(ellipse 62% 60% at 50% 52%, #000 45%, transparent 100%);
+    mask-image: radial-gradient(ellipse 62% 60% at 50% 52%, #000 45%, transparent 100%);
+}
+.lp-map-plane {
+    --tilt: 56; --spin: -24; --tilt-o: 0; --spin-o: 0; --zoom: 0.5; --h: 64px;
+    position: absolute; left: 50%; top: 50%; width: 900px; height: 700px; margin: -350px 0 0 -450px;
     transform-style: preserve-3d;
-    transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+    transform: scale(var(--zoom)) rotateX(calc((var(--tilt) + var(--tilt-o)) * 1deg)) rotateZ(calc((var(--spin) + var(--spin-o)) * 1deg));
 }
-
-.lp-line { stroke-dasharray: 700; }
-.js .lp-line { stroke-dashoffset: 700; }
-.js .is-in .lp-line { animation: lp-draw 2.2s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s forwards; }
-.lp-bar { transform-origin: bottom; }
-.js .lp-bar { transform: scaleY(0); }
-.js .is-in .lp-bar { animation: lp-grow 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: var(--d, 0ms); }
-
-/* Hero showcase: three stacked slides that swing through 3D space (landing.js toggles .is-active / .is-leaving). */
-.lp-hero-stage { display: grid; transform-style: preserve-3d; }
-.lp-hero-stage > * { grid-area: 1 / 1; }
-.lp-hero-slide {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    filter: blur(8px);
-    transform: translate3d(22%, 0, -180px) rotateY(-32deg) scale(0.9);
-    transition: transform 1s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.7s ease, filter 0.8s ease, visibility 0s linear 1s;
+@media (width >= 40rem) { .lp-map-plane { --zoom: 0.75; } }
+@media (width >= 64rem) { .lp-map-plane { --zoom: 0.95; } }
+.lp-map-building { position: absolute; width: 150px; height: 50px; transform-style: preserve-3d; cursor: pointer; }
+.lp-face { position: absolute; display: block; border: 2px solid var(--color-forest); transition: background-color 0.3s ease; }
+.lp-face.is-top { inset: 0; transform: translateZ(var(--h)); background: repeating-linear-gradient(90deg, var(--color-chalk) 0 18px, var(--color-chalk-dim) 18px 20px); }
+.lp-face.is-front, .lp-face.is-back { left: 0; width: 150px; height: var(--h); transform-origin: top; transform: rotateX(90deg); }
+.lp-face.is-front { top: 100%; background: var(--color-forest); }
+.lp-face.is-back { top: 0; background: var(--color-forest-soft); }
+.lp-face.is-left, .lp-face.is-right { top: 0; width: var(--h); height: 50px; transform-origin: left; transform: rotateY(-90deg); }
+.lp-face.is-left { left: 0; background: #0d1811; }
+.lp-face.is-right { left: 100%; background: var(--color-forest-soft); }
+.lp-map-building.is-active .lp-face.is-top { background: var(--color-clay); }
+.lp-map-pin {
+    position: absolute; width: 0; height: 0; transform-style: preserve-3d;
+    transform: translateZ(var(--lift, 0px)) rotateZ(calc((var(--spin) + var(--spin-o)) * -1deg)) rotateX(calc((var(--tilt) + var(--tilt-o)) * -1deg));
 }
-.lp-hero-slide.is-active {
-    opacity: 1;
-    visibility: visible;
-    filter: none;
-    transform: none;
-    transition-delay: 0.08s, 0.08s, 0.08s, 0s;
+.lp-map-pin-body {
+    position: absolute; left: 0; bottom: 0; display: flex; flex-direction: column; align-items: center;
+    transform: translateX(-50%); transform-origin: bottom center; cursor: pointer;
+    transition: transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1), opacity 0.3s ease;
 }
-.lp-hero-slide.is-leaving { transform: translate3d(-22%, 0, -180px) rotateY(32deg) scale(0.9); }
+.lp-map-label { padding: 0.4rem 0.6rem; white-space: nowrap; text-align: center; background: var(--color-chalk); border: 2px solid var(--color-forest); box-shadow: 4px 4px 0 0 var(--color-forest); transition: background-color 0.25s ease, color 0.25s ease; }
+.lp-map-detail { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease; }
+.lp-map-stem { width: 2px; height: 1.75rem; background: var(--color-forest); }
+.lp-map-dot { width: 0.85rem; height: 0.85rem; margin-bottom: -0.425rem; border-radius: 9999px; background: var(--color-clay); border: 2px solid var(--color-forest); }
+.lp-map-pin-body.is-yours .lp-map-label { background: var(--color-forest); color: var(--color-volt); }
+.lp-map-pin-body.is-active { transform: translateX(-50%) translateY(-8px) scale(1.15); }
+.lp-map-pin-body.is-active .lp-map-label { background: var(--color-clay); color: var(--color-forest); }
+.lp-map-pin-body.is-active .lp-map-detail { max-height: 2em; margin-top: 0.2rem; opacity: 1; }
+.has-active .lp-map-pin-body:not(.is-active) { opacity: 0.35; }
+.lp-map-item { transition: background-color 0.25s ease, color 0.25s ease, opacity 0.25s ease, padding 0.25s ease; }
+.lp-map-item.is-active { background: var(--color-forest); color: var(--color-volt); padding-left: 1rem; }
+.has-active .lp-map-item:not(.is-active) { opacity: 0.45; }
 
-/* Hero copy that swaps with the showcase: variants share one grid cell; each line slides through a mask. */
-.lp-copy-stage { display: grid; }
-.lp-hero-copy { grid-area: 1 / 1; visibility: hidden; transition: visibility 0s linear 0.7s; }
-.lp-hero-copy.is-active { visibility: visible; transition-delay: 0s; }
-.lp-copy-line { display: block; overflow: hidden; padding-bottom: 0.08em; margin-bottom: -0.08em; }
-.lp-copy-line > span {
-    opacity: 0;
-    filter: blur(6px);
-    transform: translateY(105%);
-    transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.6s ease, filter 0.6s ease;
-    transition-delay: calc(var(--i, 0) * 90ms);
-}
-.lp-hero-copy.is-active .lp-copy-line > span { opacity: 1; filter: none; transform: none; transition-delay: calc(0.25s + var(--i, 0) * 110ms); }
-.lp-hero-copy.is-leaving .lp-copy-line > span { transform: translateY(-105%); }
+/* ---- Pricing calculator sliders ---- */
+.lp-range { -webkit-appearance: none; appearance: none; height: 0.75rem; background: linear-gradient(var(--color-volt), var(--color-volt)) no-repeat left / var(--fill, 15%) 100%, rgb(238 233 220 / 0.15); border-radius: 0; }
+.lp-range::-webkit-slider-thumb { -webkit-appearance: none; width: 1.75rem; height: 2.5rem; background: var(--color-chalk); border: 3px solid var(--color-forest); box-shadow: 4px 4px 0 var(--color-volt); cursor: grab; }
+.lp-range::-moz-range-thumb { width: 1.75rem; height: 2.5rem; border-radius: 0; background: var(--color-chalk); border: 3px solid var(--color-forest); box-shadow: 4px 4px 0 var(--color-volt); cursor: grab; }
 
-/* Animated conic edge on the screen currently shown. */
-.lp-hero-slide { position: relative; isolation: isolate; }
-.lp-hero-slide::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    z-index: -1;
-    border-radius: calc(1rem + 1px);
-    background: conic-gradient(from var(--lp-angle), transparent 0deg, #ee4444 70deg, #fdba74 100deg, transparent 160deg, transparent 360deg);
-    opacity: 0;
-    transition: opacity 0.6s ease;
-}
-.lp-hero-slide.is-active::before { opacity: 1; animation: lp-rotate-angle 4.5s linear infinite; }
+/* ---- About: rows that fill with volt on hover ---- */
+.lp-row { position: relative; isolation: isolate; }
+.lp-row::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--color-volt); transform: scaleX(0); transform-origin: left; transition: transform 0.45s cubic-bezier(0.7, 0, 0.2, 1); }
+.lp-row:hover::before { transform: scaleX(1); }
+.lp-row:hover { color: var(--color-forest); }
 
-/* Stage around the showcase: beam, orbit ring and a receding grid floor. */
-.lp-beam {
-    background: conic-gradient(from 180deg at 50% 0%, transparent 155deg, rgb(238 68 68 / 0.22) 175deg, rgb(253 186 116 / 0.18) 180deg, rgb(238 68 68 / 0.22) 185deg, transparent 205deg);
-    filter: blur(14px);
-    mask-image: linear-gradient(to bottom, black, transparent 90%);
-    animation: lp-glow 6s ease-in-out infinite;
-}
-.lp-orbit { transform: rotateX(74deg) rotateZ(0deg); animation: lp-orbit 16s linear infinite; }
-@keyframes lp-orbit { to { transform: rotateX(74deg) rotateZ(360deg); } }
-.lp-floor {
-    background-image: linear-gradient(rgb(238 68 68 / 0.35) 1px, transparent 1px), linear-gradient(90deg, rgb(238 68 68 / 0.35) 1px, transparent 1px);
-    background-size: 40px 40px;
-    transform: perspective(500px) rotateX(68deg);
-    transform-origin: top;
-    mask-image: radial-gradient(ellipse at top, black 15%, transparent 65%);
-    animation: lp-floor 3s linear infinite;
-}
-@keyframes lp-floor { to { background-position: 0 40px; } }
-
-/* Hero tab switcher: a pill that slides under the active tab (landing.js sets --x / --w). */
-.lp-hero-indicator {
-    position: absolute;
-    top: 0.25rem;
-    bottom: 0.25rem;
-    left: 0;
-    width: var(--w, 0);
-    transform: translateX(var(--x, 0));
-    border-radius: 0.75rem;
-    background: linear-gradient(135deg, rgb(238 68 68 / 0.28), rgb(249 115 22 / 0.12));
-    box-shadow: inset 0 0 0 1px rgb(238 68 68 / 0.45), 0 8px 24px -8px rgb(238 68 68 / 0.7);
-    transition: transform 0.55s cubic-bezier(0.34, 1.3, 0.64, 1), width 0.55s cubic-bezier(0.34, 1.3, 0.64, 1);
-}
-
-.lp-hero-floats { position: absolute; inset: 0; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.45s ease, visibility 0s linear 0.45s; }
-.lp-hero-floats.is-active { opacity: 1; visibility: visible; transition-delay: 0.35s, 0s; }
-.lp-hero-floats [data-depth] > * { scale: 0.75; transition: scale 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.lp-hero-floats.is-active [data-depth] > * { scale: 1; transition-delay: 0.4s; }
-
-.lp-hero-tab.is-active { color: #fff; }
-.lp-hero-tab.is-active svg { color: #f87171; }
-[data-hero-tabs]:not(.is-ready) .lp-hero-tab.is-active { background: rgb(238 68 68 / 0.14); }
-.lp-hero-progress { transform: scaleX(0); opacity: 0; }
-.lp-hero-tab.is-active .lp-hero-progress { opacity: 1; animation: lp-hero-progress var(--lp-hero-duration, 5.5s) linear forwards; }
-[data-lp-hero-slider]:is(.is-paused, .is-offscreen) .lp-hero-progress { animation-play-state: paused; }
-@keyframes lp-hero-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
-
-/* Micro-animations that replay each time a slide becomes active. */
-.js .lp-hero-slide.is-active .lp-line { animation: lp-draw 2.2s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s forwards; }
-.js .lp-hero-slide.is-active .lp-bar { animation: lp-grow 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; animation-delay: var(--d, 0ms); }
-.lp-hero-slide.is-active .lp-pop { animation: lp-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; animation-delay: var(--d, 0ms); }
-.lp-hbar { transform-origin: left; }
-.lp-hero-slide.is-active .lp-hbar { animation: lp-hbar 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) backwards; animation-delay: var(--d, 0ms); }
-.lp-hero-slide.is-active .lp-scan { animation: lp-scan 2.6s ease-in-out infinite; }
-.lp-hero-slide.is-active .lp-flame { animation: lp-flame 1.6s ease-in-out infinite; }
-.lp-hero-slide.is-active .lp-today { animation: lp-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.62s backwards, lp-today 1.8s ease-in-out 1.3s infinite; }
-@keyframes lp-pop { from { opacity: 0; transform: translateY(8px) scale(0.85); } }
-@keyframes lp-hbar { from { transform: scaleX(0); } }
-@keyframes lp-scan { 0% { transform: translateY(-40px); } 100% { transform: translateY(230px); } }
-@keyframes lp-flame { 0%, 100% { transform: scale(1) rotate(-3deg); } 50% { transform: scale(1.08) rotate(3deg); } }
-@keyframes lp-today { 0%, 100% { box-shadow: 0 0 0 0 rgb(251 146 60 / 0.6); } 50% { box-shadow: 0 0 0 6px rgb(251 146 60 / 0); } }
-
-/* Pointer-following glow on feature cards (--mx/--my set by landing.js). */
-.lp-glow-card { position: relative; isolation: isolate; }
-.lp-glow-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgb(238 68 68 / 0.16), transparent 45%);
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-.lp-glow-card:hover::before { opacity: 1; }
-
-.lp-nav { transition: background-color 0.3s, border-color 0.3s, backdrop-filter 0.3s; }
-.lp-nav.is-scrolled { background-color: rgb(19 19 21 / 0.82); border-color: var(--color-ink-700); backdrop-filter: blur(14px); }
-
-.lp-range { accent-color: var(--color-brand-600); }
-
-/* Page loader: only shown when JS runs, and always fades out on its own as a safety net. */
-@keyframes lp-loader-safety { to { opacity: 0; visibility: hidden; } }
-@keyframes lp-loader-pulse { 0%, 100% { transform: scale(1); box-shadow: 0 0 30px -4px rgb(238 68 68 / 0.7); } 50% { transform: scale(1.08); box-shadow: 0 0 60px 0 rgb(238 68 68 / 0.9); } }
-.lp-loader { display: none; }
-.js .lp-loader { display: flex; animation: lp-loader-safety 0.4s ease 2.6s forwards; }
-.lp-loader-mark { animation: lp-loader-pulse 1.4s ease-in-out infinite; }
-.lp-loader-bar { transform: scaleX(0.15); transform-origin: left; animation: lp-loader-fill 1s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
-@keyframes lp-loader-fill { to { transform: scaleX(0.8); } }
-
-/* Scroll progress bar. */
-.lp-progress { transform: scaleX(0); transform-origin: left; }
-
-/* Subtle film-grain noise overlay. */
-.lp-noise::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    opacity: 0.05;
-    mix-blend-mode: overlay;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-/* Animated conic glow border (pricing card, CTA). */
-@property --lp-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-@keyframes lp-rotate-angle { to { --lp-angle: 360deg; } }
-.lp-border-glow { position: relative; isolation: isolate; }
-.lp-border-glow::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    z-index: -1;
-    border-radius: inherit;
-    background: conic-gradient(from var(--lp-angle), transparent 0deg, #ee4444 60deg, #fca5a5 90deg, transparent 150deg, transparent 360deg);
-    animation: lp-rotate-angle 5s linear infinite;
-}
-
-/* Cursor spotlight for whole sections. */
-.lp-spotlight { position: relative; }
-.lp-spotlight::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: radial-gradient(600px circle at var(--mx, 50%) var(--my, -20%), rgb(238 68 68 / 0.08), transparent 60%);
-}
-
-/* Dot grid backdrop. */
-.lp-dots { background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px); background-size: 22px 22px; }
-
-/* Nav link underline + hamburger morph. */
-.lp-navlink { position: relative; }
-.lp-navlink::after {
-    content: '';
-    position: absolute;
-    left: 0.75rem;
-    right: 0.75rem;
-    bottom: 0.3rem;
-    height: 2px;
-    border-radius: 9999px;
-    background: var(--color-brand-600);
-    transform: scaleX(0);
-    transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.lp-navlink:hover::after, .lp-navlink.is-active::after { transform: scaleX(1); }
-.lp-burger span { transition: transform 0.3s, opacity 0.2s; transform-origin: center; }
-.is-open.lp-burger span:nth-of-type(2) { transform: translateY(7px) rotate(45deg); }
-.is-open.lp-burger span:nth-of-type(3) { opacity: 0; }
-.is-open.lp-burger span:nth-of-type(4) { transform: translateY(-7px) rotate(-45deg); }
-
-/* Button shine sweep. */
-.lp-shine-btn { position: relative; overflow: hidden; }
-.lp-shine-btn::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(110deg, transparent 30%, rgb(255 255 255 / 0.35) 50%, transparent 70%);
-    transform: translateX(-120%);
-    transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.lp-shine-btn:hover::after { transform: translateX(120%); }
-
-/* Icon micro-animation on card hover. */
-.group:hover .lp-icon-bounce { animation: lp-icon-bounce 0.6s cubic-bezier(0.2, 0.7, 0.2, 1); }
-@keyframes lp-icon-bounce { 30% { transform: translateY(-4px) rotate(-8deg); } 60% { transform: translateY(1px) rotate(4deg); } }
-
+/* ---- FAQ ---- */
 .landing details > summary { list-style: none; }
 .landing details > summary::-webkit-details-marker { display: none; }
+.landing details .lp-faq-icon { transition: transform 0.3s ease; }
 .landing details[open] .lp-faq-icon { transform: rotate(45deg); }
 .landing details[open] .lp-faq-body { animation: lp-faq-in 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
-@keyframes lp-faq-in { from { opacity: 0; transform: translateY(-4px); } }
+@keyframes lp-faq-in { from { opacity: 0; transform: translateY(-6px); } }
 
 @media (prefers-reduced-motion: reduce) {
-    html:has(body.landing) { scroll-behavior: auto; }
-    .lp-float, .lp-float-slow, .lp-glow, .lp-spin-slow, .lp-particle, .lp-text-shine, .lp-marquee { animation: none !important; }
-    .lp-particle { display: none; }
-    .js .lp-reveal { opacity: 1; transform: none; transition: none; }
-    .js .lp-line { stroke-dashoffset: 0; animation: none !important; }
-    .js .lp-bar { transform: none; animation: none !important; }
-    .lp-tilt { transition: none; }
+    .landing *, .landing *::before, .landing *::after { animation: none !important; transition: none !important; }
+    .js .lp-hero-title { visibility: visible; }
+    .js .lp-reveal { opacity: 1; transform: none; }
+    .js .lp-ecg path, .lp-draw-loop { stroke-dashoffset: 0; }
+    .lp-spine { display: none; }
     .js .lp-loader { display: none; }
-    .lp-border-glow::before, .lp-loader-mark, .group:hover .lp-icon-bounce, .landing details[open] .lp-faq-body { animation: none !important; }
-    .lp-hero-slide, .lp-hero-floats, .lp-hero-floats [data-depth] > *, .lp-hero-indicator, .lp-copy-line > span { transition: none; filter: none; }
-    .lp-orbit, .lp-floor, .lp-beam, .lp-hero-slide::before { animation: none !important; }
-    .lp-hero-slide .lp-pop, .lp-hero-slide .lp-hbar, .lp-hero-slide .lp-scan, .lp-hero-slide .lp-flame, .lp-hero-slide .lp-today, .lp-hero-progress { animation: none !important; }
-    .lp-shine-btn::after { display: none; }
+    .js .lp-reveal:not(.is-in) .lp-set-no { background-size: 100% 100%; }
+    .js .lp-report:not(.is-in) .lp-typeline { opacity: 1; transform: none; }
 }
+} /* end landing @layer components */
 
 @media print {
     .no-print { display: none !important; }

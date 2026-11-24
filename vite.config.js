@@ -12,6 +12,10 @@ export default defineConfig({
                 bunny('Instrument Sans', {
                     weights: [400, 500, 600, 700],
                 }),
+                // Landing page only (welcome.blade.php); not preloaded so other pages don't fetch them.
+                bunny('Anton', { weights: [400], preload: false }),
+                bunny('Inter Tight', { weights: [400, 500, 600, 700, 800], preload: false }),
+                bunny('JetBrains Mono', { weights: [500, 700], preload: false }),
             ],
         }),
         tailwindcss(),

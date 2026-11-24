@@ -1,32 +1,26 @@
 @php
     $steps = [
-        ['user', 'Create Your Account', 'Sign up with your name, email and phone. It takes less than a minute.'],
-        ['building', 'Register Your Gym', 'Add your gym name, city and address. Your own gym page and QR code are ready instantly.'],
-        ['card', 'Choose Your Subscription', 'One simple plan with every feature. You pay only for members with an active membership.'],
-        ['chart', 'Manage Your Gym', 'Add plans, members and trainers, collect fees and track attendance from day one.'],
+        ['Register your gym', 'Add your gym name, city and address. Your dashboard, gym page and QR codes are ready at once.'],
+        ['Add plans & trainers', 'Set up membership plans, invite trainers and import your members from Excel or CSV.'],
+        ['Members join & check in', 'Members sign up online or by QR, get the app and check in from day one.'],
+        ['Grow', 'Collect fees, convert enquiries and keep members coming back with streaks and AI Coach.'],
     ];
 @endphp
-<section id="how-it-works" data-lp-section class="relative overflow-hidden border-y border-ink-700 bg-ink-900 py-14 sm:py-20">
-    <div aria-hidden="true" class="pointer-events-none absolute top-1/2 left-1/2 h-80 w-[50rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-600/10 blur-3xl"></div>
-    <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="mx-auto max-w-2xl text-center">
-            <p class="lp-reveal text-sm font-semibold tracking-[0.2em] text-brand-500 uppercase">How it works</p>
-            <h2 data-split class="lp-reveal mt-3 text-3xl font-bold tracking-tight sm:text-5xl" style="--d: 80ms">Up and running in four steps</h2>
-        </div>
+<section id="how-it-works" data-lp-section class="relative py-16 sm:py-24">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <p class="lp-mono">How it works</p>
+        <h2 data-lp-slam class="lp-display mt-3 text-5xl sm:text-7xl">Four sets. <span class="lp-hl">Done.</span></h2>
 
-        <ol class="relative mt-10 grid gap-10 md:grid-cols-4 md:gap-6">
-            {{-- Connector line (desktop) --}}
-            <div aria-hidden="true" class="absolute top-7 right-[12%] left-[12%] hidden h-px bg-ink-700 md:block"></div>
-            <div aria-hidden="true" data-lp-connector class="absolute top-7 right-[12%] left-[12%] hidden h-0.5 origin-left bg-gradient-to-r from-brand-700 via-brand-500 to-brand-400 shadow-[0_0_14px_rgb(238_68_68/0.8)] md:block"></div>
-            @foreach ($steps as $i => [$icon, $title, $text])
-                <li class="lp-reveal relative text-center" style="--d: {{ $i * 140 }}ms">
-                    <div class="relative mx-auto flex size-14 items-center justify-center rounded-2xl border border-brand-600/40 bg-ink-850 text-brand-400 shadow-[0_0_30px_-6px_rgb(238_68_68/0.7)]">
-                        <x-ui.icon :name="$icon" class="size-6" />
-                        <span class="absolute -top-2 -right-2 flex size-6 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">{{ $i + 1 }}</span>
-                    </div>
-                    <p class="mt-6 text-xs font-semibold tracking-widest text-zinc-500 uppercase">Step {{ $i + 1 }}</p>
-                    <h3 class="mt-1 text-lg font-semibold">{{ $title }}</h3>
-                    <p class="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-zinc-400">{{ $text }}</p>
+        <svg data-lp-ecg data-lp-ecg-scrub class="lp-ecg mt-10 hidden h-16 w-full lg:block" viewBox="0 0 1200 64" preserveAspectRatio="none" aria-hidden="true">
+            <path pathLength="1" d="M0 40 H140 l14 -30 l16 50 l14 -36 l10 16 H440 l14 -30 l16 50 l14 -36 l10 16 H740 l14 -30 l16 50 l14 -36 l10 16 H1040 l14 -30 l16 50 l14 -36 l10 16 H1200" fill="none" stroke="var(--color-clay)" stroke-width="4" stroke-linejoin="round" />
+        </svg>
+
+        <ol class="mt-8 grid gap-0 border-t-2 border-forest sm:grid-cols-2 lg:mt-2 lg:grid-cols-4 lg:border-t-0">
+            @foreach ($steps as $i => [$title, $copy])
+                <li class="lp-reveal border-b-2 border-forest py-6 sm:px-5 lg:border-b-0 lg:border-l-2 {{ $i % 2 === 1 ? 'sm:border-l-2' : '' }}" style="--d: {{ $i * 160 }}ms">
+                    <span class="lp-set-no lp-display block text-8xl sm:text-9xl" style="--d: {{ $i * 160 + 200 }}ms">{{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</span>
+                    <h3 class="lp-display mt-4 text-3xl">{{ $title }}</h3>
+                    <p class="mt-2 font-medium text-forest/75">{{ $copy }}</p>
                 </li>
             @endforeach
         </ol>
