@@ -168,6 +168,27 @@
             </ul>
         </div>
     @else
+        <div wire:poll.30s class="card card-body mb-6 max-w-3xl">
+            <div class="flex items-center justify-between gap-3">
+                <h2 class="card-title">System status</h2>
+                <span class="text-xs text-gray-500">Updates every 30 seconds</span>
+            </div>
+            <p class="mt-1 text-sm text-gray-500">Scheduled and automatic notifications only go out when the scheduler (cron) and the queue run on their own.</p>
+            <ul class="mt-4 divide-y divide-gray-100 text-sm">
+                @foreach ($health as $key => $check)
+                    <li wire:key="health-{{ $key }}" class="flex items-start gap-3 py-2.5">
+                        <span class="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full {{ $check['ok'] ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700' }}">
+                            <x-ui.icon :name="$check['ok'] ? 'check' : 'x'" class="size-3.5" />
+                        </span>
+                        <span class="min-w-0">
+                            <span class="block font-medium text-gray-900">{{ $check['label'] }}</span>
+                            <span class="block break-words text-xs text-gray-500">{{ $check['detail'] }}</span>
+                        </span>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+
         <form wire:submit="saveRules" class="card card-body max-w-xl space-y-4">
             <h2 class="card-title">Rules for all gyms</h2>
             <div class="grid gap-3 sm:grid-cols-2">
