@@ -46,7 +46,7 @@ class Profile extends Component
         $gym = $this->gym();
         $this->profile = [
             'name' => $gym->name, 'phone' => (string) $gym->phone, 'email' => (string) $gym->email,
-            'address' => (string) $gym->address, 'city_id' => (string) $gym->city_id, 'description' => (string) $gym->description,
+            'address' => (string) $gym->address, 'map_url' => (string) $gym->map_url, 'city_id' => (string) $gym->city_id, 'description' => (string) $gym->description,
         ];
         $all = $gym->allSettings();
         $this->settings = [
@@ -71,6 +71,7 @@ class Profile extends Component
             'profile.phone' => 'nullable|string|max:20',
             'profile.email' => 'nullable|email|max:255',
             'profile.address' => 'nullable|string|max:255',
+            'profile.map_url' => 'nullable|url:http,https|max:500',
             // An active city, or the gym's current one even if the Super Admin has since switched it off.
             'profile.city_id' => ['required', Rule::exists('cities', 'id')->where(fn ($q) => $q->where('is_active', true)->orWhere('id', $this->gym()->city_id))],
             'profile.description' => 'nullable|string|max:3000',

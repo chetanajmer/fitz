@@ -69,6 +69,7 @@
                         @if ($gym->phone)<li class="flex items-center gap-2"><x-ui.icon name="phone" class="size-4 shrink-0 opacity-70" /> <a href="tel:{{ $gym->phone }}" class="hover:underline">{{ $gym->phone }}</a></li>@endif
                         @if ($gym->email)<li class="flex items-center gap-2"><x-ui.icon name="mail" class="size-4 shrink-0 opacity-70" /> <a href="mailto:{{ $gym->email }}" class="hover:underline">{{ $gym->email }}</a></li>@endif
                         @if ($gym->address || $gym->city)<li class="flex items-start gap-2"><x-ui.icon name="map-pin" class="mt-0.5 size-4 shrink-0 opacity-70" /> {{ trim($gym->address.', '.$gym->city, ', ') }}</li>@endif
+                        @if ($gym->map_url)<li class="flex items-center gap-2"><x-ui.icon name="map-pin" class="size-4 shrink-0 opacity-70" /> <a href="{{ $gym->map_url }}" target="_blank" rel="noopener noreferrer" class="font-medium hover:underline">Get directions</a></li>@endif
                     </ul>
                     @if ($social)
                         <div class="mt-4 flex flex-wrap gap-2">
