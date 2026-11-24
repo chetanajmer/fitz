@@ -8,6 +8,7 @@ use App\Livewire\Auth\Login;
 use App\Mail\LoginCodeMail;
 use App\Models\Gym;
 use App\Models\User;
+use App\Services\MemberService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -114,14 +115,38 @@ class OtpLoginTest extends TestCase
         $this->assertSame($this->owner->id, Auth::id());
     }
 
-    public function test_unknown_pending_and_super_admin_identifiers_get_no_code(): void
+    public function test_a_pending_registration_sees_its_status_only_after_the_code(): void
+    {
+        $this->createMember($this->gym, ['phone' => '9123456781', 'status' => 'pending']);
+
+        $this->get(route('login', ['mode' => 'otp']))->assertOk()->assertSee('Send code');
+
+        Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '9123456781')->call('sendCode')
+            ->assertHasNoErrors()->assertSet('codeSent', true)
+            ->assertDontSee('Waiting for approval') // nothing is revealed before the code
+            ->assertSee('Enter it to see your registration status')
+            ->set('code', $this->lastSmsCode())->call('verifyCode')
+            ->assertHasNoErrors()
+            ->assertSee('Waiting for approval')->assertSee('Mobile Gym');
+        $this->assertNull(Auth::id());
+    }
+
+    public function test_a_declined_registration_gets_a_kind_message_and_other_options(): void
+    {
+        $member = $this->createMember($this->gym, ['phone' => '9123456782', 'status' => 'pending']);
+        $this->inGym($this->gym, fn () => app(MemberService::class)->declineRegistration($member));
+
+        Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '9123456782')->call('sendCode')
+            ->set('code', $this->lastSmsCode())->call('verifyCode')
+            ->assertSee("Sorry, Mobile Gym couldn't approve your registration", false)
+            ->assertSeeHtml(route('gyms.browse'))->assertSeeHtml(route('member.join'));
+        $this->assertNull(Auth::id());
+    }
+
+    public function test_unknown_and_super_admin_identifiers_get_no_code(): void
     {
         Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '9123456780')->call('sendCode')
             ->assertHasErrors('identifier')->assertSee('No active account uses this mobile number');
-
-        $this->createMember($this->gym, ['phone' => '9123456781', 'status' => 'pending']);
-        Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '9123456781')->call('sendCode')
-            ->assertHasErrors('identifier')->assertSee('waiting for the gym');
 
         $admin = User::factory()->create(['email' => 'boss@gymai.test']);
         $admin->assignRole('super_admin');

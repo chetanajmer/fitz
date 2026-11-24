@@ -93,6 +93,10 @@
                         </div>
                         <p class="hint">Open <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" class="font-medium text-brand-600 hover:underline">Google Maps</a>, find your gym, tap <strong>Share</strong> and paste the link here. Members use it for directions.</p>
                     </x-ui.field>
+                    <x-ui.field label="Locality / area" name="locality" hint="Members find gyms by area. Pick yours from the list or type it.">
+                        <input wire:model="locality" id="locality" list="register-localities" class="input" placeholder="e.g. Jagatpura" autocomplete="off">
+                        <datalist id="register-localities">@foreach ($localities as $l)<option value="{{ $l }}">@endforeach</datalist>
+                    </x-ui.field>
                     <x-ui.field label="Address" name="address">
                         <input wire:model="address" id="address" class="input" placeholder="Shop no., street, area">
                     </x-ui.field>

@@ -5,6 +5,7 @@ namespace App\Livewire\Gym\Settings;
 use App\Models\City;
 use App\Models\Gym;
 use App\Models\GymPhoto;
+use App\Models\Locality;
 use App\Services\GymProfileService;
 use App\Services\QrCodeService;
 use Illuminate\Contracts\View\View;
@@ -46,7 +47,7 @@ class Profile extends Component
         $gym = $this->gym();
         $this->profile = [
             'name' => $gym->name, 'phone' => (string) $gym->phone, 'email' => (string) $gym->email,
-            'address' => (string) $gym->address, 'map_url' => (string) $gym->map_url, 'city_id' => (string) $gym->city_id, 'description' => (string) $gym->description,
+            'address' => (string) $gym->address, 'map_url' => (string) $gym->map_url, 'city_id' => (string) $gym->city_id, 'locality' => (string) $gym->locality?->name, 'description' => (string) $gym->description,
         ];
         $all = $gym->allSettings();
         $this->settings = [
@@ -74,6 +75,7 @@ class Profile extends Component
             'profile.map_url' => 'nullable|url:http,https|max:500',
             // An active city, or the gym's current one even if the Super Admin has since switched it off.
             'profile.city_id' => ['required', Rule::exists('cities', 'id')->where(fn ($q) => $q->where('is_active', true)->orWhere('id', $this->gym()->city_id))],
+            'profile.locality' => 'nullable|string|max:80',
             'profile.description' => 'nullable|string|max:3000',
             'settings.primary_color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'settings.secondary_color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
@@ -149,6 +151,8 @@ class Profile extends Component
             'gymPhotos' => GymPhoto::orderBy('sort_order')->get(),
             'cities' => City::where(fn ($q) => $q->where('is_active', true)->orWhere('id', $gym->city_id))->orderBy('name')->get(['id', 'name', 'state']),
             'joinQr' => $qr->svg($gym->joinUrl(), 220),
+            'localities' => Locality::where('city_id', (int) $this->profile['city_id'])->orderBy('name')->pluck('name'),
+            'completeness' => $gym->profileCompleteness(),
         ]);
     }
 }

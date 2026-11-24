@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\City;
 use App\Models\Gym;
+use App\Models\Locality;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -62,8 +64,57 @@ class CityService
 
     public function assignToGym(Gym $gym, ?City $city): void
     {
+        if ((int) $gym->city_id !== (int) $city?->id) {
+            $gym->locality_id = null; // a locality belongs to one city
+        }
+
         $gym->city_id = $city?->id;
         $gym->city = $city?->name;
+    }
+
+    /**
+     * Set the gym's locality by name within its city: an existing one (matched case-insensitively)
+     * or a new one added to the city's list. A blank name clears it.
+     */
+    public function assignLocality(Gym $gym, ?string $name): void
+    {
+        $name = Str::squish((string) $name);
+
+        if ($name === '' || ! $gym->city_id) {
+            $gym->locality_id = null;
+
+            return;
+        }
+
+        $locality = Locality::where('city_id', $gym->city_id)->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->first();
+
+        if (! $locality) {
+            $locality = new Locality(['name' => $name]);
+            $locality->city_id = $gym->city_id;
+            $locality->save();
+        }
+
+        $gym->locality_id = $locality->id;
+    }
+
+    public function renameLocality(Locality $locality, string $name): Locality
+    {
+        $name = Str::squish($name);
+        $taken = Locality::where('city_id', $locality->city_id)->whereKeyNot($locality->id)->whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->exists();
+
+        if ($taken) {
+            throw ValidationException::withMessages(['localityName' => "{$name} is already in this city's list."]);
+        }
+
+        $locality->update(['name' => $name]);
+
+        return $locality;
+    }
+
+    /** Remove a locality; its gyms keep their city and simply have no locality. */
+    public function deleteLocality(Locality $locality): void
+    {
+        $locality->delete();
     }
 
     protected function ensureNameIsFree(string $name, ?int $ignoreId = null): void

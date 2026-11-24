@@ -3,6 +3,7 @@
 namespace App\Livewire\Auth;
 
 use App\Models\City;
+use App\Models\Locality;
 use App\Models\PlatformSetting;
 use App\Models\PricingRate;
 use App\Services\GymRegistrationService;
@@ -31,6 +32,8 @@ class RegisterGym extends Component
     public string $address = '';
 
     public string $map_url = '';
+
+    public string $locality = '';
 
     public string $owner_name = '';
 
@@ -64,6 +67,7 @@ class RegisterGym extends Component
             2 => [
                 'gym_name' => 'required|string|min:2|max:120',
                 'map_url' => 'nullable|url:http,https|max:500',
+                'locality' => 'nullable|string|max:80',
                 'address' => 'nullable|string|max:255',
             ],
             3 => [
@@ -151,6 +155,7 @@ class RegisterGym extends Component
             'cities' => City::active()->orderBy('name')->get(['id', 'name', 'state']),
             'open' => PlatformSetting::get('allow_registrations', '1') === '1',
             'steps' => self::STEPS,
+            'localities' => Locality::where('city_id', (int) $this->city_id)->orderBy('name')->pluck('name'),
         ]);
     }
 }

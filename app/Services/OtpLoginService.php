@@ -12,6 +12,7 @@ use App\Models\Member;
 use App\Models\Scopes\GymScope;
 use App\Models\User;
 use App\Tenancy\TenantManager;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
@@ -25,6 +26,9 @@ use Illuminate\Support\Str;
  */
 class OtpLoginService
 {
+    /** Pseudo-account for checking the status of a registration that cannot sign in yet. */
+    public const STATUS = 'status';
+
     public function __construct(
         protected SmsSender $sms,
         protected MemberService $members,
@@ -107,8 +111,48 @@ class OtpLoginService
             : $this->sms->send($destination, "{$code} is your Gymai sign-in OTP. It is valid for {$minutes} minutes. Do not share it with anyone.");
     }
 
+    /**
+     * Gym registrations of this email or number that cannot sign in yet: waiting for approval,
+     * declined (removed by the gym) or inactive. Newest first. Shown only after an OTP check.
+     *
+     * @return Collection<int, Member>
+     */
+    public function registrations(string $identifier): Collection
+    {
+        $destination = self::destination($identifier);
+
+        return Member::withoutGlobalScope(GymScope::class)->withTrashed()->with('gym')
+            ->when(self::channel($identifier) === 'email', fn ($q) => $q->whereRaw('LOWER(email) = ?', [$destination]), fn ($q) => $q->where('phone_digits', $destination))
+            ->where(fn ($q) => $q->whereNotNull('deleted_at')->orWhere('status', '!=', MemberStatus::Active->value))
+            ->latest('id')
+            ->get();
+    }
+
+    /** Check a STATUS code and return the registrations to show. */
+    public function verifyStatusCode(string $identifier, string $code): Collection
+    {
+        $this->checkCode($identifier, self::STATUS, $code);
+
+        return $this->registrations($identifier);
+    }
+
     /** Check the code and return the user to sign in (a member's portal account is created on first use). */
     public function verifyCode(string $identifier, string $account, string $code): User
+    {
+        $this->checkCode($identifier, $account, $code);
+
+        [$type, $id] = explode(':', $account);
+
+        if ($type === 'staff') {
+            return User::findOrFail((int) $id);
+        }
+
+        $member = Member::withoutGlobalScope(GymScope::class)->with('gym')->findOrFail((int) $id);
+
+        return $this->tenant->runAs($member->gym, fn () => $this->members->portalUserFor($member));
+    }
+
+    protected function checkCode(string $identifier, string $account, string $code): void
     {
         $this->assertAccount($identifier, $account);
         $destination = self::destination($identifier);
@@ -142,21 +186,16 @@ class OtpLoginService
         if ($failure) {
             throw $failure;
         }
-
-        [$type, $id] = explode(':', $account);
-
-        if ($type === 'staff') {
-            return User::findOrFail((int) $id);
-        }
-
-        $member = Member::withoutGlobalScope(GymScope::class)->with('gym')->findOrFail((int) $id);
-
-        return $this->tenant->runAs($member->gym, fn () => $this->members->portalUserFor($member));
     }
 
     protected function assertAccount(string $identifier, string $account): void
     {
-        if (! in_array($account, array_column($this->accounts($identifier), 'key'), true)) {
+        // STATUS: no account can sign in yet, but a registration exists (pending, declined or inactive).
+        $allowed = $account === self::STATUS
+            ? $this->accounts($identifier) === [] && $this->registrations($identifier)->isNotEmpty()
+            : in_array($account, array_column($this->accounts($identifier), 'key'), true);
+
+        if (! $allowed) {
             throw new ApiException('No active account found for this email or mobile number.', 'ACCOUNT_NOT_FOUND', 404);
         }
     }

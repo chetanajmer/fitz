@@ -4,7 +4,9 @@ namespace App\Services;
 
 use App\Models\Gym;
 use App\Models\GymPhoto;
+use App\Models\MembershipPlan;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class GymProfileService
@@ -12,7 +14,7 @@ class GymProfileService
     public function __construct(protected CityService $cities) {}
 
     /**
-     * @param  array  $profile  name, phone, email, address, description, city_id (from the managed list)
+     * @param  array  $profile  name, phone, email, address, description, city_id (from the managed list), locality (a name in that city)
      * @param  array  $settings  primary_color, secondary_color, tagline, opening_hours, facilities, social
      */
     public function update(Gym $gym, array $profile, array $settings, ?UploadedFile $logo = null, ?UploadedFile $banner = null): Gym
@@ -21,7 +23,11 @@ class GymProfileService
             $this->cities->assignToGym($gym, $this->cities->resolve($profile['city_id'] ? (int) $profile['city_id'] : null));
         }
 
-        $gym->fill(collect($profile)->except(['city', 'city_id'])->all());
+        if (array_key_exists('locality', $profile)) {
+            $this->cities->assignLocality($gym, $profile['locality']);
+        }
+
+        $gym->fill(collect($profile)->except(['city', 'city_id', 'locality'])->all());
 
         $current = $gym->allSettings();
         // Merge over the current settings so keys managed elsewhere (e.g. streak rules) are kept.
@@ -119,5 +125,47 @@ class GymProfileService
         }
 
         return $out;
+    }
+
+    /**
+     * What a new member sees about a gym before joining (website pop-up and the app's sign-up).
+     * Only what the gym published on its public page: never members, staff or private settings.
+     *
+     * @return array<string, mixed>
+     */
+    public function publicSummary(Gym $gym): array
+    {
+        $gym->loadMissing('locality');
+
+        return [
+            'gym_id' => $gym->id,
+            'name' => $gym->name,
+            'tagline' => $gym->setting('tagline'),
+            'logo_url' => $gym->logoUrl(),
+            'banner_url' => $gym->bannerUrl(),
+            'description' => $gym->description,
+            'locality' => $gym->locality?->name,
+            'city' => $gym->city,
+            'address' => $gym->address,
+            'map_url' => $gym->map_url,
+            'directions_url' => $gym->directionsUrl(),
+            'phone' => $gym->phone,
+            'opening_hours' => collect($gym->setting('opening_hours', []))->map(fn (array $h, string $day) => [
+                'day' => ucfirst($day),
+                'closed' => (bool) $h['closed'],
+                'hours' => $h['closed'] ? null : Carbon::createFromFormat('H:i', $h['open'])->format('g:i A').' – '.Carbon::createFromFormat('H:i', $h['close'])->format('g:i A'),
+            ])->values()->all(),
+            'facilities' => array_values(array_filter($gym->setting('facilities', []))),
+            'photos' => $gym->photos()->limit(6)->get()->map(fn (GymPhoto $p) => ['url' => $p->url(), 'caption' => $p->caption])->all(),
+            'plans' => $gym->plans()->where('is_active', true)->where('is_public', true)->orderBy('sort_order')->orderBy('price')->get()
+                ->map(fn (MembershipPlan $p) => [
+                    'name' => $p->name,
+                    'duration' => $p->durationLabel(),
+                    'price' => (float) $p->price,
+                    'price_label' => money($p->price, false),
+                    'features' => array_values($p->features ?? []),
+                ])->all(),
+            'public_url' => $gym->publicUrl(),
+        ];
     }
 }

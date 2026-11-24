@@ -5,10 +5,13 @@ namespace App\Livewire\PublicSite;
 use App\Exceptions\ApiException;
 use App\Models\City;
 use App\Models\Gym;
+use App\Models\Locality;
 use App\Models\Member;
 use App\Models\Scopes\GymScope;
+use App\Services\GymProfileService;
 use App\Services\MemberSignupService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -16,8 +19,8 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * Website sign-up for new members, one step at a time: city → gym in that city → details →
- * phone OTP. Same rules as the app sign-up (MemberSignupService): the member is created
+ * Website sign-up for new members, one step at a time: city (and locality, in cities that have them)
+ * → gym in that city → details → phone OTP. Each gym's public profile can be opened before choosing it. Same rules as the app sign-up (MemberSignupService): the member is created
  * pending and the gym approves them. Members at the gym's desk use the QR form instead.
  */
 #[Layout('components.layouts.guest', ['wide' => true])]
@@ -31,8 +34,20 @@ class MemberSignup extends Component
     #[Locked]
     public ?int $cityId = null;
 
+    /** null = all localities of the city. */
+    #[Locked]
+    public ?int $localityId = null;
+
+    /** The city was chosen and its localities are shown (still step 1). */
+    #[Locked]
+    public bool $choosingLocality = false;
+
     #[Locked]
     public ?int $gymId = null;
+
+    /** The gym whose profile is open in the pop-up. */
+    #[Locked]
+    public ?int $previewGymId = null;
 
     #[Locked]
     public ?string $memberCode = null;
@@ -43,6 +58,8 @@ class MemberSignup extends Component
     public string $citySearch = '';
 
     public string $gymSearch = '';
+
+    public string $localitySearch = '';
 
     public string $name = '';
 
@@ -72,9 +89,42 @@ class MemberSignup extends Component
     public function selectCity(int $cityId): void
     {
         $this->cityId = City::active()->findOrFail($cityId)->id;
+        $this->localityId = null;
         $this->gymId = null;
         $this->gymSearch = '';
+        $this->localitySearch = '';
+
+        // Cities with localities ask for the area first; others go straight to the gym list.
+        $this->choosingLocality = $this->localities()->isNotEmpty();
+        $this->step = $this->choosingLocality ? 1 : 2;
+    }
+
+    /** null = every locality of the city. */
+    public function selectLocality(?int $localityId = null): void
+    {
+        abort_unless($this->cityId, 404);
+
+        $this->localityId = $localityId === null ? null : Locality::where('city_id', $this->cityId)->findOrFail($localityId)->id;
+        $this->gymSearch = '';
         $this->step = 2;
+    }
+
+    public function changeCity(): void
+    {
+        $this->reset('cityId', 'localityId', 'choosingLocality', 'gymId', 'gymSearch', 'localitySearch');
+        $this->step = 1;
+    }
+
+    public function viewGym(int $gymId): void
+    {
+        abort_unless($this->cityId, 404);
+
+        $this->previewGymId = Gym::operational()->where('city_id', $this->cityId)->findOrFail($gymId)->id;
+    }
+
+    public function closeGym(): void
+    {
+        $this->previewGymId = null;
     }
 
     public function selectGym(int $gymId): void
@@ -82,6 +132,7 @@ class MemberSignup extends Component
         abort_unless($this->cityId, 404);
 
         $this->gymId = Gym::operational()->where('city_id', $this->cityId)->findOrFail($gymId)->id;
+        $this->previewGymId = null;
         $this->step = 3;
     }
 
@@ -175,6 +226,21 @@ class MemberSignup extends Component
         ];
     }
 
+    /**
+     * The city's localities that have at least one gym members can join, with the number of gyms.
+     *
+     * @return Collection<int, Locality>
+     */
+    protected function localities(): Collection
+    {
+        return $this->cityId
+            ? Locality::where('city_id', $this->cityId)
+                ->whereHas('gyms', fn ($q) => $q->operational())
+                ->withCount(['gyms' => fn ($q) => $q->operational()])
+                ->orderBy('name')->get()
+            : new Collection;
+    }
+
     protected function city(): ?City
     {
         return $this->cityId ? City::find($this->cityId) : null;
@@ -196,8 +262,15 @@ class MemberSignup extends Component
                     ->when(trim($this->citySearch) !== '', fn ($q) => $q->where(fn ($w) => $w->where('name', 'like', $cityLike)->orWhere('state', 'like', $cityLike)))
                     ->orderBy('name')->get()
                 : collect(),
+            'localities' => $this->step === 1 && $this->choosingLocality
+                ? $this->localities()->filter(fn (Locality $l) => trim($this->localitySearch) === '' || str_contains(mb_strtolower($l->name), mb_strtolower(trim($this->localitySearch))))->values()
+                : collect(),
+            'cityGymCount' => $this->cityId ? Gym::operational()->where('city_id', $this->cityId)->count() : 0,
+            'locality' => $this->localityId ? Locality::find($this->localityId) : null,
+            'preview' => $this->previewGymId ? app(GymProfileService::class)->publicSummary(Gym::findOrFail($this->previewGymId)) : null,
             'gyms' => $this->step === 2 && $this->cityId
-                ? Gym::operational()->where('city_id', $this->cityId)
+                ? Gym::operational()->with('locality')->where('city_id', $this->cityId)
+                    ->when($this->localityId, fn ($q, $id) => $q->where('locality_id', $id))
                     ->when($search !== '', fn ($q) => $q->where('name', 'like', '%'.addcslashes($search, '%_\\').'%'))
                     ->orderBy('name')->limit(30)->get()
                 : collect(),

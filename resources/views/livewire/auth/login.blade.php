@@ -7,7 +7,32 @@
         <button type="button" wire:click="$set('mode', 'otp')" class="rounded-md px-3 py-2 {{ $mode === 'otp' ? 'bg-white shadow-sm' : 'text-gray-500' }}">OTP</button>
     </div>
 
-    @if ($mode === 'password')
+    @if ($statuses)
+        {{-- A verified number that cannot sign in yet: where each registration stands. --}}
+        <div class="mt-6 space-y-3">
+            @foreach ($statuses as $i => $s)
+                <div wire:key="status-{{ $i }}" class="rounded-lg border border-gray-200 p-4 text-sm dark:border-ink-700">
+                    <p class="font-semibold">{{ $s['gym'] }}</p>
+                    <p class="text-xs text-gray-500">Registered {{ $s['registered_on'] }}@if ($s['member_code']) · Member ID {{ $s['member_code'] }}@endif</p>
+                    @if ($s['status'] === 'pending')
+                        <p class="mt-3 flex items-start gap-2"><x-ui.icon name="clock" class="mt-0.5 size-5 shrink-0 text-amber-500" />
+                            <span><strong>Waiting for approval.</strong> {{ $s['gym'] }} hasn't confirmed your registration yet. You can sign in here as soon as they do.</span></p>
+                    @elseif ($s['status'] === 'declined')
+                        <p class="mt-3 text-2xl" aria-hidden="true">😔</p>
+                        <p class="mt-1"><strong>Sorry, {{ $s['gym'] }} couldn't approve your registration.</strong> This can happen if the gym is full or couldn't confirm your details. Please contact the gym, or find another gym near you.</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <a href="{{ route('gyms.browse') }}" class="btn-secondary btn-sm">Browse gyms</a>
+                            <a href="{{ route('member.join') }}" class="btn-primary btn-sm">Join another gym</a>
+                        </div>
+                    @else
+                        <p class="mt-3 flex items-start gap-2"><x-ui.icon name="warning" class="mt-0.5 size-5 shrink-0 text-gray-400" />
+                            <span><strong>Your membership is inactive.</strong> Please contact {{ $s['gym'] }} to reactivate it.</span></p>
+                    @endif
+                </div>
+            @endforeach
+            <button type="button" wire:click="changeIdentifier" class="w-full text-center text-sm text-gray-500 hover:underline">Use another number or email</button>
+        </div>
+    @elseif ($mode === 'password')
         <form wire:submit="login" class="mt-6 space-y-4">
             <x-ui.field label="Email or mobile number" name="email" hint="Gym staff can use their verified mobile number.">
                 <input wire:model="email" id="email" type="text" autocomplete="username" autofocus class="input">
@@ -46,7 +71,7 @@
         </form>
     @else
         <form wire:submit="verifyCode" class="mt-6 space-y-4">
-            <p class="text-sm text-gray-600">We sent a code to <strong>{{ $this->sentTo() }}</strong>.
+            <p class="text-sm text-gray-600">We sent a code to <strong>{{ $this->sentTo() }}</strong>.@if ($account === \App\Services\OtpLoginService::STATUS) Enter it to see your registration status.@endif
                 <button type="button" wire:click="changeIdentifier" class="font-medium text-indigo-600 hover:underline">Change</button></p>
             <x-ui.field label="Code" name="code">
                 <input wire:model="code" id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="{{ config('gymai.otp.length', 6) }}" autofocus class="input tracking-widest">

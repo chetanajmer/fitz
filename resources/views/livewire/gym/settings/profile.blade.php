@@ -3,6 +3,17 @@
         <x-slot:actions><a href="{{ $gym->publicUrl() }}" target="_blank" class="btn-secondary"><x-ui.icon name="globe" class="size-4" /> View public page</a></x-slot:actions>
     </x-ui.page-header>
 
+    @if ($completeness['percent'] < 100)
+        <div class="card card-body mb-6">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="text-sm font-semibold">Profile {{ $completeness['percent'] }}% complete</p>
+                <p class="text-xs text-gray-500">New members see this profile when they choose a gym to join.</p>
+            </div>
+            <div class="mt-2 h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-brand-600" style="width: {{ $completeness['percent'] }}%"></div></div>
+            <p class="mt-2 text-sm text-gray-600">Still missing: {{ implode(', ', $completeness['missing']) }}.</p>
+        </div>
+    @endif
+
     <div class="mb-6 flex gap-6 overflow-x-auto border-b border-gray-200">
         @foreach (['profile' => 'Profile & branding', 'hours' => 'Hours & facilities', 'photos' => 'Photos', 'qr' => 'QR registration'] as $key => $label)
             <button wire:key="tab-{{ $key }}" wire:click="$set('tab', '{{ $key }}')" class="tab {{ $tab === $key ? 'tab-active' : '' }}">{{ $label }}</button>
@@ -23,12 +34,16 @@
                             <x-ui.field label="Address" name="profile.address"><input wire:model="profile.address" class="input"></x-ui.field>
                             <x-ui.field label="Google Maps link" name="profile.map_url" hint="Paste your gym's location link from Google Maps."><input wire:model="profile.map_url" type="url" class="input" placeholder="https://maps.app.goo.gl/…"></x-ui.field>
                             <x-ui.field label="City" name="profile.city_id" required hint="Missing your city? Ask Gymai support to add it.">
-                                <select wire:model="profile.city_id" class="input">
+                                <select wire:model.live="profile.city_id" class="input">
                                     <option value="">Select city</option>
                                     @foreach ($cities as $c)
                                         <option value="{{ $c->id }}">{{ $c->name }}{{ $c->state ? ', '.$c->state : '' }}</option>
                                     @endforeach
                                 </select>
+                            </x-ui.field>
+                            <x-ui.field label="Locality / area" name="profile.locality" hint="Members filter gyms by area when they join. Pick one from the list or type a new one.">
+                                <input wire:model="profile.locality" list="gym-localities" class="input" placeholder="e.g. Jagatpura" autocomplete="off">
+                                <datalist id="gym-localities">@foreach ($localities as $l)<option value="{{ $l }}">@endforeach</datalist>
                             </x-ui.field>
                             <x-ui.field label="Description" name="profile.description" class="sm:col-span-2"><textarea wire:model="profile.description" rows="4" class="input" placeholder="Tell visitors about your gym…"></textarea></x-ui.field>
                         </div>

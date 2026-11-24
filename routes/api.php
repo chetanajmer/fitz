@@ -34,7 +34,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
 
     // New member sign-up: verify phone, pick a city and a gym in it, send details (member starts pending).
     Route::get('cities', [CityController::class, 'index'])->middleware('throttle:60,1')->name('cities.index');
+    Route::get('cities/{cityId}/localities', [CityController::class, 'localities'])->whereNumber('cityId')->middleware('throttle:60,1')->name('cities.localities');
     Route::get('cities/{cityId}/gyms', [CityController::class, 'gyms'])->whereNumber('cityId')->middleware('throttle:60,1')->name('cities.gyms');
+    Route::get('gyms/{gymId}/profile', [CityController::class, 'gymProfile'])->whereNumber('gymId')->middleware('throttle:60,1')->name('gyms.profile');
     Route::prefix('auth/register')->name('auth.register.')->group(function () {
         Route::post('send-otp', [SignupController::class, 'sendOtp'])->middleware('throttle:otp-send')->name('send-otp');
         Route::post('verify-otp', [SignupController::class, 'verifyOtp'])->middleware('throttle:otp-verify')->name('verify-otp');

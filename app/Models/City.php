@@ -31,6 +31,11 @@ class City extends Model
         return $this->hasMany(Gym::class);
     }
 
+    public function localities(): HasMany
+    {
+        return $this->hasMany(Locality::class)->orderBy('name');
+    }
+
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);

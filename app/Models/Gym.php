@@ -74,6 +74,11 @@ class Gym extends Model
         return $this->belongsTo(City::class, 'city_id');
     }
 
+    public function locality(): BelongsTo
+    {
+        return $this->belongsTo(Locality::class);
+    }
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
@@ -97,6 +102,32 @@ class Gym extends Model
     public function saasInvoices(): HasMany
     {
         return $this->hasMany(SaasInvoice::class);
+    }
+
+    /**
+     * How complete the public profile is (shown to members choosing a gym), and what is missing.
+     *
+     * @return array{percent: int, missing: list<string>}
+     */
+    public function profileCompleteness(): array
+    {
+        $checks = [
+            'Logo' => (bool) $this->logo_path,
+            'Banner image' => (bool) $this->banner_path,
+            'Description' => filled($this->description),
+            'Phone' => filled($this->phone),
+            'Address' => filled($this->address),
+            'Google Maps link' => filled($this->map_url),
+            'Locality' => (bool) $this->locality_id,
+            'Opening hours' => ! empty($this->settings['opening_hours'] ?? null),
+            'Gym photos' => $this->photos()->exists(),
+            'A public membership plan' => $this->plans()->where('is_active', true)->where('is_public', true)->exists(),
+        ];
+
+        return [
+            'percent' => (int) round(count(array_filter($checks)) / count($checks) * 100),
+            'missing' => array_keys(array_filter($checks, fn (bool $done) => ! $done)),
+        ];
     }
 
     // ---- Settings -------------------------------------------------------
@@ -178,6 +209,13 @@ class Gym extends Model
     public function publicUrl(): string
     {
         return route('gym.public', $this->slug);
+    }
+
+    /** The gym's own Google Maps link, or a Google Maps search for its name and address. */
+    public function directionsUrl(): string
+    {
+        return $this->map_url ?: 'https://www.google.com/maps/search/?api=1&query='
+            .rawurlencode(collect([$this->name, $this->address, $this->locality?->name, $this->city])->filter()->unique()->implode(', '));
     }
 
     public function joinUrl(): string

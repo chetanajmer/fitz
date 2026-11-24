@@ -1912,6 +1912,34 @@
                     ]
                 },
                 {
+                    "name": "List localities in a city",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cities/1/localities",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cities",
+                                "1",
+                                "localities"
+                            ]
+                        },
+                        "description": "Areas of the city that have gyms, with gyms_count each, plus the city's total gyms_count. Show this after the city: an \"All areas\" choice plus each locality. An empty list means the city has no localities yet: skip straight to the gym list."
+                    },
+                    "response": []
+                },
+                {
                     "name": "Search gyms in a city",
                     "event": [
                         {
@@ -1951,10 +1979,16 @@
                                     "key": "search",
                                     "value": "iron",
                                     "description": "Optional. Part of the gym name, for type-ahead."
+                                },
+                                {
+                                    "key": "locality_id",
+                                    "value": "",
+                                    "description": "Optional: only gyms in this locality (id from List localities)",
+                                    "disabled": true
                                 }
                             ]
                         },
-                        "description": "Step 2: gyms in the chosen city, filtered as the user types (`search`, optional). Up to 30 results, A to Z. Only active gyms are returned.\n\n`404 CITY_NOT_FOUND` if the city is not live."
+                        "description": "Step 2: gyms in the chosen city, filtered as the user types (`search`, optional). Up to 30 results, A to Z. Only active gyms are returned.\n\n`404 CITY_NOT_FOUND` if the city is not live.\n\nOptional locality_id filters to one locality. Each gym now also has `locality` (name or null). Each gym also has `public_url` (its public profile page: open it in the phone's browser, e.g. a \"View gym\" button) and `directions_url` (the gym's Google Maps link, or a Maps search for its address)."
                     },
                     "response": [
                         {
@@ -1984,6 +2018,34 @@
                             "body": "{\n    \"success\": false,\n    \"message\": \"This city is not available on Gymai.\",\n    \"code\": \"CITY_NOT_FOUND\"\n}"
                         }
                     ]
+                },
+                {
+                    "name": "Gym profile (before joining)",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/gyms/1/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "gyms",
+                                "1",
+                                "profile"
+                            ]
+                        },
+                        "description": "The gym's public profile for a \"View gym\" screen before joining: name, tagline, logo_url, banner_url, description, locality, city, address, map_url (the gym's own Maps link or null), directions_url (always set: open it for directions), phone, opening_hours [{day, closed, hours}], facilities [], photos [{url, caption}] (up to 6), plans [{name, duration, price, price_label, features}] (public plans only), public_url. 404 GYM_NOT_FOUND for gyms that are not live."
+                    },
+                    "response": []
                 },
                 {
                     "name": "Send sign-up OTP",

@@ -6,6 +6,7 @@ use App\Exceptions\ApiException;
 use App\Models\Member;
 use App\Models\User;
 use App\Services\MemberOtpService;
+use App\Services\MemberSignupService;
 use App\Services\OtpLoginService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -13,6 +14,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
@@ -23,7 +25,8 @@ use Livewire\Component;
 #[Title('Sign in')]
 class Login extends Component
 {
-    /** password | otp */
+    /** password | otp (?mode=otp opens the OTP tab, e.g. from "Already a member? Sign in"). */
+    #[Url(except: 'password')]
     public string $mode = 'password';
 
     /** Email, or the verified sign-in mobile of a gym admin / trainer. */
@@ -44,6 +47,13 @@ class Login extends Component
     public bool $codeSent = false;
 
     public string $code = '';
+
+    /**
+     * After an OTP check for a number that cannot sign in yet: its registrations.
+     *
+     * @var list<array{gym: string, status: string, member_code: ?string, registered_on: string}>
+     */
+    public array $statuses = [];
 
     public function login()
     {
@@ -72,7 +82,7 @@ class Login extends Component
     }
 
     /** Step 1: find the identifier's accounts (the person picks one when there are several), then send the code. */
-    public function sendCode(OtpLoginService $otp, MemberOtpService $memberOtps): void
+    public function sendCode(OtpLoginService $otp): void
     {
         $this->identifier = trim($this->identifier);
         $byEmail = OtpLoginService::channel($this->identifier) === 'email';
@@ -86,20 +96,20 @@ class Login extends Component
 
         $this->accounts = $otp->accounts($this->identifier);
 
-        if ($this->accounts === []) {
-            $pending = $byEmail ? null : $memberOtps->pendingRegistration(OtpLoginService::destination($this->identifier));
-            $this->addError('identifier', $pending
-                ? "Your registration with {$pending->gym->name} is waiting for the gym's approval."
-                : 'No active account uses this '.($byEmail ? 'email' : 'mobile number').'.'.($byEmail ? '' : ' Gym staff: verify your mobile under My account first.'));
+        if ($this->accounts === [] && $otp->registrations($this->identifier)->isEmpty()) {
+            $this->addError('identifier', 'No active account uses this '.($byEmail ? 'email' : 'mobile number').'.'.($byEmail ? '' : ' Gym staff: verify your mobile under My account first.'));
 
             return;
         }
 
-        if (count($this->accounts) === 1) {
+        if ($this->accounts === []) {
+            // A registration that cannot sign in yet: the code proves it is theirs, then we show its status.
+            $this->account = OtpLoginService::STATUS;
+        } elseif (count($this->accounts) === 1) {
             $this->account = $this->accounts[0]['key'];
         }
 
-        if (! in_array($this->account, array_column($this->accounts, 'key'), true)) {
+        if ($this->account !== OtpLoginService::STATUS && ! in_array($this->account, array_column($this->accounts, 'key'), true)) {
             $this->account = '';
             $this->addError('account', 'More than one account uses this '.($byEmail ? 'email' : 'number').'. Choose where to sign in.');
 
@@ -124,6 +134,17 @@ class Login extends Component
         $this->validate(['code' => 'required|digits:'.config('gymai.otp.length', 6)], [], ['code' => 'code']);
 
         try {
+            if ($this->account === OtpLoginService::STATUS) {
+                $this->statuses = $otp->verifyStatusCode($this->identifier, $this->code)->map(fn (Member $m) => [
+                    'gym' => $m->gym->name,
+                    'status' => app(MemberSignupService::class)->statusOf($m),
+                    'member_code' => $m->member_code,
+                    'registered_on' => $m->created_at->format('d M Y'),
+                ])->all();
+
+                return;
+            }
+
             $user = $otp->verifyCode($this->identifier, $this->account, $this->code);
         } catch (ApiException $e) {
             $this->addError('code', $e->getMessage());
@@ -138,7 +159,7 @@ class Login extends Component
 
     public function changeIdentifier(): void
     {
-        $this->reset('accounts', 'account', 'codeSent', 'code');
+        $this->reset('accounts', 'account', 'codeSent', 'code', 'statuses');
         $this->resetValidation();
     }
 
