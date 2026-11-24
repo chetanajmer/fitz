@@ -6,6 +6,12 @@
 # DEPLOYPATH = live app folder. The subdomain's document root must be DEPLOYPATH/public.
 export DEPLOYPATH=/home/morethangiftz/smartai.morethangiftz.com
 
+# PHP version for the website (LiteSpeed / CloudLinux). Added to public/.htaccess on every deploy,
+# because the repository's .htaccess replaces the live one. Leave empty to keep whatever is there.
+export PHP_WEB_HANDLER='<FilesMatch "\.(php4|php5|php3|php2|php|phtml)$">
+    SetHandler application/x-httpd-alt-php83___lsphp
+</FilesMatch>'
+
 # PHP 8.3+ command-line binary. The plain `php` on cPanel is often an older default version,
 # so look in the usual EasyApache and CloudLinux locations (newest first).
 # To force a specific binary, set PHP_BIN here, e.g. export PHP_BIN=/opt/alt/php83/usr/bin/php

@@ -69,7 +69,7 @@ class EnquiryFlowTest extends TestCase
         $this->assertSame('Lead One', $member->name);
         $this->assertSame(1, $member->memberships()->count());
         $this->assertEquals(600.0, $member->pendingAmount());
-        $this->assertSame(['created', 'status_changed', 'converted'], $enquiry->activities()->oldest('id')->pluck('type')->all());
+        $this->assertSame(['created', 'status_changed', 'converted'], $enquiry->activities()->reorder()->oldest('id')->pluck('type')->all());
 
         $this->expectException(ValidationException::class);
         $service->convert($enquiry, ['joining_date' => now()->toDateString()]);

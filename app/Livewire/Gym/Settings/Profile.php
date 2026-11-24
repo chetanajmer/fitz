@@ -83,9 +83,13 @@ class Profile extends Component
             'settings.social.youtube' => 'nullable|url|max:255',
             'settings.social.whatsapp' => 'nullable|string|max:20',
             'facilities' => 'nullable|string|max:2000',
-            'logo' => 'nullable|image|max:2048',
-            'banner' => 'nullable|image|max:4096',
-        ], [], ['profile.name' => 'gym name']);
+            // Originals up to 10 MB: we resize and compress them (logo ≤ 70 KB, banner ≤ 500 KB).
+            'logo' => 'nullable|image|mimes:jpg,jpeg,png,webp,gif|max:10240',
+            'banner' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:10240',
+        ], [
+            'logo.max' => 'The logo file must be smaller than 10 MB (we compress it for you).',
+            'banner.max' => 'The banner file must be smaller than 10 MB (we compress it for you).',
+        ], ['profile.name' => 'gym name']);
 
         $settings = $this->settings;
         $settings['facilities'] = preg_split('/\r?\n/', $this->facilities);

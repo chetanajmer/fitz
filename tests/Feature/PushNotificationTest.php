@@ -24,6 +24,7 @@ use App\Services\Push\PushMessage;
 use App\Services\PushNotificationService;
 use App\Services\StreakService;
 use App\Services\WeightTrackingService;
+use App\Support\SystemHealth;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -656,6 +657,27 @@ class PushNotificationTest extends TestCase
         $this->actingAs($trainer);
         $this->get(route('gym.members.show', $assigned))->assertOk()->assertDontSee('Phones & notifications', false)->assertDontSee(str_repeat('v', 40));
         Livewire::test(MemberDevices::class, ['member' => $assigned])->assertForbidden();
+    }
+
+    public function test_health_shows_whether_the_scheduler_and_queue_run_on_their_own(): void
+    {
+        $health = app(SystemHealth::class);
+        $this->assertFalse($health->report()['scheduler']['ok']);
+        $this->assertFalse($health->report()['queue']['ok']);
+
+        // One scheduler run: it writes its heartbeat and queues the queue heartbeat (run right away in tests).
+        $this->artisan('schedule:run')->assertSuccessful();
+        $report = $health->report();
+        $this->assertTrue($report['scheduler']['ok']);
+        $this->assertTrue($report['queue']['ok']);
+
+        $this->travel(5)->minutes();
+        $this->assertFalse($health->report()['scheduler']['ok'], 'stale after 3 minutes');
+
+        $this->artisan('gymai:health')->assertSuccessful()->expectsOutputToContain('Scheduler (cron)');
+
+        $this->actingAs($this->superAdmin());
+        Livewire::test(PlatformNotifications::class)->set('tab', 'rules')->assertSee('System status')->assertSee('Queue (sends notifications)');
     }
 
     public function test_super_admin_sets_quiet_hours_and_daily_limit(): void
