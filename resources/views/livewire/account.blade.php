@@ -21,5 +21,33 @@
                 <button class="btn-primary">Update password</button>
             </div>
         </form>
+
+        @unless (auth()->user()->isSuperAdmin() || auth()->user()->isMember())
+            <div class="card">
+                <div class="card-header"><h2 class="card-title">Sign in with mobile</h2></div>
+                <div class="card-body space-y-4">
+                    @if (auth()->user()->login_phone)
+                        <p class="text-sm text-gray-600">You can sign in with <strong>{{ auth()->user()->login_phone }}</strong> and your password, or with a one-time code (OTP tab).</p>
+                        <button type="button" wire:click="removeLoginPhone" wire:confirm="Stop signing in with this mobile number?" class="btn-secondary btn-sm">Remove</button>
+                        <p class="hint">To change it, verify a new number below.</p>
+                    @else
+                        <p class="text-sm text-gray-600">Verify your mobile number to sign in with it instead of your email.</p>
+                    @endif
+
+                    @if (! $phoneCodeSent)
+                        <form wire:submit="sendPhoneCode" class="flex flex-wrap items-start gap-2">
+                            <x-ui.field name="loginPhone" class="flex-1"><input wire:model="loginPhone" type="tel" inputmode="numeric" placeholder="98765 43210" class="input"></x-ui.field>
+                            <button class="btn-primary">Send OTP</button>
+                        </form>
+                    @else
+                        <form wire:submit="verifyPhoneCode" class="flex flex-wrap items-start gap-2">
+                            <x-ui.field name="phoneCode" class="flex-1"><input wire:model="phoneCode" inputmode="numeric" autocomplete="one-time-code" placeholder="OTP sent to {{ $loginPhone }}" class="input"></x-ui.field>
+                            <button class="btn-primary">Verify</button>
+                            <button type="button" wire:click="$set('phoneCodeSent', false)" class="btn-secondary">Change number</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        @endunless
     </div>
 </div>

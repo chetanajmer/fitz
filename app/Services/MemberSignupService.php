@@ -38,7 +38,7 @@ class MemberSignupService
         $digits = Member::normalizePhone($phone);
         $cooldown = (int) config('gymai.otp.resend_cooldown_seconds', 30);
 
-        $latest = PhoneVerification::where('phone_digits', $digits)->latest('id')->first();
+        $latest = PhoneVerification::where('phone_digits', $digits)->where('purpose', 'signup')->latest('id')->first();
         if ($latest && $latest->consumed_at === null && $latest->created_at->gt(now()->subSeconds($cooldown))) {
             $wait = $cooldown - (int) $latest->created_at->diffInSeconds(now());
 
@@ -57,7 +57,7 @@ class MemberSignupService
 
         $verification = DB::transaction(function () use ($digits, $code, $ttl, $ip) {
             // Only the newest OTP for a number is ever valid.
-            PhoneVerification::where('phone_digits', $digits)->whereNull('consumed_at')->update(['consumed_at' => now()]);
+            PhoneVerification::where('phone_digits', $digits)->where('purpose', 'signup')->whereNull('consumed_at')->update(['consumed_at' => now()]);
 
             $verification = new PhoneVerification;
             $verification->phone_digits = $digits;
@@ -85,7 +85,7 @@ class MemberSignupService
         $token = Str::random(64);
 
         $failure = DB::transaction(function () use ($digits, $code, $maxAttempts, $token): ?ApiException {
-            $verification = PhoneVerification::where('phone_digits', $digits)->whereNull('consumed_at')->latest('id')->lockForUpdate()->first();
+            $verification = PhoneVerification::where('phone_digits', $digits)->where('purpose', 'signup')->whereNull('consumed_at')->latest('id')->lockForUpdate()->first();
 
             if (! $verification) {
                 return new ApiException('No OTP requested. Please request a new OTP.', 'OTP_NOT_FOUND', 422);
