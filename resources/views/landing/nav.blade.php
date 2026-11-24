@@ -19,8 +19,8 @@
                 <a href="{{ auth()->user()->homeRoute() }}" class="btn-primary px-5">Open dashboard</a>
             @else
                 <a href="{{ route('login') }}" class="rounded-lg px-4 py-2 text-sm font-medium text-zinc-300 transition hover:text-white">Login</a>
-                <a href="{{ route('member.join') }}" class="rounded-lg border border-ink-700 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:bg-white/5 hover:text-white">Join as member</a>
-                <a href="{{ $ctaUrl }}" data-magnetic class="btn-primary lp-shine-btn px-5">Join as Gym</a>
+                <a href="{{ route('member.join') }}" class="rounded-lg border border-ink-700 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:bg-white/5 hover:text-white">Register as Member</a>
+                <a href="{{ $ctaUrl }}" data-magnetic class="btn-primary lp-shine-btn px-5">Register Your Gym</a>
             @endauth
         </div>
 
@@ -42,8 +42,8 @@
                     <a href="{{ auth()->user()->homeRoute() }}" class="btn-primary col-span-2">Open dashboard</a>
                 @else
                     <a href="{{ route('login') }}" class="btn border border-ink-700 text-zinc-200 hover:bg-white/5">Login</a>
-                    <a href="{{ $ctaUrl }}" class="btn-primary">Join as Gym</a>
-                    <a href="{{ route('member.join') }}" class="btn col-span-2 border border-ink-700 text-zinc-200 hover:bg-white/5">Join as member</a>
+                    <a href="{{ $ctaUrl }}" class="btn-primary">Register Your Gym</a>
+                    <a href="{{ route('member.join') }}" class="btn col-span-2 border border-ink-700 text-zinc-200 hover:bg-white/5">Register as Member</a>
                 @endauth
             </div>
         </nav>
