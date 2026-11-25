@@ -3,11 +3,16 @@
 namespace App\Livewire\Gym\Enquiries;
 
 use App\Enums\EnquirySource;
+use App\Enums\MemberStatus;
 use App\Models\Enquiry;
+use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Services\EnquiryService;
+use App\Services\MemberService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -74,6 +79,24 @@ class Index extends Component
         $this->dispatch('notify', message: "Enquiry from {$enquiry->name} added.");
     }
 
+    public function approveJoinRequest(int $memberId, MemberService $members): void
+    {
+        $member = Member::findOrFail($memberId);
+        Gate::authorize('update', $member);
+
+        $members->approveRegistration($member);
+        $this->dispatch('notify', message: "{$member->name} approved. They can now log in to the app.");
+    }
+
+    public function declineJoinRequest(int $memberId, MemberService $members): void
+    {
+        $member = Member::findOrFail($memberId);
+        Gate::authorize('delete', $member);
+
+        $members->declineRegistration($member);
+        $this->dispatch('notify', message: "Join request from {$member->name} declined.");
+    }
+
     public function render(): View
     {
         $today = Carbon::today()->toDateString();
@@ -96,6 +119,10 @@ class Index extends Component
             'counts' => $counts,
             'plans' => MembershipPlan::active()->orderBy('price')->get(['id', 'name']),
             'dueCount' => Enquiry::open()->whereDate('follow_up_date', '<=', $today)->count(),
+            // Website/app sign-ups waiting for approval; only staff who may manage members act on them.
+            'joinRequests' => Auth::user()->can('members.manage')
+                ? Member::where('status', MemberStatus::Pending->value)->oldest()->get()
+                : collect(),
         ]);
     }
 }

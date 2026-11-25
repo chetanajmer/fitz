@@ -4,6 +4,7 @@ use App\Http\Controllers\AttendanceScanController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ImpersonationController;
+use App\Http\Controllers\ProgressPhotoController;
 use App\Http\Controllers\PublicGymController;
 use App\Http\Controllers\QrCodeController;
 use App\Livewire;
@@ -30,6 +31,16 @@ Route::post('/login-as/leave', [ImpersonationController::class, 'leave'])->middl
 // QR registration link: always creates an Enquiry for the gym that owns the token.
 Route::get('/join/{token}', [PublicGymController::class, 'join'])->where('token', '[A-Za-z0-9]{20,64}')->name('gym.join');
 
+// Website sign-up for new members: city → gym → details → phone OTP. Creates a pending member.
+Route::livewire('/join-gym', Livewire\PublicSite\MemberSignup::class)->name('member.join');
+Route::livewire('/join-gym/status', Livewire\PublicSite\JoinStatus::class)->name('member.join.status');
+
+// Browse the gyms in a city without signing up; each public profile opens in a new tab.
+Route::livewire('/gyms', Livewire\PublicSite\BrowseGyms::class)->name('gyms.browse');
+
+// Member self-registration QR (shown on the attendance desk): creates a member without a membership.
+Route::get('/register/{token}', [PublicGymController::class, 'register'])->where('token', '[A-Za-z0-9]{20,64}')->name('gym.register');
+
 Route::view('/suspended', 'gym-suspended')->middleware('auth')->name('gym.suspended');
 
 /*
@@ -50,6 +61,7 @@ Route::prefix('app')->name('gym.')
         Route::livewire('/members/{member}', Livewire\Gym\Members\Show::class)->middleware('permission:members.view')->name('members.show');
         Route::livewire('/members/{member}/edit', Livewire\Gym\Members\Form::class)->middleware('permission:members.manage')->name('members.edit');
         Route::get('/members/{member}/qr', [QrCodeController::class, 'member'])->middleware('permission:members.view')->name('members.qr');
+        Route::get('/members/{member}/progress-photos/{photoId}', ProgressPhotoController::class)->whereNumber('photoId')->middleware('permission:ai.view')->name('members.progress-photo');
 
         Route::middleware('permission:enquiries.manage')->group(function () {
             Route::livewire('/enquiries', Livewire\Gym\Enquiries\Index::class)->name('enquiries.index');
@@ -67,6 +79,10 @@ Route::prefix('app')->name('gym.')
 
         Route::middleware('permission:attendance.manage')->group(function () {
             Route::livewire('/attendance', Livewire\Gym\Attendance\Index::class)->name('attendance.index');
+            Route::get('/attendance/register-qr', [QrCodeController::class, 'register'])->name('attendance.register-qr');
+            Route::livewire('/qr-codes', Livewire\Gym\QrCodes::class)->name('qr-codes');
+            Route::livewire('/check-in-screen', Livewire\Gym\CheckInScreen::class)->name('check-in-screen');
+            Route::get('/attendance/check-in-qr', [QrCodeController::class, 'checkIn'])->name('attendance.check-in-qr');
             // Staff scan a member's QR with any phone camera: the QR encodes this URL.
             Route::get('/attendance/scan/{token}', AttendanceScanController::class)->where('token', '[A-Za-z0-9]{20,64}')->name('attendance.scan');
         });
@@ -82,6 +98,7 @@ Route::prefix('app')->name('gym.')
 
         Route::livewire('/progress', Livewire\Gym\Progress::class)->middleware('permission:members.view')->name('progress');
         Route::livewire('/streaks', Livewire\Gym\Streaks::class)->middleware('permission:attendance.reports')->name('streaks');
+        Route::livewire('/ai-coach', Livewire\Gym\AiCoach::class)->middleware('permission:ai.manage')->name('ai-coach');
         Route::livewire('/notifications', Livewire\Gym\Announcements::class)->middleware('permission:announcements.send')->name('announcements');
 
         Route::middleware('permission:trainers.manage')->group(function () {
@@ -112,8 +129,13 @@ Route::prefix('me')->name('portal.')
     ->group(function () {
         Route::livewire('/', Livewire\Portal\Dashboard::class)->name('dashboard');
         Route::get('/qr', [QrCodeController::class, 'self'])->name('qr');
+        Route::livewire('/membership', Livewire\Portal\Membership::class)->name('membership');
+        Route::livewire('/check-in', Livewire\Portal\CheckIn::class)->name('check-in');
+        Route::livewire('/notifications', Livewire\Portal\Notifications::class)->name('notifications');
         Route::livewire('/plans/view/{plan}', Livewire\Portal\PlanShow::class)->whereNumber('plan')->name('plans.show');
         Route::livewire('/plans/{type}', Livewire\Portal\Plans::class)->whereIn('type', ['diet', 'workout'])->name('plans');
+        Route::livewire('/progress', Livewire\Portal\Progress::class)->name('progress');
+        Route::get('/progress/photos/{photoId}', [ProgressPhotoController::class, 'own'])->whereNumber('photoId')->name('progress-photo');
         Route::get('/receipts/{payment}', [DocumentController::class, 'memberReceipt'])->name('receipt');
         Route::livewire('/account', Livewire\Account::class)->name('account');
     });
@@ -132,7 +154,9 @@ Route::prefix('platform')->name('platform.')
         Route::livewire('/leads', Livewire\Platform\Leads::class)->name('leads');
         Route::livewire('/library', Livewire\Platform\Library::class)->name('library');
         Route::livewire('/notifications', Livewire\Platform\Notifications::class)->name('notifications');
+        Route::livewire('/ai-coach', Livewire\Platform\AiCoach::class)->name('ai-coach');
         Route::livewire('/pricing', Livewire\Platform\Pricing::class)->name('pricing');
+        Route::livewire('/cities', Livewire\Platform\Cities::class)->name('cities');
         Route::livewire('/invoices', Livewire\Platform\Invoices::class)->name('invoices');
         Route::get('/invoices/{invoice}', [DocumentController::class, 'platformSaasInvoice'])->name('invoices.show');
         Route::livewire('/settings', Livewire\Platform\Settings::class)->name('settings');

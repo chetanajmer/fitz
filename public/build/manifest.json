@@ -1,7 +1,15 @@
 {
-  "_fonts-C9MNnjVw.css": {
-    "file": "assets/fonts-C9MNnjVw.css",
-    "src": "_fonts-C9MNnjVw.css"
+  "_anton-400-normal-AUNGEG_V.woff": {
+    "file": "assets/anton-400-normal-AUNGEG_V.woff",
+    "src": "_anton-400-normal-AUNGEG_V.woff"
+  },
+  "_anton-400-normal-Byf51wtH.woff2": {
+    "file": "assets/anton-400-normal-Byf51wtH.woff2",
+    "src": "_anton-400-normal-Byf51wtH.woff2"
+  },
+  "_fonts-C7IxdWgf.css": {
+    "file": "assets/fonts-C7IxdWgf.css",
+    "src": "_fonts-C7IxdWgf.css"
   },
   "_instrument-sans-400-normal-D1W7dsQl.woff": {
     "file": "assets/instrument-sans-400-normal-D1W7dsQl.woff",
@@ -27,8 +35,81 @@
     "file": "assets/instrument-sans-600-normal-B9e8oLYv.woff",
     "src": "_instrument-sans-600-normal-B9e8oLYv.woff"
   },
+  "_instrument-sans-700-normal-CYfAanHo.woff2": {
+    "file": "assets/instrument-sans-700-normal-CYfAanHo.woff2",
+    "src": "_instrument-sans-700-normal-CYfAanHo.woff2"
+  },
+  "_instrument-sans-700-normal-DfAjL1vF.woff": {
+    "file": "assets/instrument-sans-700-normal-DfAjL1vF.woff",
+    "src": "_instrument-sans-700-normal-DfAjL1vF.woff"
+  },
+  "_inter-tight-400-normal-BLrFJfvD.woff": {
+    "file": "assets/inter-tight-400-normal-BLrFJfvD.woff",
+    "src": "_inter-tight-400-normal-BLrFJfvD.woff"
+  },
+  "_inter-tight-400-normal-iW8qmuJY.woff2": {
+    "file": "assets/inter-tight-400-normal-iW8qmuJY.woff2",
+    "src": "_inter-tight-400-normal-iW8qmuJY.woff2"
+  },
+  "_inter-tight-500-normal-BFXNXuvF.woff2": {
+    "file": "assets/inter-tight-500-normal-BFXNXuvF.woff2",
+    "src": "_inter-tight-500-normal-BFXNXuvF.woff2"
+  },
+  "_inter-tight-500-normal-pobXraBK.woff": {
+    "file": "assets/inter-tight-500-normal-pobXraBK.woff",
+    "src": "_inter-tight-500-normal-pobXraBK.woff"
+  },
+  "_inter-tight-600-normal-BgSTtRxb.woff2": {
+    "file": "assets/inter-tight-600-normal-BgSTtRxb.woff2",
+    "src": "_inter-tight-600-normal-BgSTtRxb.woff2"
+  },
+  "_inter-tight-600-normal-D7bG6gX1.woff": {
+    "file": "assets/inter-tight-600-normal-D7bG6gX1.woff",
+    "src": "_inter-tight-600-normal-D7bG6gX1.woff"
+  },
+  "_inter-tight-700-normal-BZKd_v_8.woff2": {
+    "file": "assets/inter-tight-700-normal-BZKd_v_8.woff2",
+    "src": "_inter-tight-700-normal-BZKd_v_8.woff2"
+  },
+  "_inter-tight-700-normal-DvYAVZQd.woff": {
+    "file": "assets/inter-tight-700-normal-DvYAVZQd.woff",
+    "src": "_inter-tight-700-normal-DvYAVZQd.woff"
+  },
+  "_inter-tight-800-normal-CRGCHRPv.woff2": {
+    "file": "assets/inter-tight-800-normal-CRGCHRPv.woff2",
+    "src": "_inter-tight-800-normal-CRGCHRPv.woff2"
+  },
+  "_inter-tight-800-normal-D2te1T7i.woff": {
+    "file": "assets/inter-tight-800-normal-D2te1T7i.woff",
+    "src": "_inter-tight-800-normal-D2te1T7i.woff"
+  },
+  "_jetbrains-mono-500-normal-BWZEU5yA.woff2": {
+    "file": "assets/jetbrains-mono-500-normal-BWZEU5yA.woff2",
+    "src": "_jetbrains-mono-500-normal-BWZEU5yA.woff2"
+  },
+  "_jetbrains-mono-500-normal-CJOVTJB7.woff": {
+    "file": "assets/jetbrains-mono-500-normal-CJOVTJB7.woff",
+    "src": "_jetbrains-mono-500-normal-CJOVTJB7.woff"
+  },
+  "_jetbrains-mono-700-normal-BYuf6tUa.woff2": {
+    "file": "assets/jetbrains-mono-700-normal-BYuf6tUa.woff2",
+    "src": "_jetbrains-mono-700-normal-BYuf6tUa.woff2"
+  },
+  "_jetbrains-mono-700-normal-D3wTyLJW.woff": {
+    "file": "assets/jetbrains-mono-700-normal-D3wTyLJW.woff",
+    "src": "_jetbrains-mono-700-normal-D3wTyLJW.woff"
+  },
+  "node_modules/jsqr/dist/jsQR.js": {
+    "file": "assets/jsQR-BFjPv2xX.js",
+    "name": "jsQR",
+    "src": "node_modules/jsqr/dist/jsQR.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
   "resources/css/app.css": {
-    "file": "assets/app-BCeu0f_Z.css",
+    "file": "assets/app-CTEG4DYM.css",
     "name": "app",
     "names": [
       "app.css"
@@ -37,9 +118,27 @@
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-CqzrB8s8.js",
+    "file": "assets/app-CAXyouyn.js",
     "name": "app",
     "src": "resources/js/app.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "node_modules/jsqr/dist/jsQR.js"
+    ]
+  },
+  "resources/js/gym-page.js": {
+    "file": "assets/gym-page-B5P7QRci.js",
+    "name": "gym-page",
+    "src": "resources/js/gym-page.js",
     "isEntry": true
+  },
+  "resources/js/landing.js": {
+    "file": "assets/landing-DqwZA0cH.js",
+    "name": "landing",
+    "src": "resources/js/landing.js",
+    "isEntry": true,
+    "css": [
+      "assets/landing-fOJvfYOR.css"
+    ]
   }
 }

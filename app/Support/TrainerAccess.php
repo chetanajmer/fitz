@@ -33,6 +33,9 @@ class TrainerAccess
             'content.custom' => ['label' => 'Diet charts & workout plans', 'hint' => 'View the library and send custom plans to their assigned members.'],
             'content.manage' => ['label' => 'Manage the library', 'hint' => 'Edit default plans and categories for the whole gym.'],
         ],
+        'AI coach' => [
+            'ai.view' => ['label' => 'AI progress', 'hint' => 'Measurements, progress photos and AI reports of the members they can see.'],
+        ],
         'Communication' => [
             'announcements.send' => ['label' => 'Send notifications', 'hint' => 'Send app notifications to members. Only their assigned members unless "See all members" is on.'],
         ],
@@ -55,6 +58,7 @@ class TrainerAccess
         'members.manage' => 'members.view',
         'members.import' => 'members.view',
         'content.manage' => 'content.custom',
+        'ai.view' => 'members.view',
     ];
 
     /** @return list<string> */

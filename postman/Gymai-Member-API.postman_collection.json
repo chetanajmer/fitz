@@ -51,6 +51,18 @@
         {
             "key": "fcm_token",
             "value": "paste-a-firebase-token-here"
+        },
+        {
+            "key": "city_id",
+            "value": ""
+        },
+        {
+            "key": "registration_token",
+            "value": ""
+        },
+        {
+            "key": "signup_phone",
+            "value": "9811100001"
         }
     ],
     "item": [
@@ -255,7 +267,7 @@
                                 "send-otp"
                             ]
                         },
-                        "description": "Sends a 6-digit OTP by SMS to a registered, active member.\n\n**Body**\n- `phone` (required) — any format: `9876543210`, `+91 98765 43210`, `09876543210`.\n- `gym_id` (optional) — required only when the number belongs to members of more than one gym (see the *Send OTP — choose gym* request).\n\n**Rules:** OTP valid 5 minutes · resend allowed after 30 s · max 5 OTPs per number per hour.\n\n`debug_otp` is included only when `OTP_EXPOSE_IN_RESPONSE=true` and the app is not in production.\n\n**Not connected to any gym (fallback):** if the number is not an active member of any active gym (never registered, deactivated or removed by their gym, or their gym is suspended), the API returns `404 NO_GYM_CONNECTED` with `data.callback_requested: true`. The number is saved as a **lead** in Super Admin → App Leads and a support executive calls back with nearby gyms.\n\nOptional lead fields (used only in that case): `name`, `city`, `latitude` + `longitude` (for gyms near the user), `app_platform`, `app_version`."
+                        "description": "Sends a 6-digit OTP by SMS to a registered, active member.\n\n**Body**\n- `phone` (required) — any format: `9876543210`, `+91 98765 43210`, `09876543210`.\n- `gym_id` (optional) — required only when the number belongs to members of more than one gym (see the *Send OTP — choose gym* request).\n\n**Rules:** OTP valid 5 minutes · resend allowed after 30 s · max 5 OTPs per number per hour.\n\n`debug_otp` is included only when `OTP_EXPOSE_IN_RESPONSE=true` and the app is not in production.\n\n**Not connected to any gym (fallback):** if the number is not an active member of any active gym (never registered, deactivated or removed by their gym, or their gym is suspended), the API returns `404 NO_GYM_CONNECTED` with `data.callback_requested: true`. The number is saved as a **lead** in Super Admin → App Leads and a support executive calls back with nearby gyms.\n\nOptional lead fields (used only in that case): `name`, `city`, `latitude` + `longitude` (for gyms near the user), `app_platform`, `app_version`.\n\n**Waiting for approval:** a number that signed up through *5. Sign up* and is not approved yet gets `403 MEMBER_PENDING_APPROVAL` (with `data.gym_id`, `data.gym_name`) and is not saved as a lead."
                     },
                     "response": [
                         {
@@ -1135,7 +1147,7 @@
                                 "check-in"
                             ]
                         },
-                        "description": "Member checks themselves in (the CHECK IN NOW button). Returns the attendance and the refreshed streak so the card updates immediately.\n\n**Errors:** `409 ALREADY_CHECKED_IN` · `403 NO_ACTIVE_MEMBERSHIP` · `403 SELF_CHECKIN_DISABLED` (gym turned it off) · `403 GYM_INACTIVE`."
+                        "description": "Member checks themselves in (the CHECK IN NOW button). Returns the attendance and the refreshed streak so the card updates immediately.\n\n**Errors:** `409 ALREADY_CHECKED_IN` · `403 NO_ACTIVE_MEMBERSHIP` · `403 SELF_CHECKIN_DISABLED` (gym turned it off) · `403 GYM_INACTIVE`.\n\nOptional JSON body `{\"code\": \"<text read from the gym's check-in QR>\"}`. Not required yet, but a wrong or expired code fails with 422 `INVALID_CHECKIN_CODE`. Send the scanned text as it is. Gyms can use a printed QR or a screen QR that changes every 30 seconds."
                     },
                     "response": [
                         {
@@ -1192,7 +1204,7 @@
                                 "check-out"
                             ]
                         },
-                        "description": "Ends today's visit.\n\n**Errors:** `409 NOT_CHECKED_IN` · `409 ALREADY_CHECKED_OUT`."
+                        "description": "Ends today's visit.\n\n**Errors:** `409 NOT_CHECKED_IN` · `409 ALREADY_CHECKED_OUT`.\n\nOptional JSON body `{\"code\": \"<text read from the gym's check-in QR>\"}`. Not required yet, but a wrong or expired code fails with 422 `INVALID_CHECKIN_CODE`. Send the scanned text as it is. Gyms can use a printed QR or a screen QR that changes every 30 seconds."
                     },
                     "response": [
                         {
@@ -1839,6 +1851,816 @@
                             "raw": "{\n  \"reminders\": true,\n  \"announcements\": true\n}"
                         }
                     }
+                }
+            ]
+        },
+        {
+            "name": "5. Sign up (new members)",
+            "description": "For people who are not members yet: verify phone → pick a city → pick a gym in that city → send details. The member starts **pending** until the gym approves.\n\nRun the requests in order; each one saves the variables the next one needs (`city_id`, `gym_id`, `otp`, `registration_token`).\n\nMembers who join with the QR code at the gym's desk don't use these endpoints: that form already knows the gym and creates an active member.",
+            "item": [
+                {
+                    "name": "List cities",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "pm.test('Cities listed', () => pm.expect(body.success).to.eql(true));",
+                                    "if (body.data.cities.length) { pm.collectionVariables.set('city_id', body.data.cities[0].id); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cities",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cities"
+                            ]
+                        },
+                        "description": "Step 1 of sign-up for people who are not members yet. Returns the cities Gymai is live in (managed by the Super Admin), A to Z.\n\nNo login needed. `gyms_count` counts only gyms that are currently active."
+                    },
+                    "response": [
+                        {
+                            "name": "Cities",
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": true,\n    \"message\": \"Cities.\",\n    \"data\": {\n        \"cities\": [\n            {\n                \"id\": 1,\n                \"name\": \"Pune\",\n                \"state\": \"Maharashtra\",\n                \"gyms_count\": 12\n            }\n        ]\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "List localities in a city",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cities/1/localities",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cities",
+                                "1",
+                                "localities"
+                            ]
+                        },
+                        "description": "Areas of the city that have gyms, with gyms_count each, plus the city's total gyms_count. Show this after the city: an \"All areas\" choice plus each locality. An empty list means the city has no localities yet: skip straight to the gym list."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Search gyms in a city",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "if (pm.response.code === 200 && body.data.gyms.length) { pm.collectionVariables.set('gym_id', body.data.gyms[0].gym_id); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/cities/{{city_id}}/gyms?search=iron",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "cities",
+                                "{{city_id}}",
+                                "gyms"
+                            ],
+                            "query": [
+                                {
+                                    "key": "search",
+                                    "value": "iron",
+                                    "description": "Optional. Part of the gym name, for type-ahead."
+                                },
+                                {
+                                    "key": "locality_id",
+                                    "value": "",
+                                    "description": "Optional: only gyms in this locality (id from List localities)",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "description": "Step 2: gyms in the chosen city, filtered as the user types (`search`, optional). Up to 30 results, A to Z. Only active gyms are returned.\n\n`404 CITY_NOT_FOUND` if the city is not live.\n\nOptional locality_id filters to one locality. Each gym now also has `locality` (name or null). Each gym also has `public_url` (its public profile page: open it in the phone's browser, e.g. a \"View gym\" button) and `directions_url` (the gym's Google Maps link, or a Maps search for its address)."
+                    },
+                    "response": [
+                        {
+                            "name": "Gyms",
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": true,\n    \"message\": \"Gyms.\",\n    \"data\": {\n        \"city\": {\n            \"id\": 1,\n            \"name\": \"Pune\"\n        },\n        \"gyms\": [\n            {\n                \"gym_id\": 1,\n                \"name\": \"Iron Temple Fitness\",\n                \"address\": \"21 FC Road, Shivajinagar\",\n                \"logo_url\": null\n            }\n        ]\n    }\n}"
+                        },
+                        {
+                            "name": "City not live",
+                            "status": "Not Found",
+                            "code": 404,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": false,\n    \"message\": \"This city is not available on Gymai.\",\n    \"code\": \"CITY_NOT_FOUND\"\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Gym profile (before joining)",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/gyms/1/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "gyms",
+                                "1",
+                                "profile"
+                            ]
+                        },
+                        "description": "The gym's public profile for a \"View gym\" screen before joining: name, tagline, logo_url, banner_url, description, locality, city, address, map_url (the gym's own Maps link or null), directions_url (always set: open it for directions), phone, opening_hours [{day, closed, hours}], facilities [], photos [{url, caption}] (up to 6), plans [{name, duration, price, price_label, features}] (public plans only), public_url. 404 GYM_NOT_FOUND for gyms that are not live."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Send sign-up OTP",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "if (pm.response.code === 200 && body.data.debug_otp) {",
+                                    "  pm.collectionVariables.set('otp', body.data.debug_otp);",
+                                    "} else if (pm.response.code === 200) {",
+                                    "  console.log('Read the OTP from the SMS (or storage/logs/laravel.log with SMS_DRIVER=log) and set the \"otp\" variable.');",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"phone\": \"{{signup_phone}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register/send-otp",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register",
+                                "send-otp"
+                            ]
+                        },
+                        "description": "Step 3: send an OTP to verify a **new** user's phone. Works for any number, member or not.\n\nSame rules as login OTPs: valid 5 minutes, resend after 30 s, max 5 per number per hour (`OTP_COOLDOWN`, `OTP_LIMIT_REACHED`).\n\n`debug_otp` is included only when `OTP_EXPOSE_IN_RESPONSE=true` and the app is not in production."
+                    },
+                    "response": [
+                        {
+                            "name": "OTP sent",
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": true,\n    \"message\": \"OTP sent to your mobile number.\",\n    \"data\": {\n        \"phone\": \"XXXXXX0001\",\n        \"expires_in\": 300,\n        \"resend_after\": 30\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Verify sign-up OTP",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "type": "text/javascript",
+                                "exec": [
+                                    "const body = pm.response.json();",
+                                    "if (pm.response.code === 200) { pm.collectionVariables.set('registration_token', body.data.registration_token); }"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"phone\": \"{{signup_phone}}\",\n  \"otp\": \"{{otp}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register/verify-otp",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register",
+                                "verify-otp"
+                            ]
+                        },
+                        "description": "Step 4: check the OTP. Returns a `registration_token` that proves the phone was verified. It is valid for 30 minutes and can be used **once**.\n\nErrors: `OTP_INVALID` (with `attempts_left`), `OTP_EXPIRED`, `OTP_ATTEMPTS_EXCEEDED`, `OTP_NOT_FOUND`."
+                    },
+                    "response": [
+                        {
+                            "name": "Verified",
+                            "status": "OK",
+                            "code": 200,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": true,\n    \"message\": \"Phone verified. Choose your city and gym.\",\n    \"data\": {\n        \"registration_token\": \"64-character token\",\n        \"expires_in\": 1800\n    }\n}"
+                        }
+                    ]
+                },
+                {
+                    "name": "Register at a gym",
+                    "request": {
+                        "auth": {
+                            "type": "noauth"
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"registration_token\": \"{{registration_token}}\",\n  \"city_id\": {{city_id}},\n  \"gym_id\": {{gym_id}},\n  \"name\": \"Rahul Sharma\",\n  \"email\": \"rahul@example.com\",\n  \"gender\": \"male\",\n  \"date_of_birth\": \"1995-06-15\",\n  \"address\": \"Kothrud, Pune\",\n  \"emergency_contact_name\": \"Anita Sharma\",\n  \"emergency_contact_phone\": \"9876500002\",\n  \"fitness_goal\": \"Weight loss\",\n  \"medical_notes\": \"\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/register",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        },
+                        "description": "Step 5: create the member at the chosen gym. Required: `registration_token`, `city_id`, `gym_id`, `name`. Everything else is optional.\n\nThe member is created as **pending** and gets **no login token**. The gym approves the registration in its panel; after that the user logs in normally with *2. Auth → Send OTP / Verify OTP*. Until then, *Send OTP* answers `403 MEMBER_PENDING_APPROVAL` with `data.gym_name`.\n\nErrors: `REGISTRATION_TOKEN_INVALID` (expired or already used: verify the phone again), `CITY_NOT_FOUND`, `GYM_NOT_FOUND` (gym not active or not in that city), `ALREADY_REGISTERED` (409, the number is already a member of that gym)."
+                    },
+                    "response": [
+                        {
+                            "name": "Registered (pending)",
+                            "status": "Created",
+                            "code": 201,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": true,\n    \"message\": \"Registration sent to Iron Temple Fitness. You can log in once the gym approves it.\",\n    \"data\": {\n        \"member_code\": \"M0023\",\n        \"status\": \"pending\",\n        \"gym\": {\n            \"gym_id\": 1,\n            \"name\": \"Iron Temple Fitness\"\n        }\n    }\n}"
+                        },
+                        {
+                            "name": "Already a member there",
+                            "status": "Conflict",
+                            "code": 409,
+                            "_postman_previewlanguage": "json",
+                            "header": [
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": "{\n    \"success\": false,\n    \"message\": \"This mobile number is already registered with Iron Temple Fitness.\",\n    \"code\": \"ALREADY_REGISTERED\"\n}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "6. AI coach & body progress",
+            "description": "Measurements, progress photos and AI reports. AI is controlled by the Super Admin and the gym admin; members need to accept the consent text once.",
+            "item": [
+                {
+                    "name": "AI coach status",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai"
+                            ]
+                        },
+                        "description": "Show on the AI coach screen. available (gym switched AI on and the member is eligible), has_consented, consent_text (show it with an Accept checkbox before first use), credits {limit, used, remaining, resets_on}, features {progress, photo_comparison: {available, credits}}, disclaimer (show under every report)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Accept / withdraw AI consent (withdrawing deletes all AI reports and progress photos)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai/consent",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai",
+                                "consent"
+                            ]
+                        },
+                        "description": "accepted: true | false. Returns the same data as AI coach status.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"accepted\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Request AI progress report",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai/reports",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai",
+                                "reports"
+                            ]
+                        },
+                        "description": "type: progress (uses weight, goal, measurements, attendance, streak and program adherence) or photo_comparison (also before_photo_id and after_photo_id from GET /me/progress-photos; always compared older → newer).\n\n202 Accepted with data.report {id, type, status pending|completed|failed, content (Markdown), credits, created_at, completed_at, disclaimer} and data.credits. Generation runs in the background: poll GET /me/ai/reports/{id} until status is completed or failed, or wait for the push (type ai_report_ready, data.report_id). Failed reports use no credits.\n\nErrors (code): AI_DISABLED (platform switched off), AI_NOT_AVAILABLE (gym has not switched AI on), AI_FEATURE_DISABLED (photo comparison off for this gym), AI_NOT_ELIGIBLE (no valid membership, or not on an AI plan / not picked by the gym), AI_CONSENT_REQUIRED (call POST /me/ai/consent first), AI_LIMIT_REACHED (429, member used this month's credits), AI_GYM_LIMIT_REACHED (429, gym's monthly pool used). Error responses carry data.credits.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"progress\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Request AI photo comparison",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai/reports",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai",
+                                "reports"
+                            ]
+                        },
+                        "description": "Compares two of the member's own progress photos. Costs more credits than a progress report (see features.photo_comparison.credits).\n\nErrors (code): AI_DISABLED (platform switched off), AI_NOT_AVAILABLE (gym has not switched AI on), AI_FEATURE_DISABLED (photo comparison off for this gym), AI_NOT_ELIGIBLE (no valid membership, or not on an AI plan / not picked by the gym), AI_CONSENT_REQUIRED (call POST /me/ai/consent first), AI_LIMIT_REACHED (429, member used this month's credits), AI_GYM_LIMIT_REACHED (429, gym's monthly pool used). Error responses carry data.credits.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"photo_comparison\",\n  \"before_photo_id\": 1,\n  \"after_photo_id\": 2\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "AI report list",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai/reports",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai",
+                                "reports"
+                            ]
+                        },
+                        "description": "Latest 50 reports, newest first. Reports are also visible to the member's gym admin and trainer."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "AI report detail",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai/reports/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai",
+                                "reports",
+                                "1"
+                            ]
+                        },
+                        "description": "One report (poll this after requesting one).\n\n`result` holds the answer as fields (null for older reports); `content` is the same answer as Markdown.\n- progress: summary, direction (improved | mixed | declined | unknown), wins[], focus_areas[{title, why, tip}], missing[], motivation, confidence (low | medium | high). focus_areas: most important first. Reports made before this was added have no direction, why or missing, and no focus_areas in photo_comparison\n- photo_comparison: summary, direction, change_level (none | slight | moderate | strong | unclear), changes[{area, observation, direction (better | worse | neutral)}], numbers, photo_quality (good | fair | poor), photo_tips[], focus_areas[{title, why, tip}], missing[], motivation, confidence"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Body measurements",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/measurements",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "measurements"
+                            ]
+                        },
+                        "description": "fields {key: label} and measurements [] (oldest → newest): id, measured_on, source app|staff, chest_cm, waist_cm, hips_cm, arm_cm, thigh_cm, body_fat_percent (null when not measured)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Record measurements",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/measurements",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "measurements"
+                            ]
+                        },
+                        "description": "Any of chest_cm, waist_cm, hips_cm, arm_cm, thigh_cm (10–300) and body_fat_percent (2–70); at least one. measured_on optional (default today). Same date again updates that entry. Returns the full list.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"waist_cm\": 88.5,\n  \"chest_cm\": 100,\n  \"body_fat_percent\": 22.4\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete measurements",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/measurements/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "measurements",
+                                "1"
+                            ]
+                        },
+                        "description": "Removes one day's measurements. Returns the full list."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Progress photos",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/progress-photos",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "progress-photos"
+                            ]
+                        },
+                        "description": "photos [] (oldest → newest): id, pose front|side|back, taken_on, source, image_url. image_url is private: load it with the same Authorization: Bearer token."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Upload progress photo",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/progress-photos",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "progress-photos"
+                            ]
+                        },
+                        "description": "Multipart: photo (jpg/png/webp, max 6 MB), pose front|side|back, taken_on (optional, default today). Returns the full list.",
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "photo",
+                                    "type": "file",
+                                    "src": []
+                                },
+                                {
+                                    "key": "pose",
+                                    "value": "front",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "taken_on",
+                                    "value": "",
+                                    "type": "text",
+                                    "disabled": true
+                                }
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Progress photo image",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/progress-photos/1/image",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "progress-photos",
+                                "1",
+                                "image"
+                            ]
+                        },
+                        "description": "The image file. Only the member's own photos (404 otherwise)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete progress photo",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/progress-photos/1",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "progress-photos",
+                                "1"
+                            ]
+                        },
+                        "description": "Deletes the photo and its file. Returns the full list."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Transformation",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/transformation",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "transformation"
+                            ]
+                        },
+                        "description": "First versus latest weight, body measurements and photos, with the history between.\n\n- `weight`: first_kg, latest_kg, change_kg, history [{date, value}] (null / empty without weigh-ins).\n- `measurements`: one entry per recorded field with first, latest, change (null with a single entry) and history.\n- `photos`: first (`before`) and latest (`after`) photo of each pose that has at least two. `image_url` needs the same bearer token.\n- `latest_comparison`: the newest finished AI photo comparison, or null."
+                    },
+                    "response": []
                 }
             ]
         }

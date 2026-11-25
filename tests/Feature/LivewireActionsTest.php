@@ -44,6 +44,7 @@ class LivewireActionsTest extends TestCase
             ->set('form.name', 'Priya Nair')
             ->set('form.phone', '9811122233')
             ->set('form.email', 'priya@example.test')
+            ->set('portal_login', true)
             ->set('portal_password', 'member-pass')
             ->call('save')
             ->assertHasNoErrors();

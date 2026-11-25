@@ -34,10 +34,10 @@ return [
 
     // Slugs that can never be used by a gym because they collide with application routes.
     'reserved_slugs' => [
-        'admin', 'app', 'api', 'platform', 'login', 'logout', 'register', 'register-gym', 'join', 'me',
+        'admin', 'app', 'api', 'platform', 'login', 'logout', 'register', 'register-gym', 'join', 'join-gym', 'me',
         'member', 'members', 'livewire', 'up', 'storage', 'build', 'assets', 'css', 'js', 'images',
         'password', 'forgot-password', 'reset-password', 'dashboard', 'pricing', 'about', 'contact',
         'terms', 'privacy', 'help', 'support', 'gymai', 'www', 'mail', 'checkin', 'receipt', 'invoice',
-        'suspended', 'login-as', 'favicon.ico', 'robots.txt',
+        'suspended', 'login-as', 'favicon.ico', 'robots.txt', 'gyms',
     ],
 ];

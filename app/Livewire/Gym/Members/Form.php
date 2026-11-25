@@ -3,6 +3,7 @@
 namespace App\Livewire\Gym\Members;
 
 use App\Enums\DietPreference;
+use App\Enums\MemberStatus;
 use App\Models\Member;
 use App\Models\User;
 use App\Services\MemberService;
@@ -11,6 +12,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -31,6 +33,9 @@ class Form extends Component
     ];
 
     public ?string $trainer_id = '';
+
+    /** Ticked to create (or reset) the member's app login. The password box only exists while this is on, so a browser cannot quietly autofill a saved password into it. */
+    public bool $portal_login = false;
 
     public string $portal_password = '';
 
@@ -80,11 +85,18 @@ class Form extends Component
             'form.diet_preference' => ['nullable', Rule::enum(DietPreference::class)],
             'form.medical_notes' => 'nullable|string|max:2000',
             'form.notes' => 'nullable|string|max:2000',
-            'form.status' => 'required|in:active,inactive',
+            'form.status' => ['required', Rule::enum(MemberStatus::class)],
             'trainer_id' => 'nullable|integer',
-            'portal_password' => 'nullable|string|min:8',
+            'portal_login' => 'boolean',
+            'portal_password' => $this->portal_login ? 'required|string|min:8' : 'nullable',
             'photo' => 'nullable|image|max:2048',
         ];
+    }
+
+    /** @return array<string, string> */
+    protected function messages(): array
+    {
+        return ['form.phone.unique' => 'Another member of your gym already uses this phone number.'];
     }
 
     /** @return array<string, string> */
@@ -93,18 +105,37 @@ class Form extends Component
         return collect($this->form)->keys()->mapWithKeys(fn ($k) => ["form.{$k}" => str_replace('_', ' ', $k)])->all();
     }
 
+    public function updatedPortalLogin(bool $on): void
+    {
+        if (! $on) {
+            $this->reset('portal_password');
+            $this->resetValidation(['portal_password']);
+        }
+    }
+
     public function save(MemberService $service)
+    {
+        try {
+            return $this->persist($service);
+        } catch (ValidationException $e) {
+            // The service reports a taken login email as `email`; show it on the form's email field.
+            $errors = collect($e->errors())->mapWithKeys(fn ($messages, $key) => [$key === 'email' ? 'form.email' : $key => $messages])->all();
+            $this->dispatch('member-form-invalid');
+
+            throw ValidationException::withMessages($errors);
+        }
+    }
+
+    protected function persist(MemberService $service)
     {
         $this->validate();
 
-        if ($this->portal_password !== '' && blank($this->form['email'])) {
-            $this->addError('portal_password', 'An email is required to create a member portal login.');
-
-            return null;
+        if ($this->portal_login && blank($this->form['email'])) {
+            throw ValidationException::withMessages(['form.email' => 'Add an email address — the member signs in to the app with it.']);
         }
 
         $data = collect($this->form)->map(fn ($v) => $v === '' ? null : $v)->all();
-        $extra = ['trainer_id' => $this->trainer_id ? (int) $this->trainer_id : null, 'portal_password' => $this->portal_password ?: null];
+        $extra = ['trainer_id' => $this->trainer_id ? (int) $this->trainer_id : null, 'portal_password' => $this->portal_login ? $this->portal_password : null];
 
         if (! $this->canAssignTrainer()) {
             // A trainer limited to assigned members keeps what they register and cannot hand members away.

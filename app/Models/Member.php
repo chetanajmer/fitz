@@ -71,6 +71,8 @@ class Member extends Model implements AuthenticatableContract
             'diet_preference' => DietPreference::class,
             'notification_settings' => 'array',
             'status' => MemberStatus::class,
+            'ai_access' => 'boolean',
+            'ai_consent_at' => 'datetime',
         ];
     }
 
@@ -108,6 +110,21 @@ class Member extends Model implements AuthenticatableContract
     public function weightGoals(): HasMany
     {
         return $this->hasMany(WeightGoal::class)->orderByDesc('id');
+    }
+
+    public function measurements(): HasMany
+    {
+        return $this->hasMany(MemberMeasurement::class)->orderBy('measured_on');
+    }
+
+    public function progressPhotos(): HasMany
+    {
+        return $this->hasMany(ProgressPhoto::class)->orderBy('taken_on');
+    }
+
+    public function aiReports(): HasMany
+    {
+        return $this->hasMany(AiReport::class)->where('status', '!=', AiReport::ERASED)->latest('id');
     }
 
     public function programs(): HasMany
@@ -174,6 +191,7 @@ class Member extends Model implements AuthenticatableContract
     public function pendingAmount(): float
     {
         return (float) $this->memberships()
+            ->reorder()
             ->where('status', '!=', MembershipStatus::Cancelled->value)
             ->reorder()
             ->selectRaw('COALESCE(SUM(total_amount - amount_paid), 0) as due')
@@ -184,7 +202,7 @@ class Member extends Model implements AuthenticatableContract
     {
         return $this->photo_path
             ? Storage::disk('public')->url($this->photo_path)
-            : 'https://ui-avatars.com/api/?background=dcfce7&color=166534&name='.urlencode($this->name);
+            : 'https://ui-avatars.com/api/?background=2a1a0d&color=ff8c38&name='.urlencode($this->name);
     }
 
     // ---- Scopes ------------------------------------------------------------

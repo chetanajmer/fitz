@@ -5,13 +5,13 @@
 @endphp
 <div {{ $attributes->merge(['class' => 'flex items-start justify-between gap-1']) }}>
     @foreach ($week as $day)
-        <div class="flex flex-col items-center gap-1" title="{{ \Illuminate\Support\Carbon::parse($day['date'])->format('D, d M') }} · {{ ucfirst($day['status']) }}">
+        <div class="flex flex-col items-center gap-1" style="--i: {{ $loop->index }}" title="{{ \Illuminate\Support\Carbon::parse($day['date'])->format('D, d M') }} · {{ ucfirst($day['status']) }}">
             @switch($day['status'])
                 @case('attended')
-                    <span class="flex {{ $dot }} items-center justify-center rounded-full bg-rose-600 text-white"><x-ui.icon name="check" class="size-4" /></span>
+                    <span class="streak-tick flex {{ $dot }} items-center justify-center rounded-full bg-brand-600 text-white shadow-[0_6px_16px_-6px_color-mix(in_srgb,var(--gym-orange)_80%,transparent)]"><x-ui.icon name="check" class="size-4" /></span>
                     @break
                 @case('today')
-                    <span class="flex {{ $dot }} items-center justify-center rounded-full border-2 border-dashed border-rose-500"></span>
+                    <span class="streak-today flex {{ $dot }} items-center justify-center rounded-full border-2 border-dashed border-brand-500"></span>
                     @break
                 @case('closed')
                     <span class="flex {{ $dot }} items-center justify-center rounded-full bg-gray-100 text-[10px] text-gray-400">off</span>

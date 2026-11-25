@@ -32,6 +32,7 @@ class DashboardService
             'total_members' => Member::count(),
             'active_members' => Member::active()->withValidMembership()->count(),
             'inactive_members' => Member::where('status', MemberStatus::Inactive->value)->count(),
+            'pending_members' => Member::where('status', MemberStatus::Pending->value)->count(),
             'expired_members' => Member::active()->expired()->count(),
             'new_enquiries' => Enquiry::where('status', EnquiryStatus::New->value)->count(),
             'followups_today' => Enquiry::open()->whereDate('follow_up_date', '<=', $today)->count(),

@@ -55,8 +55,8 @@
                     <div class="card-body">
                         <div class="h-64" wire:key="wchart-{{ $history->pluck('id')->implode('-') }}-{{ $goal['target_weight_kg'] ?? 0 }}" x-data
                              x-init="renderChart($refs.c, { type: 'line', data: { labels: @js($history->map(fn ($h) => \Illuminate\Support\Carbon::parse($h['measured_on'])->format('d M'))), datasets: [
-                                 { label: 'Weight (kg)', data: @js($history->pluck('weight_kg')), borderColor: '#4f46e5', backgroundColor: 'rgba(79,70,229,.08)', fill: true, tension: .3, pointRadius: 4 },
-                                 @if ($goal) { label: 'Target', data: @js($history->map(fn () => $goal['target_weight_kg'])), borderColor: '#10b981', borderDash: [6, 6], pointRadius: 0, fill: false }, @endif
+                                 { label: 'Weight (kg)', data: @js($history->pluck('weight_kg')), borderColor: chartColors.primary, backgroundColor: chartColors.primarySoft, fill: true, tension: .3, pointRadius: 4 },
+                                 @if ($goal) { label: 'Target', data: @js($history->map(fn () => $goal['target_weight_kg'])), borderColor: chartColors.muted, borderDash: [6, 6], pointRadius: 0, fill: false }, @endif
                              ] }, options: { scales: { y: { beginAtZero: false } } } })"><canvas x-ref="c"></canvas></div>
                     </div>
                 @endif

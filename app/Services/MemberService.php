@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\MemberStatus;
 use App\Enums\Role;
 use App\Models\Gym;
 use App\Models\Member;
@@ -81,7 +82,8 @@ class MemberService
 
             if (! empty($extra['portal_password']) && $member->email) {
                 $member->user
-                    ? $member->user->forceFill(['password' => $extra['portal_password']])->save()
+                    // An account first created by an OTP sign-in may have no email yet.
+                    ? $member->user->forceFill(['password' => $extra['portal_password'], 'email' => $member->user->email ?? strtolower($member->email)])->save()
                     : $this->createPortalLogin($member, $extra['portal_password']);
             }
 
@@ -118,6 +120,34 @@ class MemberService
         return $user;
     }
 
+    /**
+     * The member's portal account, created on their first mobile (OTP) sign-in. It gets a random
+     * password and the member's email only when no other account uses it, so OTP stays the way in.
+     */
+    public function portalUserFor(Member $member): User
+    {
+        if ($member->user) {
+            return $member->user;
+        }
+
+        $email = $member->email ? strtolower($member->email) : null;
+        $user = User::create([
+            'name' => $member->name,
+            'email' => $email && ! User::where('email', $email)->exists() ? $email : null,
+            'phone' => $member->phone,
+            'password' => Str::random(40),
+            'status' => 'active',
+        ]);
+        $user->gym_id = $member->gym_id;
+        $user->save();
+        $user->assignRole(Role::Member->value);
+
+        $member->user_id = $user->id;
+        $member->save();
+
+        return $user;
+    }
+
     public function delete(Member $member): void
     {
         DB::transaction(function () use ($member) {
@@ -125,6 +155,30 @@ class MemberService
             $member->tokens()->delete(); // sign the member out of the mobile app
             $member->delete();
         });
+    }
+
+    /** Accept a website/app sign-up: the member becomes active and can log in. */
+    public function approveRegistration(Member $member): Member
+    {
+        $this->ensurePending($member);
+        $member->status = MemberStatus::Active;
+        $member->save();
+
+        return $member;
+    }
+
+    /** Turn down a website/app sign-up. Soft-deleted, so the person can apply again later. */
+    public function declineRegistration(Member $member): void
+    {
+        $this->ensurePending($member);
+        $this->delete($member);
+    }
+
+    protected function ensurePending(Member $member): void
+    {
+        if ($member->status !== MemberStatus::Pending) {
+            throw ValidationException::withMessages(['member' => "{$member->name} is not waiting for approval."]);
+        }
     }
 
     /** Ensures the trainer belongs to the current gym — never trust a posted id. */

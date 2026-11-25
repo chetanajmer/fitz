@@ -30,6 +30,14 @@ class PlatformSetting extends Model
         'ios_release_notes' => null,
         'app_maintenance_mode' => '0',
         'app_maintenance_message' => null,
+
+        // AI progress module (OpenRouter). Gyms get their own limits on the AI page.
+        'ai_enabled' => '0',
+        'ai_model' => 'openai/gpt-6-luna',
+        'ai_credits_progress' => '1',
+        'ai_credits_photo_comparison' => '2',
+        'ai_default_gym_credits' => '100',
+        'ai_default_member_ceiling' => '4',
     ];
 
     public static function get(string $key, mixed $default = null): mixed

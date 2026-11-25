@@ -36,6 +36,13 @@ class MemberOtpService
         try {
             $member = $this->resolveMember($phone, $gymId);
         } catch (ApiException $e) {
+            if ($e->errorCode === 'MEMBER_NOT_FOUND' && $pending = $this->pendingRegistration($phone, $gymId)) {
+                throw new ApiException("Your registration with {$pending->gym->name} is waiting for the gym's approval. You can log in once they approve it.", 'MEMBER_PENDING_APPROVAL', 403, [
+                    'gym_id' => $pending->gym_id,
+                    'gym_name' => $pending->gym->name,
+                ]);
+            }
+
             if ($e->errorCode === 'MEMBER_NOT_FOUND' && ! $this->hasAnyActiveMembership($phone)) {
                 $this->leads->captureFromApp($phone, $leadInfo, $ip);
 
@@ -159,6 +166,19 @@ class MemberOtpService
         }
 
         return $candidates->first();
+    }
+
+    /** A sign-up from the app still waiting for the gym's approval (newest first). */
+    public function pendingRegistration(string $phone, ?int $gymId = null): ?Member
+    {
+        return Member::withoutGlobalScope(GymScope::class)
+            ->with('gym')
+            ->where('phone_digits', Member::normalizePhone($phone))
+            ->where('status', MemberStatus::Pending->value)
+            ->whereHas('gym', fn ($q) => $q->operational())
+            ->when($gymId, fn ($q) => $q->where('gym_id', $gymId))
+            ->latest('id')
+            ->first();
     }
 
     /** True if the number is an active member of at least one active gym (any gym). */
