@@ -10,11 +10,11 @@
 @endphp
 <section id="home" data-lp-section class="relative isolate overflow-hidden bg-gym-black-deep pt-24 sm:pt-28 lg:pt-32">
     {{-- Athlete photo (decorative). Desktop: fills the right side from under the nav down to the feature strip —
-         the sharp figure fades into a soft charcoal glow (no blurred copy, which read as a ghosted arm). Phones: a dim
-         full-bleed backdrop behind the text. --}}
+         the athlete stands in front of a sharp, darkened gym floor (no blurred glow), so the space around him shows
+         a real gym. Phones: a dim full-bleed backdrop behind the text. --}}
     <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-35 md:inset-auto md:top-16 md:right-0 md:bottom-32 md:left-[36%] md:opacity-100 lg:top-20 lg:bottom-[8.5rem] lg:left-[38%]">
-        <div class="absolute inset-0 hidden bg-[radial-gradient(ellipse_at_45%_40%,#1f1f1f_0%,transparent_65%)] md:block"></div>
-        <div class="absolute top-[12%] bottom-[8%] left-[42%] hidden w-[46%] -translate-x-1/2 rounded-full bg-gym-orange/15 blur-3xl md:block"></div>
+        <img src="{{ asset('images/landing/hero-gym.webp') }}" alt="" decoding="async" class="lp-hero-backdrop absolute inset-0 hidden size-full object-cover object-[60%_45%] md:block">
+        <div class="absolute inset-0 hidden bg-[radial-gradient(ellipse_at_90%_10%,rgb(255_107_0/0.35),transparent_55%)] mix-blend-soft-light md:block"></div>
         <img src="{{ asset('images/landing/hero-athlete.jpg') }}" alt="" fetchpriority="high" class="lp-hero-photo relative size-full object-cover object-[50%_15%] md:absolute md:top-0 md:left-[42%] md:h-full md:w-auto md:max-w-none md:-translate-x-1/2">
     </div>
     <div aria-hidden="true" class="pointer-events-none absolute -top-32 -left-40 -z-10 size-[34rem] rounded-full bg-gym-orange/10 blur-3xl"></div>

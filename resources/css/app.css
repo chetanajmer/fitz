@@ -382,7 +382,15 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
 .lp-tile { box-shadow: 6px 6px 0 0 var(--gym-orange); }
 
 /* Hero photo. Phones: a full-bleed backdrop fading out at the bottom. From tablet up the sharp figure blends
- * into its blurred backdrop at the sides and bottom, and the backdrop fades into the black page on the left. */
+ * into a darkened gym-floor photo at the sides and bottom; that backdrop fades into the black page on the left
+ * (behind the headline) and at the bottom (behind the feature strip). */
+.lp-hero-backdrop {
+    filter: brightness(0.5) contrast(1.15);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 30%), linear-gradient(to top, transparent 0%, #000 25%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent 0%, #000 30%), linear-gradient(to top, transparent 0%, #000 25%);
+    mask-composite: intersect;
+}
 .lp-hero-photo {
     -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 35%);
     mask-image: linear-gradient(to top, transparent 0%, #000 35%);
