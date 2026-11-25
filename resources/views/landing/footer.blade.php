@@ -1,12 +1,13 @@
 <footer id="contact" data-lp-section class="relative overflow-hidden">
     {{-- Final call to action --}}
-    <div class="border-y-2 border-forest bg-clay">
+    {{-- Orange accent band: black type and black buttons on the brand orange. --}}
+    <div class="bg-gym-orange text-gym-black [--color-volt:var(--gym-black)]">
         <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-24 lg:px-8">
             <p class="lp-mono">Ready when you are</p>
-            <h2 data-lp-slam class="lp-display mt-4 text-[clamp(3.5rem,13vw,12rem)]">Your gym. <span class="lp-hl">Lifted.</span></h2>
+            <h2 data-lp-slam class="lp-display mt-4 text-[clamp(3.5rem,13vw,12rem)]">Your gym. <span class="lp-hl text-gym-orange">Lifted.</span></h2>
             <div class="mt-10 flex flex-wrap items-center gap-4">
-                <a href="{{ $ctaUrl }}" class="lp-btn lp-btn-solid">{{ $ctaLabel }} <x-ui.icon name="arrow-right" class="size-4" /></a>
-                <a href="{{ route('member.join') }}" class="lp-btn lp-btn-ghost">Register as Member</a>
+                <a href="{{ $ctaUrl }}" class="lp-btn lp-btn-solid border-gym-black bg-gym-black text-gym-white shadow-none hover:border-gym-charcoal hover:bg-gym-charcoal">{{ $ctaLabel }} <x-ui.icon name="arrow-right" class="size-4" /></a>
+                <a href="{{ route('member.join') }}" class="lp-btn lp-btn-ghost hover:border-gym-black hover:bg-gym-black hover:text-gym-white">Register as Member</a>
                 <span class="font-bold">{{ $priceLabel }} per active member / month · no setup fee</span>
             </div>
         </div>
@@ -15,7 +16,7 @@
     <div class="bg-forest text-chalk">
         <div class="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:px-8">
             <div>
-                <a href="#home" class="lp-display text-4xl">Gym<span class="lp-hl ml-0.5 text-forest">ai</span></a>
+                <a href="#home" class="lp-display flex items-center gap-2 text-4xl text-gym-white"><x-ui.icon name="dumbbell" class="size-9 text-gym-orange" /><span>Gym<span class="text-gym-orange">ai</span></span></a>
                 <p class="mt-4 max-w-xs text-sm text-chalk/70">All-in-one gym management software for memberships, payments, attendance, trainers and growth — built for independent gyms and studios.</p>
             </div>
             <nav aria-label="Quick links">
@@ -56,7 +57,7 @@
                 </ul>
             </div>
         </div>
-        <p aria-hidden="true" class="lp-display lp-outline -mb-[0.12em] text-center text-[27vw] select-none" style="--lp-stroke: rgb(238 233 220 / 0.18)">Gymai</p>
+        <p aria-hidden="true" class="lp-display lp-outline -mb-[0.12em] text-center text-[27vw] select-none" style="--lp-stroke: rgb(245 245 245 / 0.18)">Gymai</p>
         <div class="border-t-2 border-chalk/15">
             <div class="lp-mono mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-chalk/60 sm:flex-row sm:px-6 lg:px-8">
                 <p>© {{ now()->year }} Gymai. All rights reserved.</p>

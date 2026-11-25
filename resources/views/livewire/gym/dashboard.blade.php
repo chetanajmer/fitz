@@ -33,8 +33,8 @@
                 <div class="h-64" wire:ignore x-data x-init="renderChart($refs.canvas, {
                     type: 'bar',
                     data: { labels: @js($growth['labels']), datasets: [
-                        { type: 'line', label: 'Total members', data: @js($growth['total']), borderColor: '#EE4444', backgroundColor: '#EE4444', tension: .3 },
-                        { label: 'New members', data: @js($growth['new']), backgroundColor: 'rgba(238,68,68,.35)', borderRadius: 6 },
+                        { type: 'line', label: 'Total members', data: @js($growth['total']), borderColor: chartColors.primary, backgroundColor: chartColors.primary, tension: .3 },
+                        { label: 'New members', data: @js($growth['new']), backgroundColor: chartColors.primaryHalf, borderRadius: 6 },
                     ] }
                 })"><canvas x-ref="canvas"></canvas></div>
             </div>
@@ -44,7 +44,7 @@
             <div class="card-body">
                 <div class="h-64" wire:ignore x-data x-init="renderChart($refs.canvas, {
                     type: 'bar',
-                    data: { labels: @js($revenue['labels']), datasets: [{ label: 'Revenue (₹)', data: @js($revenue['values']), backgroundColor: '#34d399', borderRadius: 6 }] }
+                    data: { labels: @js($revenue['labels']), datasets: [{ label: 'Revenue (₹)', data: @js($revenue['values']), backgroundColor: chartColors.primaryLight, borderRadius: 6 }] }
                 })"><canvas x-ref="canvas"></canvas></div>
             </div>
         </div>

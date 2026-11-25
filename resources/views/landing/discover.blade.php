@@ -18,11 +18,12 @@
         ['M-50 700 L300 560', 3], ['M820 -50 L950 120', 3],
     ];
 @endphp
-<section id="discover" data-lp-section data-lp-discover class="relative overflow-hidden border-y-2 border-forest bg-volt py-16 sm:py-24">
+<section id="discover" data-lp-section data-lp-discover class="relative isolate overflow-hidden border-y border-forest bg-gym-black-deep py-16 sm:py-24">
+    <div aria-hidden="true" class="pointer-events-none absolute top-1/3 -right-40 -z-10 size-[40rem] rounded-full bg-gym-orange/10 blur-3xl"></div>
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="grid items-end gap-6 lg:grid-cols-[1fr_auto]">
             <div>
-                <p class="lp-mono">Gym discovery &amp; online joining</p>
+                <p class="lp-mono text-gym-orange">Gym discovery &amp; online joining</p>
                 <h2 data-lp-slam class="lp-display mt-3 text-6xl sm:text-8xl">Get found. <br class="hidden sm:block"><span class="lp-outline">Get joined.</span></h2>
             </div>
             <div class="flex flex-wrap gap-4">
@@ -30,7 +31,7 @@
                 <a href="{{ route('member.join') }}" class="lp-btn lp-btn-ghost">Register as Member</a>
             </div>
         </div>
-        <p class="mt-6 max-w-2xl text-lg font-medium">Every gym on Gymai gets a public profile with photos, facilities, timings and plans. People find you by city and locality, then join online — their details land straight in your panel.</p>
+        <p class="mt-6 max-w-2xl text-lg font-medium text-gym-light/85">Every gym on Gymai gets a public profile with photos, facilities, timings and plans. People find you by city and locality, then join online — their details land straight in your panel.</p>
 
         <div class="mt-10 grid gap-8 lg:grid-cols-[22rem_1fr] lg:items-center">
             {{-- Gyms in this locality; hovering one lights up its pin on the map (and the other way round). --}}

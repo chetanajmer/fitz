@@ -22,7 +22,7 @@
         </div>
         <div class="card mb-6">
             <div class="card-header"><h2 class="card-title">Check-ins by hour</h2></div>
-            <div class="card-body"><div class="h-56" wire:key="chart-d-{{ $date }}" x-data x-init="renderChart($refs.c, { type: 'bar', data: { labels: @js($labels), datasets: [{ label: 'Check-ins', data: @js($values), backgroundColor: '#EE4444', borderRadius: 4 }] } })"><canvas x-ref="c"></canvas></div></div>
+            <div class="card-body"><div class="h-56" wire:key="chart-d-{{ $date }}" x-data x-init="renderChart($refs.c, { type: 'bar', data: { labels: @js($labels), datasets: [{ label: 'Check-ins', data: @js($values), backgroundColor: chartColors.primary, borderRadius: 4 }] } })"><canvas x-ref="c"></canvas></div></div>
         </div>
         <div class="card overflow-x-auto">
             <table class="table">
@@ -53,7 +53,7 @@
         </div>
         <div class="card mb-6">
             <div class="card-header"><h2 class="card-title">Daily check-ins</h2></div>
-            <div class="card-body"><div class="h-56" wire:key="chart-m-{{ $month }}" x-data x-init="renderChart($refs.c, { type: 'line', data: { labels: @js($labels), datasets: [{ label: 'Check-ins', data: @js($values), borderColor: '#EE4444', backgroundColor: 'rgba(238,68,68,.12)', fill: true, tension: .3 }] } })"><canvas x-ref="c"></canvas></div></div>
+            <div class="card-body"><div class="h-56" wire:key="chart-m-{{ $month }}" x-data x-init="renderChart($refs.c, { type: 'line', data: { labels: @js($labels), datasets: [{ label: 'Check-ins', data: @js($values), borderColor: chartColors.primary, backgroundColor: chartColors.primarySoft, fill: true, tension: .3 }] } })"><canvas x-ref="c"></canvas></div></div>
         </div>
         <div class="card overflow-x-auto">
             <div class="card-header"><h2 class="card-title">Visits per member</h2></div>

@@ -91,7 +91,7 @@
                     {{-- 5. Weight goal --}}
                     <div id="lp-screen-4" data-lp-app-screen="4" class="lp-screen flex flex-col items-center bg-chalk px-5 pt-12">
                         <p class="lp-mono self-start">Weight goal</p>
-                        <span class="mt-8 flex size-44 items-center justify-center rounded-full" style="background: conic-gradient(var(--color-forest) 0 72%, rgb(20 35 26 / 0.12) 0)">
+                        <span class="mt-8 flex size-44 items-center justify-center rounded-full" style="background: conic-gradient(var(--color-forest) 0 72%, rgb(17 17 17 / 0.12) 0)">
                             <span class="flex size-34 flex-col items-center justify-center rounded-full bg-chalk"><span class="lp-display text-5xl">72%</span><span class="lp-mono">to goal</span></span>
                         </span>
                         <svg viewBox="0 0 220 60" class="mt-8 w-full" aria-hidden="true"><path d="M5 10 L40 16 L75 14 L110 28 L145 34 L180 44 L215 50" fill="none" stroke="var(--color-clay)" stroke-width="4" stroke-linejoin="round" /></svg>
