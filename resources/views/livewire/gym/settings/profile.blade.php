@@ -93,7 +93,7 @@
                                     </div>
                                 </x-ui.field>
                             @endforeach
-                            <div class="h-10 rounded-lg" style="background: linear-gradient(90deg, {{ preg_match('/^#[0-9a-fA-F]{6}$/', $settings['primary_color']) ? $settings['primary_color'] : '#4f46e5' }}, {{ preg_match('/^#[0-9a-fA-F]{6}$/', $settings['secondary_color']) ? $settings['secondary_color'] : '#0ea5e9' }})"></div>
+                            <div class="h-10 rounded-lg" style="background: linear-gradient(90deg, {{ preg_match('/^#[0-9a-fA-F]{6}$/', $settings['primary_color']) ? $settings['primary_color'] : '#ff6b00' }}, {{ preg_match('/^#[0-9a-fA-F]{6}$/', $settings['secondary_color']) ? $settings['secondary_color'] : '#111111' }})"></div>
                         </div>
                         <div class="card card-body space-y-3">
                             <h2 class="card-title">Social links</h2>

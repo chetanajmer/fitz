@@ -11,35 +11,78 @@
 @source not '../views/landing-v1'; /* backup of the old landing page, not rendered */
 @source '../../app/**/*.php';
 
+/* ---- Theme palette: Black + Electric Orange --------------------------------
+ * The single source of truth for every colour in the app. Everything below
+ * (brand, ink, indigo accent, landing tokens, charts in resources/js/app.js)
+ * reads from these variables, so the whole theme is changed here.
+ */
+:root {
+    --gym-black: #111111;        /* main background */
+    --gym-black-deep: #0d0d0d;   /* sidebar */
+    --gym-charcoal: #1c1c1c;     /* inputs, table headers, hovers */
+    --gym-card: #222222;         /* cards and content containers */
+    --gym-orange: #ff6b00;       /* primary actions, active items, highlights */
+    --gym-orange-hover: #e85d00; /* button hover */
+    --gym-orange-light: #ff8c38; /* accent text / secondary highlight on dark */
+    --gym-white: #ffffff;        /* headings, important text */
+    --gym-light: #f5f5f5;        /* body text on dark, light surfaces */
+    --gym-muted: #a3a3a3;        /* secondary text */
+    --gym-border: #333333;       /* borders and dividers */
+}
+
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
-    --color-brand-50: #fef2f2;
-    --color-brand-100: #fee2e2;
-    --color-brand-400: #f87171;
-    --color-brand-500: #f05252;
-    --color-brand-600: #ee4444;
-    --color-brand-700: #dc2626;
-    --color-brand-900: #7f1d1d;
 
-    /* Card / control surface: white by default, #1F1F22 under .theme-dark. */
+    /* Palette as utilities: bg-gym-orange, text-gym-muted, border-gym-border, ... */
+    --color-gym-black: var(--gym-black);
+    --color-gym-black-deep: var(--gym-black-deep);
+    --color-gym-charcoal: var(--gym-charcoal);
+    --color-gym-card: var(--gym-card);
+    --color-gym-orange: var(--gym-orange);
+    --color-gym-orange-hover: var(--gym-orange-hover);
+    --color-gym-orange-light: var(--gym-orange-light);
+    --color-gym-white: var(--gym-white);
+    --color-gym-light: var(--gym-light);
+    --color-gym-muted: var(--gym-muted);
+    --color-gym-border: var(--gym-border);
+
+    --color-brand-50: #fff3e9;
+    --color-brand-100: #ffe3cc;
+    --color-brand-400: var(--gym-orange-light);
+    --color-brand-500: var(--gym-orange);
+    --color-brand-600: var(--gym-orange);
+    --color-brand-700: var(--gym-orange-hover);
+    --color-brand-900: #7a3300;
+
+    /* Existing views use indigo-* as "the accent colour"; it is the orange scale everywhere. */
+    --color-indigo-50: #fff3e9;
+    --color-indigo-100: #ffe3cc;
+    --color-indigo-200: #ffc999;
+    --color-indigo-300: #ffa766;
+    --color-indigo-400: var(--gym-orange-light);
+    --color-indigo-500: var(--gym-orange);
+    --color-indigo-600: var(--gym-orange);
+    --color-indigo-700: var(--gym-orange-hover);
+
+    /* Card / control surface: white in the light panel theme, #222222 under .theme-dark. */
     --color-surface: #ffffff;
 
     /* Panel surfaces (dark theme). */
-    --color-ink-950: #0f0f11;
-    --color-ink-900: #131315;
-    --color-ink-850: #18181a;
-    --color-ink-800: #1f1f22;
-    --color-ink-750: #26262a;
-    --color-ink-700: #2e2e33;
+    --color-ink-950: var(--gym-black-deep);
+    --color-ink-900: var(--gym-black-deep);
+    --color-ink-850: var(--gym-black);
+    --color-ink-800: var(--gym-card);
+    --color-ink-750: #2a2a2a;
+    --color-ink-700: var(--gym-border);
 
-    /* Public landing page ("Chalk & Volt"). */
-    --color-chalk: #eee9dc;
-    --color-chalk-dim: #e2dbc8;
-    --color-forest: #14231a;
-    --color-forest-soft: #1e3427;
-    --color-volt: #d7ff3a;
-    --color-clay: #e2673b;
+    /* Public landing page: same structure, re-inked in the black + orange palette. */
+    --color-chalk: var(--gym-light);
+    --color-chalk-dim: #e6e6e6;
+    --color-forest: var(--gym-black);
+    --color-forest-soft: var(--gym-charcoal);
+    --color-volt: var(--gym-orange);
+    --color-clay: var(--gym-orange-light);
     --font-display: 'Anton', 'Impact', 'Arial Narrow', sans-serif;
     --font-tight: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
     --font-code: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
@@ -47,51 +90,52 @@
 
 [x-cloak] { display: none !important; }
 
-/* ---- Dark panel theme ------------------------------------------------
- * Applied with `theme-dark` on <body> by the panel, portal and auth layouts.
- * Tailwind v4 utilities read colours from CSS variables, so remapping the
- * palette here re-skins every existing view without touching its classes:
- * greys become the #18181A surface scale, indigo becomes the #EE4444 accent,
- * and light status tints become translucent tints that read on dark.
+/* ---- Panel themes ----------------------------------------------------
+ * Panel, portal and auth layouts render dark (`theme-dark` on <body>) by default;
+ * the panel's theme toggle can switch to the light variant. Tailwind v4 utilities
+ * read colours from CSS variables, so remapping the palette here re-skins every
+ * existing view without touching its classes: greys become the black / charcoal
+ * scale, indigo is the orange accent, and light status tints become translucent
+ * tints that read on dark.
  */
-/* Panel light theme: keep the original light surfaces but use the #EE4444 brand
- * accent instead of indigo. `.theme-dark` (declared after) overrides these. */
+/* The sidebar is dark in both variants; its zinc text is the palette's muted grey. */
+.panel-theme,
+.theme-dark {
+    --color-zinc-400: var(--gym-muted);
+    --color-zinc-500: #8a8a8a;
+    --color-zinc-600: #6e6e6e;
+    --color-zinc-800: var(--gym-card);
+}
+
 .panel-theme {
-    --color-indigo-50: #fef2f2;
-    --color-indigo-100: #fee2e2;
-    --color-indigo-200: #fecaca;
-    --color-indigo-300: #fca5a5;
-    --color-indigo-400: #f87171;
-    --color-indigo-500: #f05252;
-    --color-indigo-600: #ee4444;
-    --color-indigo-700: #c81e1e;
+    --color-gray-50: var(--gym-light);
 }
 
 .theme-dark {
     color-scheme: dark;
-    background-color: var(--color-ink-850);
-    color: #f4f4f5;
+    background-color: var(--gym-black);
+    color: var(--gym-light);
 
-    --color-surface: var(--color-ink-800);
-    --color-gray-50: #202023;
-    --color-gray-100: #26262a;
-    --color-gray-200: #2e2e33;
-    --color-gray-300: #3a3a40;
-    --color-gray-400: #71717a;
-    --color-gray-500: #9a9aa3;
-    --color-gray-600: #b4b4bc;
-    --color-gray-700: #d4d4d8;
-    --color-gray-800: #e4e4e7;
-    --color-gray-900: #f4f4f5;
+    --color-surface: var(--gym-card);
+    --color-gray-50: var(--gym-charcoal);
+    --color-gray-100: #2a2a2a;
+    --color-gray-200: var(--gym-border);
+    --color-gray-300: #404040;
+    --color-gray-400: #737373;
+    --color-gray-500: var(--gym-muted);
+    --color-gray-600: #b8b8b8;
+    --color-gray-700: #d4d4d4;
+    --color-gray-800: var(--gym-light);
+    --color-gray-900: var(--gym-white);
 
-    --color-indigo-50: rgb(238 68 68 / 0.12);
-    --color-indigo-100: rgb(238 68 68 / 0.18);
-    --color-indigo-200: rgb(238 68 68 / 0.3);
-    --color-indigo-300: rgb(238 68 68 / 0.5);
-    --color-indigo-400: #f87171;
-    --color-indigo-500: #f05252;
-    --color-indigo-600: #ee4444;
-    --color-indigo-700: #f87171;
+    --color-indigo-50: rgb(255 107 0 / 0.12);
+    --color-indigo-100: rgb(255 107 0 / 0.18);
+    --color-indigo-200: rgb(255 107 0 / 0.3);
+    --color-indigo-300: rgb(255 107 0 / 0.5);
+    --color-indigo-400: var(--gym-orange-light);
+    --color-indigo-500: var(--gym-orange);
+    --color-indigo-600: var(--gym-orange);
+    --color-indigo-700: var(--gym-orange-light);
 
     --color-emerald-50: rgb(16 185 129 / 0.12);
     --color-emerald-100: rgb(16 185 129 / 0.18);
@@ -132,29 +176,34 @@
 
 /* Literal white surfaces and dark overlays that the variable remap can't express. */
 .theme-dark .bg-white { background-color: var(--color-surface); }
-.theme-dark .bg-white\/90 { background-color: rgb(24 24 26 / 0.85); }
+.theme-dark .bg-white\/90 { background-color: rgb(17 17 17 / 0.85); }
 .theme-dark .bg-gray-900\/50,
-.theme-dark .bg-gray-900\/60 { background-color: rgb(0 0 0 / 0.65); }
+.theme-dark .bg-gray-900\/60 { background-color: rgb(0 0 0 / 0.7); }
 .theme-dark .bg-gray-50\/50 { background-color: rgb(255 255 255 / 0.02); }
 /* "Selected" segmented buttons and pills (bg-gray-900 text-white) become the accent. */
 .theme-dark .bg-gray-900 { background-color: var(--color-brand-600); }
-.theme-dark .from-indigo-50 { --tw-gradient-from: rgb(238 68 68 / 0.16); }
+.theme-dark .from-indigo-50 { --tw-gradient-from: rgb(255 107 0 / 0.16); }
 .theme-dark .to-sky-50 { --tw-gradient-to: rgb(255 255 255 / 0.03); }
 
 .theme-dark :is(.input, select, textarea, input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'])) {
-    background-color: var(--color-ink-900);
-    border-color: var(--color-ink-700);
-    color: #f4f4f5;
+    background-color: var(--gym-charcoal);
+    border-color: var(--gym-border);
+    color: var(--gym-white);
 }
-.theme-dark :is(.input, select, textarea, input)::placeholder { color: #6b6b74; }
+.theme-dark :is(.input, select, textarea, input):focus { border-color: var(--gym-orange); }
+.theme-dark :is(.input, select, textarea, input)::placeholder { color: #6e6e6e; }
+.theme-dark select option { background-color: var(--gym-charcoal); color: var(--gym-white); }
 .theme-dark :is(input[type='checkbox'], input[type='radio']) {
-    background-color: var(--color-ink-900);
-    border-color: #4a4a52;
+    background-color: var(--gym-charcoal);
+    border-color: #4d4d4d;
 }
-.theme-dark :is(input[type='checkbox'], input[type='radio']):checked { background-color: var(--color-brand-600); border-color: var(--color-brand-600); }
+.theme-dark :is(input[type='checkbox'], input[type='radio']):checked { background-color: var(--gym-orange); border-color: var(--gym-orange); }
+:is(.panel-theme, .theme-dark) input[type='range'] { accent-color: var(--gym-orange); }
 .theme-dark ::-webkit-scrollbar { width: 10px; height: 10px; }
-.theme-dark ::-webkit-scrollbar-thumb { background: #34343a; border-radius: 9999px; border: 2px solid var(--color-ink-850); }
+.theme-dark ::-webkit-scrollbar-thumb { background: var(--gym-border); border-radius: 9999px; border: 2px solid var(--gym-black); }
+.theme-dark ::-webkit-scrollbar-thumb:hover { background: #4d4d4d; }
 .theme-dark ::-webkit-scrollbar-track { background: transparent; }
+.theme-dark ::selection { background: rgb(255 107 0 / 0.35); color: var(--gym-white); }
 
 /* ---- Reusable UI utilities ------------------------------------------- */
 @utility card { @apply rounded-2xl border border-gray-200 bg-surface shadow-sm; }
@@ -162,23 +211,23 @@
 @utility card-header { @apply flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4; }
 @utility card-title { @apply text-sm font-semibold text-gray-900; }
 
-@utility btn { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition focus:ring-2 focus:ring-offset-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60; }
-@utility btn-primary { @apply btn bg-brand-600 text-white shadow-[0_6px_20px_-6px_rgb(238_68_68/0.6)] hover:bg-brand-700 focus:ring-brand-500 focus:ring-offset-transparent; }
-@utility btn-secondary { @apply btn border border-gray-300 bg-surface text-gray-700 hover:bg-gray-50 focus:ring-gray-300 focus:ring-offset-transparent; }
+@utility btn { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition duration-200 focus:ring-2 focus:ring-offset-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60; }
+@utility btn-primary { @apply btn bg-brand-600 font-semibold text-white shadow-[0_6px_20px_-6px_rgb(255_107_0/0.55)] hover:bg-brand-700 hover:shadow-[0_8px_24px_-6px_rgb(255_107_0/0.7)] focus:ring-brand-500 focus:ring-offset-transparent; }
+@utility btn-secondary { @apply btn border border-gray-300 bg-surface text-gray-700 hover:border-brand-600/60 hover:bg-gray-50 hover:text-gray-900 focus:ring-brand-500/40 focus:ring-offset-transparent; }
 @utility btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500; }
 @utility btn-success { @apply btn bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500; }
-@utility btn-ghost { @apply btn text-gray-600 hover:bg-gray-100 focus:ring-gray-200; }
+@utility btn-ghost { @apply btn text-gray-600 hover:bg-brand-600/10 hover:text-brand-600 focus:ring-brand-500/30; }
 @utility btn-sm { @apply px-2.5 py-1.5 text-xs; }
 
 @utility label { @apply mb-1 block text-sm font-medium text-gray-700; }
-@utility input { @apply block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500; }
+@utility input { @apply block w-full rounded-lg border-gray-300 text-sm shadow-sm transition focus:border-brand-500 focus:ring-brand-500; }
 @utility input-error { @apply mt-1 text-xs text-red-600; }
 @utility hint { @apply mt-1 text-xs text-gray-500; }
 
-@utility nav-link { @apply relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition hover:bg-white/5 hover:text-white; }
-@utility nav-link-active { @apply bg-brand-600/12 text-white before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-full before:bg-brand-600 [&>svg]:text-brand-500; }
+@utility nav-link { @apply relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition not-[.nav-link-active]:text-gym-muted duration-200 hover:bg-brand-600/10 hover:text-white [&>svg]:transition-colors hover:[&>svg]:text-brand-500; }
+@utility nav-link-active { @apply bg-brand-600/15 text-white before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-full before:bg-brand-600 [&>svg]:text-brand-500; }
 
-@utility tab { @apply border-b-2 border-transparent px-1 pb-3 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700; }
+@utility tab { @apply border-b-2 border-transparent px-1 pb-3 text-sm font-medium whitespace-nowrap text-gray-500 transition hover:border-brand-600/40 hover:text-gray-700; }
 @utility tab-active { @apply border-brand-600 text-brand-700 dark:text-brand-500; }
 
 @layer components {
@@ -186,33 +235,54 @@
     .table thead th { @apply bg-gray-50 px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-gray-500 uppercase; }
     .table tbody { @apply divide-y divide-gray-100; }
     .table tbody td { @apply px-4 py-3 whitespace-nowrap text-gray-700; }
-    .table tbody tr:hover { @apply bg-gray-50; }
+    .table tbody tr { @apply transition-colors; }
+    .table tbody tr:hover { @apply bg-brand-600/5; }
 }
 
-/* ---- Public landing page — "Chalk & Volt" (welcome.blade.php + views/landing) ----
- * Light chalk paper, forest ink, volt-lime and clay. Anton for display type, Inter Tight
- * for copy, JetBrains Mono for labels. resources/js/landing.js adds the motion; every
- * section reads fine without JS, and prefers-reduced-motion turns all motion off.
+/* ---- Public landing page (welcome.blade.php + views/landing) ------------------------
+ * Dark-first: black page, white type, Electric Orange accents. Anton for display type,
+ * Inter Tight for copy, JetBrains Mono for labels. resources/js/landing.js adds the motion;
+ * every section reads fine without JS, and prefers-reduced-motion turns all motion off.
+ *
+ * The section markup speaks in two roles: `chalk` = the paper a section sits on and
+ * `forest` = the ink drawn on it, with `bg-forest` panels swapping the two. On this dark
+ * page the paper is black and the ink is light; a `bg-forest` panel restores the original
+ * pairing (charcoal panel, light text, dark ink on light chips) for everything inside it.
  */
 /* Display type stays unlayered so its tight line-height beats Tailwind's text-* sizes. */
 .lp-display { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; line-height: 0.88; letter-spacing: 0; }
 
 /* Unlayered so it beats the layout's font-sans / text-gray-900 utilities on <body>. */
 .landing {
-    background-color: var(--color-chalk);
-    /* Paper grain: an inline SVG noise tile, rendered once. */
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .08 0 0 0 0 .14 0 0 0 0 .1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-    color: var(--color-forest);
+    /* Paper drawn as a card (bg-chalk) is the card grey; the page itself is black. */
+    --color-chalk: var(--gym-card);
+    --color-chalk-dim: var(--gym-charcoal);
+    --color-forest: var(--gym-light);
+    --color-forest-soft: var(--gym-charcoal);
+    color-scheme: dark;
+    background-color: var(--gym-black);
+    /* Fine film grain: an inline SVG noise tile, rendered once. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .035 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    color: var(--gym-light);
     font-family: var(--font-tight);
 }
+/* Dark panels: charcoal surface, light text; chips and cards inside keep dark ink. */
+.landing .bg-forest {
+    --color-forest: var(--gym-charcoal);
+    --color-forest-soft: #2a2a2a;
+    --color-chalk: var(--gym-light);
+    --color-chalk-dim: #e6e6e6;
+}
+/* Ink outlines on the black page become the quiet divider grey (inside panels they keep the panel ink). */
+.landing .border-forest:not(.bg-forest .border-forest) { border-color: var(--gym-border); }
 
 /* Components sit in a layer so Tailwind utilities on the same element can override them. */
 @layer components {
 html:has(body.landing) { scroll-padding-top: 5rem; }
 html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
 
-.landing ::selection { background: var(--color-volt); color: var(--color-forest); }
-.landing :focus-visible { outline: 3px solid var(--color-clay); outline-offset: 3px; }
+.landing ::selection { background: var(--gym-orange); color: var(--gym-black); }
+.landing :focus-visible { outline: 3px solid var(--gym-orange-light); outline-offset: 3px; }
 
 .lp-mono { font-family: var(--font-code); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; }
 .lp-hl {
@@ -220,32 +290,32 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
     padding: 0 0.08em;
+    color: var(--gym-black);
 }
 .lp-outline { color: transparent; -webkit-text-stroke: 2px var(--lp-stroke, var(--color-forest)); }
 
-/* Buttons: hard offset shadows, like a printed sticker. */
+/* Buttons: solid orange primary, outlined secondary, soft orange glow on hover. */
 .lp-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-    border: 2px solid var(--color-forest); padding: 0.85rem 1.35rem;
+    border: 2px solid var(--gym-orange); border-radius: 0.375rem; padding: 0.85rem 1.35rem;
     font-weight: 700; font-size: 0.95rem; line-height: 1.2;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
-.lp-btn svg { transition: transform 0.18s ease; }
+.lp-btn svg { transition: transform 0.2s ease; }
 .lp-btn:hover svg { transform: translateX(3px); }
-.lp-btn-solid { background: var(--color-forest); color: var(--color-volt); box-shadow: 6px 6px 0 -2px var(--color-volt), 6px 6px 0 0 var(--color-forest); }
-.lp-btn-solid:hover { transform: translate(-2px, -2px); box-shadow: 9px 9px 0 -2px var(--color-volt), 9px 9px 0 0 var(--color-forest); }
-.lp-btn-solid:active { transform: translate(4px, 4px); box-shadow: 0 0 0 0 var(--color-forest); }
-.lp-btn-volt { background: var(--color-volt); color: var(--color-forest); border-color: var(--color-volt); box-shadow: 6px 6px 0 0 var(--color-chalk); }
-.lp-btn-volt:hover { transform: translate(-2px, -2px); box-shadow: 9px 9px 0 0 var(--color-chalk); }
-.lp-btn-volt:active { transform: translate(4px, 4px); box-shadow: none; }
+.lp-btn:active { transform: translateY(1px); }
+.lp-btn-solid,
+.lp-btn-volt { background: var(--gym-orange); border-color: var(--gym-orange); color: var(--gym-white); box-shadow: 0 10px 28px -12px rgb(255 107 0 / 0.75); }
+.lp-btn-solid:hover,
+.lp-btn-volt:hover { background: var(--gym-orange-hover); border-color: var(--gym-orange-hover); transform: translateY(-2px); box-shadow: 0 16px 34px -12px rgb(255 107 0 / 0.9); }
 .lp-btn-ghost { background: transparent; color: inherit; border-color: currentColor; }
-.lp-btn-ghost:hover { background: var(--color-forest); border-color: var(--color-forest); color: var(--color-chalk); }
+.lp-btn-ghost:hover { border-color: var(--gym-orange); color: var(--gym-orange); transform: translateY(-2px); }
 
 /* Page loader: a roller shutter (horizontal slats) with a CSS-3D dumbbell. Only shown with JS; a failsafe
  * hides it after 4 s in case landing.js never runs. */
 .lp-loader {
     display: none;
-    background-image: repeating-linear-gradient(to bottom, transparent 0 46px, rgb(0 0 0 / 0.25) 46px 48px, rgb(238 233 220 / 0.06) 48px 50px);
+    background-image: repeating-linear-gradient(to bottom, transparent 0 46px, rgb(0 0 0 / 0.25) 46px 48px, rgb(245 245 245 / 0.06) 48px 50px);
 }
 .js .lp-loader { display: flex; animation: lp-loader-failsafe 0.4s ease 4s forwards; }
 @keyframes lp-loader-failsafe { to { opacity: 0; visibility: hidden; } }
@@ -261,7 +331,7 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
 @keyframes lp-db-lift { 0%, 100% { transform: translateY(16px); } 50% { transform: translateY(-16px); } }
 .lp-db-bar {
     width: 220px; height: 9px; margin: -4.5px 0 0 -110px;
-    background: linear-gradient(90deg, #bdb6a2, var(--color-chalk) 30% 70%, #bdb6a2);
+    background: linear-gradient(90deg, #bdbdbd, var(--color-chalk) 30% 70%, #bdbdbd);
     transform: rotateX(calc(var(--i) * 45deg)) translateZ(4.5px);
 }
 .lp-db-bar:nth-child(odd) { filter: brightness(0.82); }
@@ -282,10 +352,11 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
 
 /* Top progress bar + navigation. */
 .lp-progress { transform: scaleX(0); transform-origin: left; }
-.lp-nav { transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.35s ease; border-bottom: 2px solid transparent; }
-.lp-nav.is-scrolled { background: rgb(238 233 220 / 0.9); border-color: var(--color-forest); backdrop-filter: blur(10px); }
-.lp-navlink { position: relative; }
-.lp-navlink::after { content: ''; position: absolute; left: 0.75rem; right: 0.75rem; bottom: 0.3rem; height: 3px; background: var(--color-forest); transform: scaleX(0); transform-origin: left; transition: transform 0.25s ease; }
+.lp-nav { transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.35s ease; border-bottom: 1px solid rgb(255 255 255 / 0.06); }
+.lp-nav.is-scrolled { background: rgb(13 13 13 / 0.88); border-color: var(--gym-border); backdrop-filter: blur(12px); }
+.lp-navlink { position: relative; transition: color 0.2s ease; }
+.lp-navlink:hover, .lp-navlink.is-active { color: var(--gym-orange); }
+.lp-navlink::after { content: ''; position: absolute; left: 0.75rem; right: 0.75rem; bottom: 0.3rem; height: 2px; background: var(--gym-orange); transform: scaleX(0); transform-origin: left; transition: transform 0.25s ease; }
 .lp-navlink:hover::after, .lp-navlink.is-active::after { transform: scaleX(1); }
 .lp-burger span { transition: transform 0.25s ease, opacity 0.2s ease; }
 .lp-burger.is-open span:nth-child(2) { transform: translateY(7px) rotate(45deg); }
@@ -293,19 +364,58 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
 .lp-burger.is-open span:nth-child(4) { transform: translateY(-7px) rotate(-45deg); }
 
 /* Hero */
-.lp-hero-title { font-size: clamp(5rem, 29vw, 9rem); }
-@media (width >= 40rem) { .lp-hero-title { font-size: clamp(5rem, 15.5vw, 15rem); } }
+.lp-hero-title { position: relative; isolation: isolate; font-size: clamp(4.25rem, 21vw, 7rem); color: var(--gym-white); }
+@media (width >= 40rem) { .lp-hero-title { font-size: clamp(5rem, 11vw, 10.5rem); } }
 .js .lp-hero-title { visibility: hidden; animation: lp-unhide 0s 2.5s forwards; } /* landing.js reveals it; failsafe after 2.5s */
 @keyframes lp-unhide { to { visibility: visible; } }
 .lp-hero-title .lp-hl { transition: background-size 0.6s cubic-bezier(0.7, 0, 0.2, 1); }
 .js .lp-hero-title:not(.is-lit) .lp-hl { background-size: 0% 100%; }
+/* "GYM." sits on a slanted orange plate that wipes in from the left once the letters land. */
+.lp-hl-slant { position: relative; display: inline-block; padding: 0.06em 0.1em 0 0.02em; color: var(--gym-black); }
+.lp-hl-slant::before {
+    content: ''; position: absolute; z-index: -1; inset: 0 -0.08em -0.04em -0.3em;
+    background: var(--gym-orange); transform: skewX(-14deg); transform-origin: left;
+    transition: transform 0.6s cubic-bezier(0.7, 0, 0.2, 1);
+}
+.js .lp-hero-title:not(.is-lit) .lp-hl-slant::before { transform: skewX(-14deg) scaleX(0); }
 .lp-badge { animation: lp-spin 22s linear infinite; }
-.lp-tile { box-shadow: 6px 6px 0 0 var(--color-forest); }
+.lp-tile { box-shadow: 6px 6px 0 0 var(--gym-orange); }
+
+/* Hero photo. Phones: a full-bleed backdrop fading out at the bottom. From tablet up the sharp figure blends
+ * into its blurred backdrop at the sides and bottom, and the backdrop fades into the black page on the left. */
+.lp-hero-photo {
+    -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 35%);
+    mask-image: linear-gradient(to top, transparent 0%, #000 35%);
+}
+.lp-hero-ambient {
+    opacity: 0.55;
+    filter: blur(24px) brightness(0.7);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 40%), linear-gradient(to top, transparent 0%, #000 30%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent 0%, #000 40%), linear-gradient(to top, transparent 0%, #000 30%);
+    mask-composite: intersect;
+}
+@media (width >= 48rem) {
+    .lp-hero-photo {
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%), linear-gradient(to top, transparent 0%, #000 18%);
+        -webkit-mask-composite: source-in;
+        mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%), linear-gradient(to top, transparent 0%, #000 18%);
+        mask-composite: intersect;
+    }
+}
+/* Floating product cards: glassy charcoal with an orange edge, like the panel's highlight. */
+.lp-hero-card {
+    border: 1px solid var(--gym-border); border-radius: 0.875rem;
+    background: rgb(28 28 28 / 0.88); backdrop-filter: blur(10px);
+    box-shadow: 4px 4px 0 0 var(--gym-orange), 0 20px 44px -16px rgb(255 107 0 / 0.45);
+}
+.lp-play { transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease, transform 0.2s ease; }
+.group:hover .lp-play { border-color: var(--gym-orange); background: var(--gym-orange); color: var(--gym-white); transform: scale(1.06); }
 
 /* Heartbeat lines: paths use pathLength="1" so the dash maths never needs measuring. */
 .lp-ecg path { stroke-dasharray: 1; }
 .js .lp-ecg path { stroke-dashoffset: 1; }
-.lp-ecg-pen { box-shadow: 0 0 0 5px rgb(215 255 58 / 0.35), 0 0 26px 8px rgb(215 255 58 / 0.85); }
+.lp-ecg-pen { box-shadow: 0 0 0 5px rgb(255 107 0 / 0.35), 0 0 26px 8px rgb(255 107 0 / 0.85); }
 .lp-spine { pointer-events: none; }
 .lp-spine path { stroke-dasharray: 1; stroke-dashoffset: 1; }
 
@@ -379,7 +489,7 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
 .lp-flap {
     position: relative; display: inline-flex; align-items: center; justify-content: center;
     min-width: 0.78em; padding: 0.06em 0.08em 0; border-radius: 0.08em;
-    background: linear-gradient(#0d1811 0 50%, #13221a 50% 100%); color: var(--color-volt);
+    background: linear-gradient(var(--gym-black-deep) 0 50%, var(--gym-charcoal) 50% 100%); color: var(--color-volt);
     box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.4);
 }
 .lp-flap::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--color-chalk); opacity: 0.85; }
@@ -391,7 +501,7 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
 .lp-screen { position: absolute; inset: 0; clip-path: inset(100% 0 0 0); transition: clip-path 0.7s cubic-bezier(0.7, 0, 0.2, 1); }
 .lp-screen.is-active { clip-path: inset(0 0 0 0); z-index: 1; }
 .lp-step { transition: background-color 0.3s ease, color 0.3s ease, padding 0.3s ease; }
-.lp-step[aria-pressed='true'] { background: var(--color-forest); color: var(--color-chalk); }
+.lp-step[aria-pressed='true'] { background: var(--gym-card); color: var(--gym-white); box-shadow: inset 4px 0 0 var(--gym-orange); }
 .lp-step[aria-pressed='true'] .lp-step-no { color: var(--color-volt); }
 .lp-ring-pulse::before { content: ''; position: absolute; inset: 0; border-radius: 9999px; border: 3px solid var(--color-volt); animation: lp-pulse 1.8s ease-out infinite; }
 .lp-otp { animation: lp-tick 3.5s ease-out infinite; animation-delay: calc(var(--i) * 0.25s); }
@@ -427,15 +537,15 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
 @media (width >= 40rem) { .lp-map-plane { --zoom: 0.75; } }
 @media (width >= 64rem) { .lp-map-plane { --zoom: 0.95; } }
 .lp-map-building { position: absolute; width: 150px; height: 50px; transform-style: preserve-3d; cursor: pointer; }
-.lp-face { position: absolute; display: block; border: 2px solid var(--color-forest); transition: background-color 0.3s ease; }
+.lp-face { position: absolute; display: block; border: 2px solid var(--gym-black-deep); transition: background-color 0.3s ease; }
 .lp-face.is-top { inset: 0; transform: translateZ(var(--h)); background: repeating-linear-gradient(90deg, var(--color-chalk) 0 18px, var(--color-chalk-dim) 18px 20px); }
 .lp-face.is-front, .lp-face.is-back { left: 0; width: 150px; height: var(--h); transform-origin: top; transform: rotateX(90deg); }
-.lp-face.is-front { top: 100%; background: var(--color-forest); }
-.lp-face.is-back { top: 0; background: var(--color-forest-soft); }
+.lp-face.is-front { top: 100%; background: var(--gym-orange); }
+.lp-face.is-back { top: 0; background: var(--gym-orange-hover); }
 .lp-face.is-left, .lp-face.is-right { top: 0; width: var(--h); height: 50px; transform-origin: left; transform: rotateY(-90deg); }
-.lp-face.is-left { left: 0; background: #0d1811; }
-.lp-face.is-right { left: 100%; background: var(--color-forest-soft); }
-.lp-map-building.is-active .lp-face.is-top { background: var(--color-clay); }
+.lp-face.is-left { left: 0; background: #b34b00; }
+.lp-face.is-right { left: 100%; background: var(--gym-orange-hover); }
+.lp-map-building.is-active .lp-face.is-top { background: var(--gym-orange-light); }
 .lp-map-pin {
     position: absolute; width: 0; height: 0; transform-style: preserve-3d;
     transform: translateZ(var(--lift, 0px)) rotateZ(calc((var(--spin) + var(--spin-o)) * -1deg)) rotateX(calc((var(--tilt) + var(--tilt-o)) * -1deg));
@@ -445,21 +555,21 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
     transform: translateX(-50%); transform-origin: bottom center; cursor: pointer;
     transition: transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1), opacity 0.3s ease;
 }
-.lp-map-label { padding: 0.4rem 0.6rem; white-space: nowrap; text-align: center; background: var(--color-chalk); border: 2px solid var(--color-forest); box-shadow: 4px 4px 0 0 var(--color-forest); transition: background-color 0.25s ease, color 0.25s ease; }
+.lp-map-label { padding: 0.4rem 0.6rem; white-space: nowrap; text-align: center; background: var(--gym-card); color: var(--gym-white); border: 1px solid var(--gym-border); border-radius: 0.375rem; box-shadow: 4px 4px 0 0 var(--gym-orange); transition: background-color 0.25s ease, color 0.25s ease; }
 .lp-map-detail { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease; }
-.lp-map-stem { width: 2px; height: 1.75rem; background: var(--color-forest); }
-.lp-map-dot { width: 0.85rem; height: 0.85rem; margin-bottom: -0.425rem; border-radius: 9999px; background: var(--color-clay); border: 2px solid var(--color-forest); }
-.lp-map-pin-body.is-yours .lp-map-label { background: var(--color-forest); color: var(--color-volt); }
+.lp-map-stem { width: 2px; height: 1.75rem; background: var(--gym-light); }
+.lp-map-dot { width: 0.85rem; height: 0.85rem; margin-bottom: -0.425rem; border-radius: 9999px; background: var(--gym-orange); border: 2px solid var(--gym-white); }
+.lp-map-pin-body.is-yours .lp-map-label { background: var(--gym-orange); color: var(--gym-black); border-color: var(--gym-orange); box-shadow: 4px 4px 0 0 var(--gym-white); }
 .lp-map-pin-body.is-active { transform: translateX(-50%) translateY(-8px) scale(1.15); }
-.lp-map-pin-body.is-active .lp-map-label { background: var(--color-clay); color: var(--color-forest); }
+.lp-map-pin-body.is-active .lp-map-label { background: var(--gym-orange-light); color: var(--gym-black); border-color: var(--gym-orange-light); }
 .lp-map-pin-body.is-active .lp-map-detail { max-height: 2em; margin-top: 0.2rem; opacity: 1; }
 .has-active .lp-map-pin-body:not(.is-active) { opacity: 0.35; }
 .lp-map-item { transition: background-color 0.25s ease, color 0.25s ease, opacity 0.25s ease, padding 0.25s ease; }
-.lp-map-item.is-active { background: var(--color-forest); color: var(--color-volt); padding-left: 1rem; }
+.lp-map-item.is-active { background: var(--gym-orange); color: var(--gym-black); padding-left: 1rem; }
 .has-active .lp-map-item:not(.is-active) { opacity: 0.45; }
 
 /* ---- Pricing calculator sliders ---- */
-.lp-range { -webkit-appearance: none; appearance: none; height: 0.75rem; background: linear-gradient(var(--color-volt), var(--color-volt)) no-repeat left / var(--fill, 15%) 100%, rgb(238 233 220 / 0.15); border-radius: 0; }
+.lp-range { -webkit-appearance: none; appearance: none; height: 0.75rem; background: linear-gradient(var(--color-volt), var(--color-volt)) no-repeat left / var(--fill, 15%) 100%, rgb(245 245 245 / 0.15); border-radius: 0; }
 .lp-range::-webkit-slider-thumb { -webkit-appearance: none; width: 1.75rem; height: 2.5rem; background: var(--color-chalk); border: 3px solid var(--color-forest); box-shadow: 4px 4px 0 var(--color-volt); cursor: grab; }
 .lp-range::-moz-range-thumb { width: 1.75rem; height: 2.5rem; border-radius: 0; background: var(--color-chalk); border: 3px solid var(--color-forest); box-shadow: 4px 4px 0 var(--color-volt); cursor: grab; }
 
@@ -467,7 +577,7 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
 .lp-row { position: relative; isolation: isolate; }
 .lp-row::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--color-volt); transform: scaleX(0); transform-origin: left; transition: transform 0.45s cubic-bezier(0.7, 0, 0.2, 1); }
 .lp-row:hover::before { transform: scaleX(1); }
-.lp-row:hover { color: var(--color-forest); }
+.lp-row:hover { color: var(--gym-black); }
 
 /* ---- FAQ ---- */
 .landing details > summary { list-style: none; }

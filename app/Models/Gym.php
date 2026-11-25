@@ -14,8 +14,8 @@ use Illuminate\Support\Str;
 class Gym extends Model
 {
     public const DEFAULT_SETTINGS = [
-        'primary_color' => '#4f46e5',
-        'secondary_color' => '#0ea5e9',
+        'primary_color' => '#ff6b00',
+        'secondary_color' => '#111111',
         'tagline' => null,
         'opening_hours' => [
             'monday' => ['open' => '06:00', 'close' => '22:00', 'closed' => false],
@@ -190,12 +190,12 @@ class Gym extends Model
 
     public function primaryColor(): string
     {
-        return $this->safeColor($this->setting('primary_color'), '#4f46e5');
+        return $this->safeColor($this->setting('primary_color'), '#ff6b00');
     }
 
     public function secondaryColor(): string
     {
-        return $this->safeColor($this->setting('secondary_color'), '#0ea5e9');
+        return $this->safeColor($this->setting('secondary_color'), '#111111');
     }
 
     protected function safeColor(?string $value, string $fallback): string

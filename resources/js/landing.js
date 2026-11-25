@@ -458,7 +458,7 @@ if (discover && map) {
                 context.lineCap = 'round';
                 for (let i = 1; i < points.length; i++) {
                     const life = 1 - (now - points[i].t) / lifetime;
-                    context.strokeStyle = `rgba(226, 103, 59, ${life})`;
+                    context.strokeStyle = `rgba(255, 140, 56, ${life})`;
                     context.lineWidth = 1 + life * 9;
                     context.beginPath();
                     context.moveTo(points[i - 1].x, points[i - 1].y);
@@ -467,7 +467,7 @@ if (discover && map) {
                 }
                 const head = points[points.length - 1];
                 if (head) {
-                    context.fillStyle = '#14231a';
+                    context.fillStyle = '#ffffff';
                     context.beginPath();
                     context.arc(head.x, head.y, 5, 0, Math.PI * 2);
                     context.fill();

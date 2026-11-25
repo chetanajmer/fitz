@@ -20,9 +20,9 @@
         <meta property="og:description" content="All-in-one gym management software for memberships, payments, attendance, trainers, a member app and growth.">
         <meta property="og:type" content="website">
         <meta property="og:url" content="{{ url('/') }}">
-        <meta name="theme-color" content="#EEE9DC">
-        {{-- The palette is designed light-only; stop browsers from auto-darkening it. --}}
-        <meta name="color-scheme" content="only light">
+        <meta name="theme-color" content="#0D0D0D">
+        {{-- The palette is designed dark-only; stop browsers from re-tinting it. --}}
+        <meta name="color-scheme" content="only dark">
         <link rel="canonical" href="{{ url('/') }}">
         <script>document.documentElement.classList.add('js');</script>
         @vite('resources/js/landing.js')
@@ -30,7 +30,7 @@
 
     @include('landing.loader')
 
-    <div data-lp-progressclass="lp-progress fixed inset-x-0 top-0 z-[60] h-1 bg-clay" aria-hidden="true"></div>
+    <div data-lp-progress class="lp-progress fixed inset-x-0 top-0 z-[60] h-1 bg-gym-orange" aria-hidden="true"></div>
 
     <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70] focus:bg-forest focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-volt">Skip to content</a>
 

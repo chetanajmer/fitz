@@ -99,7 +99,7 @@ class User extends Authenticatable
     {
         return $this->profile_photo_path
             ? Storage::disk('public')->url($this->profile_photo_path)
-            : 'https://ui-avatars.com/api/?background=2a1617&color=f87171&name='.urlencode($this->name);
+            : 'https://ui-avatars.com/api/?background=222222&color=ff6b00&name='.urlencode($this->name);
     }
 
     public function scopeTrainersOf($query, int $gymId)

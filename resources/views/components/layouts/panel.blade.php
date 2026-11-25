@@ -16,7 +16,7 @@
                 @if ($brandLogo)
                     <img src="{{ $brandLogo }}" alt="" class="size-9 rounded-lg bg-white object-contain p-0.5">
                 @else
-                    <div class="flex size-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white shadow-[0_0_18px_-2px_rgb(238_68_68/0.7)]">{{ \Illuminate\Support\Str::of($brandName)->substr(0, 2)->upper() }}</div>
+                    <div class="flex size-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white shadow-[0_0_18px_-2px_rgb(255_107_0/0.6)]">{{ \Illuminate\Support\Str::of($brandName)->substr(0, 2)->upper() }}</div>
                 @endif
                 <div class="min-w-0">
                     <p class="truncate text-sm font-semibold text-white">{{ $brandName }}</p>
