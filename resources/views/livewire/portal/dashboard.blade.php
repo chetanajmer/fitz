@@ -42,15 +42,14 @@
                             <span class="relative flex size-2.5"><span class="absolute inset-0 animate-ping rounded-full bg-emerald-500/70"></span><span class="relative size-2.5 rounded-full bg-emerald-500"></span></span>
                             Checked in at {{ $todayVisit->check_in_at->format('h:i A') }}
                         </p>
-                        <button wire:click="checkOut" wire:loading.attr="disabled" class="btn-secondary rounded-full px-6 py-2.5">
+                        <button type="button" x-data x-on:click="$dispatch('scan-qr', 'checkOut')" class="btn-secondary rounded-full px-6 py-2.5">
                             <x-ui.icon name="logout" class="size-5" /> Check out
                         </button>
                     </div>
                 @elseif ($selfCheckIn)
-                    <button wire:click="checkIn" wire:loading.attr="disabled" class="btn-primary w-full rounded-full py-3.5 text-base font-bold tracking-wider uppercase">
+                    <button type="button" x-data x-on:click="$dispatch('scan-qr', 'checkIn')" class="btn-primary w-full rounded-full py-3.5 text-base font-bold tracking-wider uppercase">
                         <x-ui.icon name="qr" class="size-5" />
-                        <span wire:loading.remove wire:target="checkIn">Check in now</span>
-                        <span wire:loading wire:target="checkIn">Checking in…</span>
+                        Check in now
                     </button>
                 @else
                     <p class="rounded-xl bg-white px-3 py-3 text-center text-sm text-gray-600 dark:bg-ink-800">Show your QR code at the front desk to check in.</p>
@@ -180,4 +179,6 @@
             </tbody>
         </table>
     </div>
+
+    <x-attendance.scanner />
 </div>

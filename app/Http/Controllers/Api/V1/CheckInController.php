@@ -19,7 +19,7 @@ class CheckInController extends ApiController
 {
     public function __construct(protected AttendanceService $attendance, protected StreakService $streaks) {}
 
-    /** POST /api/v1/me/check-in */
+    /** POST /api/v1/me/check-in. "code" (the scanned check-in QR) is optional for now, but must be right when sent. */
     public function checkIn(Request $request): JsonResponse
     {
         /** @var Member $member */
@@ -28,6 +28,8 @@ class CheckInController extends ApiController
         if (! $member->gym->allowsSelfCheckIn()) {
             throw new ApiException('Self check-in is not enabled at your gym. Please show your QR code at the front desk.', 'SELF_CHECKIN_DISABLED', 403);
         }
+
+        $this->verifyCode($request, $member);
 
         if ($existing = $this->attendance->today($member)) {
             throw new ApiException('You already checked in today at '.$existing->check_in_at->format('h:i A').'.', 'ALREADY_CHECKED_IN', 409, [
@@ -56,6 +58,7 @@ class CheckInController extends ApiController
     {
         /** @var Member $member */
         $member = $request->user('member');
+        $this->verifyCode($request, $member);
         $today = $this->attendance->today($member);
 
         if (! $today) {
@@ -93,6 +96,21 @@ class CheckInController extends ApiController
             },
             'attendance' => $today ? $this->attendancePayload($today) : null,
         ], 'Check-in status.');
+    }
+
+    protected function verifyCode(Request $request, Member $member): void
+    {
+        $data = $request->validate(['code' => ['nullable', 'string', 'max:500']]);
+
+        if (! isset($data['code'])) {
+            return;
+        }
+
+        try {
+            $this->attendance->verifyGymCode($member, $data['code']);
+        } catch (ValidationException $e) {
+            throw new ApiException(collect($e->errors())->flatten()->first(), 'INVALID_CHECKIN_CODE', 422);
+        }
     }
 
     /** @return array<string, mixed> */

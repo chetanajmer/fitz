@@ -1147,7 +1147,7 @@
                                 "check-in"
                             ]
                         },
-                        "description": "Member checks themselves in (the CHECK IN NOW button). Returns the attendance and the refreshed streak so the card updates immediately.\n\n**Errors:** `409 ALREADY_CHECKED_IN` · `403 NO_ACTIVE_MEMBERSHIP` · `403 SELF_CHECKIN_DISABLED` (gym turned it off) · `403 GYM_INACTIVE`."
+                        "description": "Member checks themselves in (the CHECK IN NOW button). Returns the attendance and the refreshed streak so the card updates immediately.\n\n**Errors:** `409 ALREADY_CHECKED_IN` · `403 NO_ACTIVE_MEMBERSHIP` · `403 SELF_CHECKIN_DISABLED` (gym turned it off) · `403 GYM_INACTIVE`.\n\nOptional JSON body `{\"code\": \"<text read from the gym's check-in QR>\"}`. Not required yet, but a wrong or expired code fails with 422 `INVALID_CHECKIN_CODE`. Send the scanned text as it is. Gyms can use a printed QR or a screen QR that changes every 30 seconds."
                     },
                     "response": [
                         {
@@ -1204,7 +1204,7 @@
                                 "check-out"
                             ]
                         },
-                        "description": "Ends today's visit.\n\n**Errors:** `409 NOT_CHECKED_IN` · `409 ALREADY_CHECKED_OUT`."
+                        "description": "Ends today's visit.\n\n**Errors:** `409 NOT_CHECKED_IN` · `409 ALREADY_CHECKED_OUT`.\n\nOptional JSON body `{\"code\": \"<text read from the gym's check-in QR>\"}`. Not required yet, but a wrong or expired code fails with 422 `INVALID_CHECKIN_CODE`. Send the scanned text as it is. Gyms can use a printed QR or a screen QR that changes every 30 seconds."
                     },
                     "response": [
                         {

@@ -81,6 +81,8 @@ Route::prefix('app')->name('gym.')
             Route::livewire('/attendance', Livewire\Gym\Attendance\Index::class)->name('attendance.index');
             Route::get('/attendance/register-qr', [QrCodeController::class, 'register'])->name('attendance.register-qr');
             Route::livewire('/qr-codes', Livewire\Gym\QrCodes::class)->name('qr-codes');
+            Route::livewire('/check-in-screen', Livewire\Gym\CheckInScreen::class)->name('check-in-screen');
+            Route::get('/attendance/check-in-qr', [QrCodeController::class, 'checkIn'])->name('attendance.check-in-qr');
             // Staff scan a member's QR with any phone camera: the QR encodes this URL.
             Route::get('/attendance/scan/{token}', AttendanceScanController::class)->where('token', '[A-Za-z0-9]{20,64}')->name('attendance.scan');
         });

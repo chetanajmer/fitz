@@ -54,14 +54,14 @@ class SelfCheckInTest extends TestCase
         $this->get(route('portal.dashboard'))->assertOk()->assertSee('Check in now');
 
         Livewire::test(Dashboard::class)
-            ->call('checkIn')
+            ->call('checkIn', $this->gym->checkin_token)
             ->assertDispatched('streak-grew', count: 1, milestone: false)
             ->assertHasNoErrors()
             ->assertSee('Checked in at')
             ->assertSee('1 day streak')
-            ->call('checkIn')
+            ->call('checkIn', $this->gym->checkin_token)
             ->assertHasErrors('member')
-            ->call('checkOut')
+            ->call('checkOut', $this->gym->checkin_token)
             ->assertHasNoErrors()
             ->assertSee('Visit done today');
 
@@ -76,7 +76,7 @@ class SelfCheckInTest extends TestCase
         $other = $this->createMember($this->gym, ['email' => 'nomember@example.test'], ['portal_password' => 'password']);
         $this->actingAs($other->user);
 
-        Livewire::test(Dashboard::class)->call('checkIn')->assertHasErrors('member');
+        Livewire::test(Dashboard::class)->call('checkIn', $this->gym->checkin_token)->assertHasErrors('member');
         $this->assertSame(0, Attendance::withoutGlobalScopes()->count());
     }
 
@@ -126,6 +126,6 @@ class SelfCheckInTest extends TestCase
         $this->app['auth']->forgetGuards();
         $this->actingAs($this->member->user);
         $this->get(route('portal.dashboard'))->assertOk()->assertDontSee('Check in now')->assertSee('Show your QR code at the front desk');
-        Livewire::test(Dashboard::class)->call('checkIn')->assertHasErrors('member');
+        Livewire::test(Dashboard::class)->call('checkIn', $this->gym->checkin_token)->assertHasErrors('member');
     }
 }

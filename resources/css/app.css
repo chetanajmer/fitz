@@ -752,6 +752,22 @@ html:has(body.gym-page) { scroll-behavior: smooth; scroll-padding-top: 5.5rem; }
 }
 } /* end streak card @layer components */
 
+/* Check-in scanner (components/attendance/scanner): corner marks and a moving line. */
+@layer components {
+.scan-frame {
+    position: absolute; inset: 14%; pointer-events: none;
+    background:
+        linear-gradient(var(--gym-orange) 0 0) 0 0 / 2.2rem 4px, linear-gradient(var(--gym-orange) 0 0) 0 0 / 4px 2.2rem,
+        linear-gradient(var(--gym-orange) 0 0) 100% 0 / 2.2rem 4px, linear-gradient(var(--gym-orange) 0 0) 100% 0 / 4px 2.2rem,
+        linear-gradient(var(--gym-orange) 0 0) 0 100% / 2.2rem 4px, linear-gradient(var(--gym-orange) 0 0) 0 100% / 4px 2.2rem,
+        linear-gradient(var(--gym-orange) 0 0) 100% 100% / 2.2rem 4px, linear-gradient(var(--gym-orange) 0 0) 100% 100% / 4px 2.2rem;
+    background-repeat: no-repeat;
+}
+.scan-frame span { position: absolute; inset-inline: 6%; top: 0; height: 100%; border-top: 2px solid var(--gym-orange); opacity: 0.8; animation: scan-line 2.2s ease-in-out infinite alternate; }
+@keyframes scan-line { from { transform: translateY(6%); } to { transform: translateY(94%); } }
+@media (prefers-reduced-motion: reduce) { .scan-frame span { display: none; } }
+}
+
 @media print {
     .no-print { display: none !important; }
     body { background: white !important; color: #111 !important; }

@@ -136,6 +136,26 @@ class GymProfileService
         return $gym;
     }
 
+    /** Old printed check-in QRs (and screen codes) stop working. */
+    public function regenerateCheckinToken(Gym $gym): Gym
+    {
+        $gym->checkin_token = Gym::generateCheckinToken();
+        $gym->save();
+
+        return $gym;
+    }
+
+    /** Which check-in QR members must scan: 'printed' or 'screen'. */
+    public function setCheckinQrMode(Gym $gym, string $mode): Gym
+    {
+        abort_unless(array_key_exists($mode, CheckInCodeService::MODES), 422);
+
+        $gym->settings = array_merge($gym->settings ?? [], ['checkin' => ['qr' => $mode]]);
+        $gym->save();
+
+        return $gym;
+    }
+
     protected function normaliseHours(array $hours): array
     {
         $out = [];

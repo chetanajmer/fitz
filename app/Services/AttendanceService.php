@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class AttendanceService
 {
-    public function __construct(protected StreakService $streaks) {}
+    public function __construct(protected StreakService $streaks, protected CheckInCodeService $codes) {}
 
     /**
      * Check a member in for today. Duplicate check-ins are rejected both here and by the
@@ -72,6 +72,14 @@ class AttendanceService
         }
 
         return $this->checkIn($member, 'self');
+    }
+
+    /** The member must be at the gym: the scanned QR has to be their own gym's current check-in code. */
+    public function verifyGymCode(Member $member, string $scanned): void
+    {
+        if (! $this->codes->accepts($member->gym, $scanned)) {
+            throw ValidationException::withMessages(['member' => "That code has expired or isn't {$member->gym->name}'s check-in QR. Scan the one on display at the gym."]);
+        }
     }
 
     public function selfCheckOut(Member $member): Attendance

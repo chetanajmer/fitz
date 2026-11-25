@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Services\CheckInCodeService;
 use App\Services\QrCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
 class QrCodeController extends Controller
 {
-    public function __construct(protected QrCodeService $qr) {}
+    public function __construct(protected QrCodeService $qr, protected CheckInCodeService $codes) {}
 
     /** The gym's QR registration code (encodes /join/{token}). */
     public function join(Request $request)
@@ -25,6 +26,14 @@ class QrCodeController extends Controller
         $gym = current_gym();
 
         return $this->svgResponse($this->qr->svg($gym->registerUrl(), 600), $request->boolean('download') ? "{$gym->slug}-register-qr.svg" : null);
+    }
+
+    /** The gym's printed check-in QR, which members scan to check in and out. */
+    public function checkIn(Request $request)
+    {
+        $gym = current_gym();
+
+        return $this->svgResponse($this->qr->svg($this->codes->url($this->codes->printedCode($gym)), 600), $request->boolean('download') ? "{$gym->slug}-check-in-qr.svg" : null);
     }
 
     /** A member's attendance QR (encodes the staff scan URL). */

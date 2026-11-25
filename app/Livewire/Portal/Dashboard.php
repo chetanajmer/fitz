@@ -29,16 +29,19 @@ class Dashboard extends Component
         return $member;
     }
 
-    public function checkIn(AttendanceService $attendance): void
+    /** $scanned is what the member's camera read from the gym's check-in QR. */
+    public function checkIn(string $scanned, AttendanceService $attendance): void
     {
+        $attendance->verifyGymCode($this->member(), $scanned);
         $record = $attendance->selfCheckIn($this->member());
         $streak = app(StreakService::class)->summary($this->member());
         $this->dispatch('streak-grew', count: $streak['current_streak'], milestone: in_array($streak['current_streak'], $streak['milestones'], true));
         $this->dispatch('notify', message: 'Checked in at '.$record->check_in_at->format('h:i A').'. Have a great workout!');
     }
 
-    public function checkOut(AttendanceService $attendance): void
+    public function checkOut(string $scanned, AttendanceService $attendance): void
     {
+        $attendance->verifyGymCode($this->member(), $scanned);
         $record = $attendance->selfCheckOut($this->member());
         $this->dispatch('notify', message: 'Checked out at '.$record->check_out_at->format('h:i A').' ('.$record->durationLabel().').');
     }

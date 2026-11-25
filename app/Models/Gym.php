@@ -51,7 +51,7 @@ class Gym extends Model
     /** Dashboards whose colours a gym can change. */
     public const DASHBOARD_AREAS = ['admin' => 'Admin dashboard', 'member' => 'Member dashboard'];
 
-    // owner_id, slug, join_token, register_token, city_id and status are set by services only.
+    // owner_id, slug, join_token, register_token, checkin_token, city_id and status are set by services only.
     protected $fillable = ['name', 'phone', 'email', 'address', 'map_url', 'city', 'logo_path', 'description'];
 
     protected function casts(): array
@@ -316,6 +316,16 @@ class Gym extends Model
         do {
             $token = Str::random(40);
         } while (static::where('register_token', $token)->exists());
+
+        return $token;
+    }
+
+    /** Secret for the check-in QR that members scan at the gym. */
+    public static function generateCheckinToken(): string
+    {
+        do {
+            $token = Str::random(40);
+        } while (static::where('checkin_token', $token)->exists());
 
         return $token;
     }

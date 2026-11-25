@@ -43,6 +43,7 @@ class GymRegistrationService
             $gym->slug = Gym::generateUniqueSlug($data['gym_name']);
             $gym->join_token = Gym::generateJoinToken();
             $gym->register_token = Gym::generateRegisterToken();
+            $gym->checkin_token = Gym::generateCheckinToken();
             $gym->status = GymStatus::Active;
             $gym->is_active = true;
             $gym->settings = Gym::DEFAULT_SETTINGS;
