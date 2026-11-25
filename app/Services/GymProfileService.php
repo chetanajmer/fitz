@@ -5,13 +5,21 @@ namespace App\Services;
 use App\Models\Gym;
 use App\Models\GymPhoto;
 use App\Models\MembershipPlan;
+use App\Support\ImageOptimizer;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class GymProfileService
 {
-    public function __construct(protected CityService $cities) {}
+    /** Logo and banner are compressed to these sizes on upload (KB = upper limit of the file). */
+    public const IMAGE_RULES = [
+        'logo' => ['width' => 512, 'height' => 512, 'max_kb' => 70],
+        'banner' => ['width' => 1920, 'height' => 720, 'max_kb' => 500],
+    ];
+
+    public function __construct(protected CityService $cities, protected ImageOptimizer $images) {}
 
     /**
      * @param  array  $profile  name, phone, email, address, description, city_id (from the managed list), locality (a name in that city)
@@ -41,17 +49,11 @@ class GymProfileService
         ]);
 
         if ($logo) {
-            if ($gym->logo_path) {
-                Storage::disk('public')->delete($gym->logo_path);
-            }
-            $gym->logo_path = $logo->store("gyms/{$gym->id}/branding", 'public');
+            $gym->logo_path = $this->storeOptimized($gym, $logo, 'logo', $gym->logo_path);
         }
 
         if ($banner) {
-            if ($gym->banner_path) {
-                Storage::disk('public')->delete($gym->banner_path);
-            }
-            $gym->banner_path = $banner->store("gyms/{$gym->id}/branding", 'public');
+            $gym->banner_path = $this->storeOptimized($gym, $banner, 'banner', $gym->banner_path);
         }
 
         $gym->save();
@@ -81,6 +83,25 @@ class GymProfileService
         $gym->save();
 
         return $gym;
+    }
+
+    /**
+     * Compress a logo / banner to its size budget and store it; the previous file is deleted.
+     * Also used to shrink pictures uploaded before compression existed (gymai:optimize-branding).
+     */
+    public function storeOptimized(Gym $gym, UploadedFile|string $source, string $kind, ?string $previous = null): string
+    {
+        $rules = self::IMAGE_RULES[$kind];
+        $image = $this->images->optimize($source, $rules['width'], $rules['height'], $rules['max_kb'] * 1024, $kind);
+
+        $path = "gyms/{$gym->id}/branding/{$kind}-".Str::lower(Str::random(10)).'.'.$image['extension'];
+        Storage::disk('public')->put($path, $image['contents']);
+
+        if ($previous && $previous !== $path) {
+            Storage::disk('public')->delete($previous);
+        }
+
+        return $path;
     }
 
     public function removeLogo(Gym $gym): void

@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\ApiException;
+use App\Jobs\SchedulerHeartbeat;
 use App\Models\AiReport;
 use App\Models\Announcement;
 use App\Models\Gym;
@@ -10,16 +11,19 @@ use App\Models\Scopes\GymScope;
 use App\Services\AiAccessService;
 use App\Services\AiReportService;
 use App\Services\BillingService;
+use App\Services\GymProfileService;
 use App\Services\MembershipService;
 use App\Services\Push\FcmClient;
 use App\Services\Push\PushMessage;
 use App\Services\PushNotificationService;
 use App\Services\StreakService;
 use App\Support\NotificationCatalog;
+use App\Support\SystemHealth;
 use App\Tenancy\TenantManager;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
+use Illuminate\Support\Facades\Storage;
 
 Artisan::command('gymai:refresh-memberships', function (MembershipService $memberships) {
     $result = $memberships->refreshStatuses();
@@ -147,6 +151,40 @@ Artisan::command('gymai:ai-monthly-reports', function (AiAccessService $access, 
     $this->info("AI progress reports requested: {$requested}.");
 })->purpose('Queue the monthly AI progress report for consenting members of gyms that switched it on');
 
+Artisan::command('gymai:optimize-branding {gym? : Gym id (defaults to all gyms)}', function (GymProfileService $profiles) {
+    $disk = Storage::disk('public');
+    $gyms = Gym::query()->when($this->argument('gym'), fn ($q, $id) => $q->whereKey($id))->get();
+    $done = 0;
+    foreach ($gyms as $gym) {
+        foreach (['logo' => 'logo_path', 'banner' => 'banner_path'] as $kind => $column) {
+            $path = $gym->{$column};
+            if (! $path || ! $disk->exists($path)) {
+                continue;
+            }
+            $before = $disk->size($path);
+            if ($before <= GymProfileService::IMAGE_RULES[$kind]['max_kb'] * 1024) {
+                continue; // already within its budget
+            }
+            try {
+                $gym->{$column} = $profiles->storeOptimized($gym, $disk->path($path), $kind, $path);
+                $gym->save();
+                $after = $disk->size($gym->{$column});
+                $this->info("{$gym->name}: {$kind} ".round($before / 1024).' KB -> '.round($after / 1024).' KB');
+                $done++;
+            } catch (Throwable $e) {
+                $this->warn("{$gym->name}: {$kind} skipped (".$e->getMessage().')');
+            }
+        }
+    }
+    $this->info("Compressed {$done} picture(s).");
+})->purpose('Compress existing gym logos (max 70 KB) and banners (max 500 KB)');
+
+Artisan::command('gymai:health', function (SystemHealth $health) {
+    foreach ($health->report() as $check) {
+        $this->line(($check['ok'] ? '<info>OK  </info> ' : '<error>FAIL</error> ').str_pad($check['label'], 30).$check['detail']);
+    }
+})->purpose('Is the cron scheduler, the queue, Firebase and PHP working on this server?');
+
 Schedule::command('gymai:refresh-memberships')->dailyAt('00:10');
 Schedule::command('gymai:refresh-streaks')->dailyAt('00:20');
 Schedule::command('gymai:generate-invoices')->monthlyOn(1, '02:00');
@@ -159,5 +197,9 @@ Schedule::command('gymai:ai-monthly-reports')->monthlyOn(1, '07:00');
 // Member notifications: each gym's own times (Notifications page), checked every 5 minutes.
 Schedule::command('push:run')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('gymai:send-announcements')->everyMinute()->withoutOverlapping();
+// Heartbeats (see gymai:health and Super Admin -> App Notifications -> Rules): the scheduler
+// writes one directly, the queued job proves the queue worker runs too.
+Schedule::call(fn () => SystemHealth::beat(SystemHealth::SCHEDULER))->everyMinute()->name('scheduler-heartbeat');
+Schedule::job(new SchedulerHeartbeat)->everyMinute()->name('queue-heartbeat');
 // Shared hosting has no queue supervisor: the cron that runs schedule:run every minute also works the queue.
 Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=2')->everyMinute()->withoutOverlapping();

@@ -10,6 +10,7 @@
 #
 #   DEPLOYPATH  live app folder (the subdomain's document root is DEPLOYPATH/public)
 #   PHP_BIN     PHP 8.3 command-line binary
+#   PHP_WEB_HANDLER  optional .htaccess block that selects the website PHP version (kept on every deploy)
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")" && pwd)"
@@ -72,6 +73,11 @@ echo "==> Copying application files"
 # Packages and compiled assets are replaced exactly (old files removed).
 /usr/bin/rsync -a --delete "$REPO/vendor/" "$DEPLOYPATH/vendor/"
 /usr/bin/rsync -a --delete "$REPO/public/build/" "$DEPLOYPATH/public/build/"
+
+# The handler set in deploy-cpanel.sh wins; otherwise the one found in the live file is kept.
+if [ -n "${PHP_WEB_HANDLER:-}" ]; then
+    PHP_HANDLER="$PHP_WEB_HANDLER"
+fi
 
 if [ -n "$PHP_HANDLER" ] && ! grep -qF "$(printf '%s' "$PHP_HANDLER" | head -n 1)" "$DEPLOYPATH/public/.htaccess"; then
     printf '\n%s\n' "$PHP_HANDLER" >> "$DEPLOYPATH/public/.htaccess"

@@ -8,6 +8,7 @@ use App\Models\Scopes\GymScope;
 use App\Services\NotificationSettings;
 use App\Services\PushNotificationService;
 use App\Support\NotificationCatalog;
+use App\Support\SystemHealth;
 use App\Tenancy\TenantManager;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -184,6 +185,7 @@ class Notifications extends Component
             'catalog' => NotificationCatalog::TYPES,
             'templates' => collect(NotificationCatalog::keys())->mapWithKeys(fn ($key) => [$key => $config->template($key)])->all(),
             'timeOptions' => $config->timeOptions(),
+            'health' => $this->tab === 'rules' ? app(SystemHealth::class)->report() : [],
         ]);
     }
 
