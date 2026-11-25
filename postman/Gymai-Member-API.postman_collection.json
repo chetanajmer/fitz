@@ -2428,7 +2428,7 @@
                                 "1"
                             ]
                         },
-                        "description": "One report (poll this after requesting one).\n\n`result` holds the answer as fields (null for older reports); `content` is the same answer as Markdown.\n- progress: summary, wins[], focus_areas[{title, tip}], motivation, confidence (low | medium | high)\n- photo_comparison: summary, change_level (none | slight | moderate | strong | unclear), changes[{area, observation}], numbers, photo_quality (good | fair | poor), photo_tips[], motivation, confidence"
+                        "description": "One report (poll this after requesting one).\n\n`result` holds the answer as fields (null for older reports); `content` is the same answer as Markdown.\n- progress: summary, wins[], focus_areas[{title, why, tip}], missing[], motivation, confidence (low | medium | high). focus_areas: most important first. Reports made before this was added have no why or missing, and no focus_areas in photo_comparison\n- photo_comparison: summary, change_level (none | slight | moderate | strong | unclear), changes[{area, observation}], numbers, photo_quality (good | fair | poor), photo_tips[], focus_areas[{title, why, tip}], missing[], motivation, confidence"
                     },
                     "response": []
                 },

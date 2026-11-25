@@ -31,13 +31,17 @@ class AiReportService
         - Speak to the member as "you". Simple English, short sentences. Use kg, cm and Indian context.
         - Base every statement on the data. If data is missing or too little, say what to log next instead of guessing.
         - The member reads this on a phone, so be brief: summary is at most 2 short sentences, every other line one short sentence of at most 15 words. Never say the same thing twice.
-        - wins: what is working, at most 3. focus_areas: 2 or 3 specific, practical suggestions (title of at most 4 words) about training consistency, weigh-ins, measurements and general healthy habits.
+        - wins: what is working, at most 3.
+        - focus_areas: 2 or 3 things that need more work, the most important first: training consistency, program or diet adherence, pace towards the goal, sleep and recovery habits.
+          title (at most 4 words), why (the fact in the data that shows it), tip (one specific action for this week).
+        - missing: what is lacking in the records and stops a better report, such as weigh-ins, measurements, a goal or a program; at most 3, each a short sentence saying what to add, empty when nothing is. Anything listed here must not appear in focus_areas: a program or goal that does not exist belongs only here.
+        - visits_this_week_so_far is an unfinished week: never call it a drop.
         - confidence: "low" when there is little data.
         - Coach training and habits only; never comment on account details such as the joining date.
         - Never diagnose, never mention diseases or medication, never prescribe calorie numbers or supplements.
         - Be body-positive. No shaming language.
         - Never call the member overweight, obese, fat or similar, and do not mention BMI.
-        - Plain text in every field, no Markdown. Keep it under 150 words in total.
+        - Plain text in every field, no Markdown. Keep it under 200 words in total.
         TXT;
 
     protected const PHOTO_PROMPT = <<<'TXT'
@@ -52,6 +56,11 @@ class AiReportService
         - The member reads this on a phone, so be brief: summary is at most 2 short sentences, every other line one short sentence of at most 15 words. Never say the same thing twice.
         - Put readings (kg, cm, %) only in numbers; the app shows them separately. Use none in summary, changes or motivation.
         - changes: each visible change with the body area, at most 4. Leave it empty when nothing clear is visible.
+        - focus_areas: 1 to 3 body areas or posture points that need more work because they changed least or look less developed than the rest, the most important first. Judge them in the after photo, for the member's goal.
+          title (the body area), why (what you see, kindly, as room to improve and never as a flaw), tip (one training habit that helps, with one or two common exercises). Never prescribe loads, calories or supplements.
+          Never contradict changes: an area praised there is not in focus_areas. Judge from the photo, not from cm readings. For the waist say "can get leaner", never "room to grow". One item is enough when nothing else stands out.
+          Only areas visible in the photo. Empty when change_level is "unclear".
+        - missing: what is lacking for a better comparison, such as a pose, a body area not shown or readings near the photos; at most 3, each a short sentence saying what to add, empty when nothing is. Do not repeat these in photo_tips.
         - change_level: judge the body shape you can see (waist, arms, chest, legs, muscle definition). "none" when the two photos look the same, "slight", "moderate" or "strong" for real differences.
           Use "unclear" only when a person's body is missing, hidden or cut off in a photo, or the poses are so different that shape cannot be judged. Different light, muscle pump, background or framing lower photo_quality and confidence, not change_level.
         - Progress photos in shorts, sportswear or without a shirt are normal. If a photo shows nudity or is not of a person, use "unclear" and photo_quality "poor".
@@ -59,7 +68,7 @@ class AiReportService
         - Never guess weight or body fat from a photo.
         - numbers: what the readings in the data say. If there are no readings, say that none were logged around these photos.
         - photo_quality and photo_tips: how comparable the photos are and how to take the next ones, at most 3 tips.
-        - Plain text in every field, no Markdown. Keep it under 150 words in total.
+        - Plain text in every field, no Markdown. Keep it under 200 words in total.
         TXT;
 
     public function __construct(
@@ -165,6 +174,11 @@ class AiReportService
         $programs = $this->programs->overview($member);
         $visits = Attendance::where('member_id', $member->id)->whereDate('check_in_at', '>=', $today->copy()->subWeeks(8)->startOfWeek())
             ->pluck('check_in_at')->countBy(fn (Carbon $at) => $at->copy()->startOfWeek()->toDateString());
+        $thisWeek = $today->copy()->startOfWeek();
+        // Full weeks only, with a 0 for weeks without a visit, but none from before the member joined.
+        $weeks = collect(range(8, 1))->map(fn (int $ago) => $thisWeek->copy()->subWeeks($ago))
+            ->filter(fn (Carbon $week) => ! $member->joining_date || $week->gte($member->joining_date->copy()->startOfWeek()))
+            ->mapWithKeys(fn (Carbon $week) => [$week->toDateString() => $visits->get($week->toDateString(), 0)]);
 
         return [
             'today' => $today->toDateString(),
@@ -185,7 +199,8 @@ class AiReportService
                 ->map(fn (MemberMeasurement $m) => ['date' => $m->measured_on->toDateString()] + array_filter($m->only(array_keys(MemberMeasurement::FIELDS)), fn ($v) => $v !== null))
                 ->values()->all(),
             'attendance' => [
-                'visits_per_week_last_8_weeks' => $visits->all(),
+                'visits_per_full_week' => $weeks->all(),
+                'visits_this_week_so_far' => $visits->get($thisWeek->toDateString(), 0),
                 'current_streak_days' => $streak['current_streak'],
                 'longest_streak_days' => $streak['longest_streak'],
                 'visits_this_month' => $streak['visits_this_month'],
@@ -215,8 +230,12 @@ class AiReportService
             'photo_tips' => $list($text),
         ] : [
             'wins' => $list($text),
-            'focus_areas' => $list($object(['title' => $text, 'tip' => $text])),
-        ]) + ['motivation' => $text, 'confidence' => $level]);
+        ]) + [
+            'focus_areas' => $list($object(['title' => $text, 'why' => $text, 'tip' => $text])),
+            'missing' => $list($text),
+            'motivation' => $text,
+            'confidence' => $level,
+        ]);
     }
 
     /** The same answer as Markdown (the "content" older app versions show). @param  array<string, mixed>  $r */
@@ -230,7 +249,10 @@ class AiReportService
         ] : [
             'Summary' => $r['summary'],
             "What's working" => $bullets($r['wins']),
-            'What to focus on next' => $bullets(array_map(fn ($f) => "**{$f['title']}:** {$f['tip']}", $r['focus_areas'])),
+        ];
+        $sections += [
+            'What to focus on next' => $bullets(array_map(fn ($f) => "**{$f['title']}:** {$f['why']} {$f['tip']}", $r['focus_areas'])),
+            "What's missing" => $bullets($r['missing']),
         ];
 
         return collect($sections + ['Motivation' => $r['motivation']])->filter()->map(fn ($body, $heading) => "## {$heading}\n\n{$body}")->implode("\n\n");

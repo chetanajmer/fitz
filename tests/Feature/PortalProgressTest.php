@@ -10,6 +10,7 @@ use App\Models\GymAiSetting;
 use App\Models\Member;
 use App\Models\PlatformSetting;
 use App\Models\ProgressPhoto;
+use App\Services\AiReportService;
 use App\Services\AttendanceService;
 use App\Services\MembershipService;
 use App\Services\StreakService;
@@ -17,6 +18,7 @@ use App\Services\TransformationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -37,7 +39,7 @@ class PortalProgressTest extends TestCase
         config(['services.openrouter.key' => 'test-key']);
         PlatformSetting::put(['ai_enabled' => '1']);
         Http::fake(['openrouter.ai/*' => Http::response(['model' => 'm', 'choices' => [['message' => ['content' => json_encode(
-            ['summary' => 'Steady <b>progress</b>.', 'wins' => ['Regular visits'], 'focus_areas' => [['title' => 'Sleep', 'tip' => 'Eight hours']], 'motivation' => 'Go on!', 'confidence' => 'low'])]]], 'usage' => []])]);
+            ['summary' => 'Steady <b>progress</b>.', 'wins' => ['Regular visits'], 'focus_areas' => [['title' => 'Sleep', 'why' => 'Short nights', 'tip' => 'Eight hours']], 'missing' => ['Weekly weigh-ins'], 'motivation' => 'Go on!', 'confidence' => 'low'])]]], 'usage' => []])]);
 
         $this->gym = $this->gymOf($this->createGymOwner('Portal Gym'));
         $this->member = $this->portalMember('one@example.test');
@@ -65,7 +67,7 @@ class PortalProgressTest extends TestCase
             ->set('measurement.waist_cm', '90')->call('saveMeasurement')->assertHasNoErrors()
             ->set('photo', UploadedFile::fake()->image('me.jpg', 300, 400))->call('uploadPhoto')->assertHasNoErrors()
             ->call('requestReport', 'progress')->assertHasNoErrors()
-            ->assertSee('Regular visits')->assertSee('Eight hours')
+            ->assertSee('Regular visits')->assertSeeInOrder(['Where to work next', 'Short nights', 'Eight hours', 'Weekly weigh-ins'])->assertDontSee('Start here')
             ->assertSee('Steady <b>progress</b>.'); // shown as text, never as HTML
 
         $this->assertSame('member', AiReport::withoutGlobalScopes()->sole()->requested_by);
@@ -81,7 +83,7 @@ class PortalProgressTest extends TestCase
     {
         Http::swap(new HttpFactory);
         Http::fake(['openrouter.ai/*' => Http::response(['model' => 'm', 'choices' => [['message' => ['content' => json_encode(
-            ['summary' => 'Leaner waist.', 'change_level' => 'moderate', 'changes' => [], 'numbers' => 'None logged.', 'photo_quality' => 'good', 'photo_tips' => [], 'motivation' => 'Go on!', 'confidence' => 'medium'])]]], 'usage' => []])]);
+            ['summary' => 'Leaner waist.', 'change_level' => 'moderate', 'changes' => [], 'numbers' => 'None logged.', 'photo_quality' => 'good', 'photo_tips' => [], 'focus_areas' => [['title' => 'Legs', 'why' => 'They changed least.', 'tip' => 'Add squats twice a week.'], ['title' => 'Back', 'why' => 'Hard to see.', 'tip' => 'Add rows.']], 'missing' => ['A side photo'], 'motivation' => 'Go on!', 'confidence' => 'medium'])]]], 'usage' => []])]);
         $this->actingAs($this->member->user);
 
         $page = Livewire::test(Progress::class)->call('setConsent', true)
@@ -95,7 +97,7 @@ class PortalProgressTest extends TestCase
         $page->assertSeeInOrder(['Progress photos', 'Before photo', 'After photo', 'AI reports'])
             ->set('beforePhotoId', (string) $before)->set('afterPhotoId', (string) $after)
             ->call('requestReport', 'photo_comparison')->assertHasNoErrors()->assertSee('Leaner waist.')
-            ->assertSee('None logged.')->assertSee('Clear change in 3 months')->assertSee('Share your progress')->assertSee('Show my photos');
+            ->assertSeeInOrder(['Legs', 'Start here', 'They changed least.', 'Add squats', 'Add rows.', 'A side photo'])->assertSee('None logged.')->assertSee('Clear change in 3 months')->assertSee('Share your progress')->assertSee('Show my photos');
         $this->assertSame(0, $this->member->measurements()->withoutGlobalScopes()->count());
 
         // Only readings within two weeks of each photo are shown, the closest one first.
@@ -132,6 +134,24 @@ class PortalProgressTest extends TestCase
         Livewire::test(Progress::class)->assertSee('Share your progress');
         $this->actingAs($this->gym->owner);
         $this->inGym($this->gym, fn () => Livewire::test(AiProgress::class, ['member' => $this->member])->assertSee('Strong change')->assertDontSee('Share your progress'));
+    }
+
+    public function test_the_ai_gets_full_weeks_with_zeros_and_the_unfinished_week_apart(): void
+    {
+        $this->travelTo(Carbon::parse('2026-11-25 10:00')); // a Wednesday
+        $attendance = $this->inGym($this->gym, function () {
+            $this->member->forceFill(['joining_date' => '2026-11-04'])->save();
+            foreach (['2026-11-05', '2026-11-18', '2026-11-19', '2026-11-24'] as $day) {
+                $this->travelTo(Carbon::parse($day.' 10:00'));
+                app(AttendanceService::class)->checkIn($this->member, requireValidMembership: false);
+            }
+            $this->travelTo(Carbon::parse('2026-11-25 10:00'));
+
+            return app(AiReportService::class)->progressData($this->member->refresh())['attendance'];
+        });
+
+        $this->assertSame(['2026-11-02' => 1, '2026-11-09' => 0, '2026-11-16' => 2], $attendance['visits_per_full_week']);
+        $this->assertSame(1, $attendance['visits_this_week_so_far']);
     }
 
     public function test_the_headline_fits_what_the_member_reached_and_stays_the_same(): void

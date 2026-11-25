@@ -58,24 +58,37 @@
                 </div>
             @endif
 
-            @if (! empty($r['wins']) || ! empty($r['focus_areas']))
-                <div class="grid gap-6 md:grid-cols-2">
-                    @if (! empty($r['wins']))
-                        <div>
-                            <h3 class="mb-2 font-semibold text-gray-900">What's working</h3>
-                            <ul class="space-y-3">
-                                @foreach ($r['wins'] as $win)<li class="flex gap-3 text-gray-700"><x-ui.icon name="check" class="mt-0.5 size-4 shrink-0 text-emerald-600" /><span>{{ $win }}</span></li>@endforeach
-                            </ul>
-                        </div>
-                    @endif
-                    @if (! empty($r['focus_areas']))
-                        <div>
-                            <h3 class="mb-2 font-semibold text-gray-900">What to do next</h3>
-                            <ul class="space-y-3">
-                                @foreach ($r['focus_areas'] as $f)<li class="flex gap-3"><x-ui.icon name="arrow-right" class="mt-0.5 size-4 shrink-0 text-brand-600" /><p><span class="block font-medium text-gray-900">{{ $f['title'] }}</span><span class="text-gray-500">{{ $f['tip'] }}</span></p></li>@endforeach
-                            </ul>
-                        </div>
-                    @endif
+            @if (! empty($r['wins']))
+                <div>
+                    <h3 class="mb-2 font-semibold text-gray-900">What's working</h3>
+                    <ul class="space-y-3">
+                        @foreach ($r['wins'] as $win)<li class="flex gap-3 text-gray-700"><x-ui.icon name="check" class="mt-0.5 size-4 shrink-0 text-emerald-600" /><span class="max-w-prose">{{ $win }}</span></li>@endforeach
+                    </ul>
+                </div>
+            @endif
+
+            @if (! empty($r['focus_areas']))
+                <div>
+                    <h3 class="mb-2 font-semibold text-gray-900">Where to work next</h3>
+                    <ul class="max-w-2xl divide-y divide-gray-100">
+                        @foreach ($r['focus_areas'] as $f)
+                            @php($isFirst = $loop->first && $loop->count > 1)
+                            <li @class(['border-l-4 py-3 pl-4', 'border-l-brand-600' => $isFirst, 'border-l-gray-300' => ! $isFirst])>
+                                <p class="flex flex-wrap items-center gap-2 font-medium text-gray-900">{{ $f['title'] }}@if ($isFirst)<x-ui.badge color="indigo">Start here</x-ui.badge>@endif</p>
+                                @isset($f['why'])<p class="text-gray-500">{{ $f['why'] }}</p>@endisset
+                                <p class="mt-1 flex gap-2 text-gray-700"><x-ui.icon name="arrow-right" class="mt-0.5 size-4 shrink-0 text-brand-600" /><span>{{ $f['tip'] }}</span></p>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            @if (! empty($r['missing']))
+                <div>
+                    <h3 class="mb-2 font-semibold text-gray-900">What's missing</h3>
+                    <ul class="space-y-2">
+                        @foreach ($r['missing'] as $gap)<li class="flex gap-3 text-gray-700"><x-ui.icon name="plus" class="mt-0.5 size-4 shrink-0 text-gray-400" /><span class="max-w-prose">{{ $gap }}</span></li>@endforeach
+                    </ul>
                 </div>
             @endif
 
