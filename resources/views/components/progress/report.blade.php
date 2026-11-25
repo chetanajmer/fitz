@@ -10,7 +10,7 @@
 <div class="space-y-6 text-sm">
     @if ($highlight || $hasPhotos)
         {{-- Always black, in both themes: the poster the member can share. --}}
-        <div @class(['overflow-hidden rounded-xl bg-gym-black text-white ring-1 ring-gym-border', 'grid md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]' => $hasPhotos])>
+        <div @class(['progress-poster overflow-hidden rounded-xl bg-gym-black text-white ring-1 ring-gym-border', 'grid md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]' => $hasPhotos])>
             @if ($hasPhotos)
                 <x-progress.before-after :before="$photoUrl($report->before_photo_id)" :after="$photoUrl($report->after_photo_id)" reveal class="rounded-none border-0" />
             @endif

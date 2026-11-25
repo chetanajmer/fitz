@@ -5,15 +5,16 @@
     $signed = fn ($v, $unit) => $v === null ? '—' : ($v > 0 ? '+' : '').$v.' '.$unit;
     $series = collect($data['measurements'])->where('field', '!=', 'body_fat_percent');
     $days = $series->flatMap(fn ($m) => array_column($m['history'], 'date'))->unique()->sort()->values();
-    $colors = ['#ee4444', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6'];
+    $colors = ['#ff6b00', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6'];
     $datasets = $series->values()->map(fn ($m, $i) => ['label' => $m['label'], 'borderColor' => $colors[$i % 5], 'backgroundColor' => $colors[$i % 5], 'spanGaps' => true, 'tension' => .3,
         'data' => $days->map(fn ($d) => collect($m['history'])->firstWhere('date', $d)['value'] ?? null)->all()]);
 @endphp
 <div class="card">
     <div class="card-header"><h2 class="card-title">Transformation</h2></div>
     <div class="card-body space-y-6">
+        <div @class(['space-y-6', 'lg:grid lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-center lg:gap-8 lg:space-y-0' => count($data['photos']) === 1])>
         @if ($data['photos'])
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div @class(['grid gap-4', 'sm:grid-cols-2 lg:grid-cols-3' => count($data['photos']) > 1, 'max-w-72' => count($data['photos']) === 1])>
                 @foreach ($data['photos'] as $pair)
                     <div wire:key="pair-{{ $pair['before']->id }}-{{ $pair['after']->id }}">
                         <x-progress.before-after :before="$photoUrl($pair['before']->id)" :after="$photoUrl($pair['after']->id)" />
@@ -41,9 +42,11 @@
             </div>
         @endif
 
+        </div>
+
         @if (count($data['weight']['history']) > 1)
             <div><p class="mb-2 text-sm font-semibold">Weight (kg)</p>
-                <div class="h-56" wire:key="tw-{{ md5(json_encode($data['weight']['history'])) }}" x-data x-init="renderChart($refs.c, { type: 'line', data: { labels: @js(array_map(fn ($h) => \Illuminate\Support\Carbon::parse($h['date'])->format('d M'), $data['weight']['history'])), datasets: [{ label: 'Weight (kg)', data: @js(array_column($data['weight']['history'], 'value')), borderColor: '#ee4444', backgroundColor: 'rgba(238,68,68,.08)', fill: true, tension: .3 }] }, options: { scales: { y: { beginAtZero: false } } } })"><canvas x-ref="c"></canvas></div></div>
+                <div class="h-56" wire:key="tw-{{ md5(json_encode($data['weight']['history'])) }}" x-data x-init="renderChart($refs.c, { type: 'line', data: { labels: @js(array_map(fn ($h) => \Illuminate\Support\Carbon::parse($h['date'])->format('d M'), $data['weight']['history'])), datasets: [{ label: 'Weight (kg)', data: @js(array_column($data['weight']['history'], 'value')), borderColor: chartColors.primary, backgroundColor: chartColors.primarySoft, fill: true, tension: .3 }] }, options: { scales: { y: { beginAtZero: false } } } })"><canvas x-ref="c"></canvas></div></div>
         @endif
         @if ($days->count() > 1)
             <div><p class="mb-2 text-sm font-semibold">Measurements (cm)</p>

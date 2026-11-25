@@ -10,7 +10,7 @@
             @endif
         </div>
     </div>
-    @foreach (['report', 'beforePhotoId', 'afterPhotoId'] as $field)
+    @foreach (($compareInReports ?? true) ? ['report', 'beforePhotoId', 'afterPhotoId'] : ['report'] as $field)
         @error($field)<p class="input-error px-5 pt-3">{{ $message }}</p>@enderror
     @endforeach
     <div class="divide-y divide-gray-100" @if ($reports->contains('status', 'pending')) wire:poll.5s @endif>
