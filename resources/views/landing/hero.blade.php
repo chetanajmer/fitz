@@ -9,11 +9,13 @@
     ];
 @endphp
 <section id="home" data-lp-section class="relative isolate overflow-hidden bg-gym-black-deep pt-24 sm:pt-28 lg:pt-32">
-    {{-- Athlete photo (decorative): a framed, centred figure on the right on desktop (clear of the nav and the
-         page edge), a dim backdrop on phones. The soft orange glow sits behind it. --}}
-    <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 opacity-35 md:inset-auto md:top-28 md:right-8 md:bottom-36 md:w-[44%] md:opacity-100 lg:top-32 lg:right-[max(3rem,calc((100%-80rem)/2+3rem))] lg:w-[40%]">
-        <div class="absolute inset-x-[12%] top-[18%] bottom-[12%] hidden rounded-full bg-gym-orange/20 blur-3xl md:block"></div>
-        <img src="{{ asset('images/landing/hero-athlete.jpg') }}" alt="" fetchpriority="high" class="lp-hero-photo relative size-full object-cover object-[50%_15%] md:object-contain md:object-center">
+    {{-- Athlete photo (decorative). Desktop: fills the right side from under the nav down to the feature strip —
+         a blurred, dimmed copy is the gym backdrop and the sharp figure stands in the middle of it. Phones: a dim
+         full-bleed backdrop behind the text. --}}
+    <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10 overflow-hidden opacity-35 md:inset-auto md:top-16 md:right-0 md:bottom-32 md:left-[36%] md:opacity-100 lg:top-20 lg:bottom-[8.5rem] lg:left-[38%]">
+        <img src="{{ asset('images/landing/hero-athlete.jpg') }}" alt="" class="lp-hero-ambient absolute inset-0 hidden size-full scale-110 object-cover md:block">
+        <div class="absolute top-[12%] bottom-[8%] left-[42%] hidden w-[46%] -translate-x-1/2 rounded-full bg-gym-orange/15 blur-3xl md:block"></div>
+        <img src="{{ asset('images/landing/hero-athlete.jpg') }}" alt="" fetchpriority="high" class="lp-hero-photo relative size-full object-cover object-[50%_15%] md:absolute md:top-0 md:left-[42%] md:h-full md:w-auto md:max-w-none md:-translate-x-1/2">
     </div>
     <div aria-hidden="true" class="pointer-events-none absolute -top-32 -left-40 -z-10 size-[34rem] rounded-full bg-gym-orange/10 blur-3xl"></div>
 

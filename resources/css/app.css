@@ -381,16 +381,26 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
 .lp-badge { animation: lp-spin 22s linear infinite; }
 .lp-tile { box-shadow: 6px 6px 0 0 var(--gym-orange); }
 
-/* Hero photo: phones get a full-bleed backdrop fading out at the bottom; from tablet up the framed figure
- * fades softly on every edge so it floats in the middle of its space. */
+/* Hero photo. Phones: a full-bleed backdrop fading out at the bottom. From tablet up the sharp figure blends
+ * into its blurred backdrop at the sides and bottom, and the backdrop fades into the black page on the left. */
 .lp-hero-photo {
     -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 35%);
     mask-image: linear-gradient(to top, transparent 0%, #000 35%);
 }
+.lp-hero-ambient {
+    opacity: 0.55;
+    filter: blur(24px) brightness(0.7);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 40%), linear-gradient(to top, transparent 0%, #000 30%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent 0%, #000 40%), linear-gradient(to top, transparent 0%, #000 30%);
+    mask-composite: intersect;
+}
 @media (width >= 48rem) {
     .lp-hero-photo {
-        -webkit-mask-image: radial-gradient(ellipse 50% 50% at 50% 46%, #000 62%, transparent 100%);
-        mask-image: radial-gradient(ellipse 50% 50% at 50% 46%, #000 62%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%), linear-gradient(to top, transparent 0%, #000 18%);
+        -webkit-mask-composite: source-in;
+        mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%), linear-gradient(to top, transparent 0%, #000 18%);
+        mask-composite: intersect;
     }
 }
 /* Floating product cards: glassy charcoal with an orange edge, like the panel's highlight. */
