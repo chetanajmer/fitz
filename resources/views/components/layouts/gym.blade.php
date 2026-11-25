@@ -30,6 +30,7 @@
 @endphp
 <x-layouts.panel :title="$title" :brand-name="$gym?->name ?? 'Gymai'" brand-sub="Powered by Gymai" :brand-logo="$gym?->logoUrl()" account-route="gym.account">
     <x-slot:nav>
+        <x-ui.dashboard-theme area="admin" :gym="$gym" />
         @foreach ($links as $link)
             @can($link['can'])
                 <a href="{{ route($link['route'], $link['params'] ?? []) }}" class="nav-link {{ ($link['active'] ?? request()->routeIs($link['match'])) ? 'nav-link-active' : '' }}">

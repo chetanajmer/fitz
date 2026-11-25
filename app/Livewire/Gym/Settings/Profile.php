@@ -8,6 +8,7 @@ use App\Models\GymPhoto;
 use App\Models\Locality;
 use App\Services\GymProfileService;
 use App\Services\QrCodeService;
+use App\Support\Color;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -42,6 +43,19 @@ class Profile extends Component
 
     public string $photoCaption = '';
 
+    /** @var array<string, array{primary: string, secondary: string}> Dashboard colours per area (admin, member). */
+    public array $theme = [];
+
+    /** Ready-made colour pairs offered beside the pickers: [label, primary, secondary]. */
+    public const THEME_PRESETS = [
+        ['Electric Orange', '#ff6b00', '#0d0d0d'],
+        ['Royal Blue', '#3b82f6', '#0b1220'],
+        ['Emerald', '#059669', '#06140f'],
+        ['Crimson', '#e11d48', '#140609'],
+        ['Violet', '#8b5cf6', '#100b1f'],
+        ['Gold', '#b8860b', '#141006'],
+    ];
+
     public function mount(): void
     {
         $gym = $this->gym();
@@ -58,6 +72,68 @@ class Profile extends Component
             'social' => array_map(fn ($v) => (string) $v, $all['social']),
         ];
         $this->facilities = implode("\n", $all['facilities']);
+        $this->theme = collect(Gym::DASHBOARD_AREAS)->map(fn ($label, $area) => collect($gym->dashboardColors($area))->only(['primary', 'secondary'])->all())->all();
+    }
+
+    public function applyThemePreset(string $area, int $preset): void
+    {
+        abort_unless(array_key_exists($area, Gym::DASHBOARD_AREAS) && isset(self::THEME_PRESETS[$preset]), 404);
+
+        [, $primary, $secondary] = self::THEME_PRESETS[$preset];
+        $this->theme[$area] = ['primary' => $primary, 'secondary' => $secondary];
+        $this->resetValidation("theme.{$area}.*");
+    }
+
+    public function saveTheme(string $area, GymProfileService $service): void
+    {
+        abort_unless(array_key_exists($area, Gym::DASHBOARD_AREAS), 404);
+
+        $this->validate([
+            "theme.{$area}.primary" => ['bail', 'required', 'regex:/^#[0-9a-fA-F]{6}$/', function (string $attribute, mixed $value, \Closure $fail) {
+                // Buttons put white text on the primary colour, and it must also stand out on the dark theme.
+                if (Color::contrast($value, '#ffffff') < 2.5) {
+                    $fail('Choose a darker or stronger primary colour — white button text is hard to read on it.');
+                } elseif (Color::contrast($value, '#111111') < 2) {
+                    $fail('Choose a brighter primary colour — it disappears on the dark background.');
+                }
+            }],
+            "theme.{$area}.secondary" => ['bail', 'required', 'regex:/^#[0-9a-fA-F]{6}$/', function (string $attribute, mixed $value, \Closure $fail) {
+                // Menu text is light grey, so the navigation background has to stay dark.
+                if (Color::contrast($value, '#a3a3a3') < 3) {
+                    $fail('Choose a darker secondary colour — the menu text needs a dark background.');
+                }
+            }],
+        ], [], ["theme.{$area}.primary" => 'primary colour', "theme.{$area}.secondary" => 'secondary colour']);
+
+        $service->updateDashboardTheme($this->gym(), $area, $this->theme[$area]);
+
+        $this->confirmTheme($area, 'colours saved.');
+    }
+
+    public function resetTheme(string $area, GymProfileService $service): void
+    {
+        abort_unless(array_key_exists($area, Gym::DASHBOARD_AREAS), 404);
+
+        $service->updateDashboardTheme($this->gym(), $area, null);
+        $this->theme[$area] = ['primary' => Gym::DASHBOARD_THEME_DEFAULTS['primary'], 'secondary' => Gym::DASHBOARD_THEME_DEFAULTS['secondary']];
+        $this->resetValidation("theme.{$area}.*");
+
+        $this->confirmTheme($area, 'colours reset to the Gymai theme.');
+    }
+
+    /** Admin colours repaint this very panel, so reload it; member colours show in the member app. */
+    protected function confirmTheme(string $area, string $message): void
+    {
+        $message = Gym::DASHBOARD_AREAS[$area].' '.$message;
+
+        if ($area === 'admin') {
+            session()->flash('success', $message);
+            $this->redirectRoute('gym.settings', ['tab' => 'theme']);
+
+            return;
+        }
+
+        $this->dispatch('notify', message: $message);
     }
 
     protected function gym(): Gym

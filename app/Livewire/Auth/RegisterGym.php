@@ -17,7 +17,7 @@ use Livewire\Component;
 /**
  * Three-step gym sign-up: 1) city, 2) gym name and location, 3) owner account.
  */
-#[Layout('components.layouts.guest', ['wide' => true])]
+#[Layout('components.layouts.guest', ['split' => true])]
 #[Title('Register your gym')]
 class RegisterGym extends Component
 {

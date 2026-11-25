@@ -23,7 +23,7 @@ use Livewire\Component;
  * → gym in that city → details → phone OTP. Each gym's public profile can be opened before choosing it. Same rules as the app sign-up (MemberSignupService): the member is created
  * pending and the gym approves them. Members at the gym's desk use the QR form instead.
  */
-#[Layout('components.layouts.guest', ['wide' => true])]
+#[Layout('components.layouts.guest', ['split' => true])]
 #[Title('Join a gym')]
 class MemberSignup extends Component
 {
