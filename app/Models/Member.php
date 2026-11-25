@@ -124,7 +124,7 @@ class Member extends Model implements AuthenticatableContract
 
     public function aiReports(): HasMany
     {
-        return $this->hasMany(AiReport::class)->latest('id');
+        return $this->hasMany(AiReport::class)->where('status', '!=', AiReport::ERASED)->latest('id');
     }
 
     public function programs(): HasMany

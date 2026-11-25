@@ -10,6 +10,7 @@ use App\Models\GymAiSetting;
 use App\Models\Member;
 use App\Models\PlatformSetting;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Who may use the AI progress module and how much. Three levels, the strictest wins:
@@ -22,7 +23,7 @@ class AiAccessService
 {
     public const CONSENT_TEXT = 'Your progress data (weight, measurements, attendance, workout/diet adherence and, for photo comparisons, the photos you choose) '
         .'is sent to an AI provider to write your report. Providers that store or train on it are not used. '
-        .'Your reports are also visible to your gym admin and your trainer. Your medical notes are never sent. You can withdraw consent at any time.';
+        .'Your reports are also visible to your gym admin and your trainer. Your medical notes are never sent. You can withdraw consent at any time; your AI reports are then deleted.';
 
     /** The gym's settings, or the defaults for a gym the Super Admin has not configured yet (unsaved). */
     public function settingsFor(Gym $gym): GymAiSetting
@@ -149,11 +150,33 @@ class AiAccessService
 
     public function setConsent(Member $member, bool $accepted): void
     {
-        $member->forceFill(['ai_consent_at' => $accepted ? now() : null])->save();
+        DB::transaction(function () use ($member, $accepted) {
+            $member->forceFill(['ai_consent_at' => $accepted ? now() : null])->save();
 
-        if (! $accepted) {
-            AiReport::forGym($member->gym_id)->where('member_id', $member->id)->where('status', AiReport::PENDING)
-                ->update(['status' => AiReport::FAILED, 'error' => 'Consent withdrawn.', 'updated_at' => now()]);
-        }
+            if (! $accepted) {
+                $this->eraseReports($member);
+            }
+        });
+    }
+
+    /**
+     * Delete the member's report history. Finished reports keep a bare usage record: without it, withdrawing
+     * and agreeing again would refill the monthly credits, and the platform would lose its AI cost figures.
+     */
+    protected function eraseReports(Member $member): void
+    {
+        $reports = AiReport::forGym($member->gym_id)->where('member_id', $member->id);
+
+        (clone $reports)->whereIn('status', [AiReport::PENDING, AiReport::FAILED])->delete();
+        $reports->where('status', AiReport::COMPLETED)->update([
+            'status' => AiReport::ERASED,
+            'content' => null,
+            'result' => null,
+            'before_photo_id' => null,
+            'after_photo_id' => null,
+            'requested_by_user' => null,
+            'error' => null,
+            'updated_at' => now(),
+        ]);
     }
 }

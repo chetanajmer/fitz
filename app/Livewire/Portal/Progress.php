@@ -29,7 +29,7 @@ class Progress extends Component
     public function setConsent(bool $accepted, AiAccessService $access): void
     {
         $access->setConsent($this->progressMember(), $accepted);
-        $this->dispatch('notify', message: $accepted ? 'Thanks! AI coach is ready.' : 'Consent withdrawn.');
+        $this->dispatch('notify', message: $accepted ? 'Thanks! AI coach is ready.' : 'Consent withdrawn. Your AI reports were deleted.');
     }
 
     /** Always the signed-in member's own profile, never taken from the request. */

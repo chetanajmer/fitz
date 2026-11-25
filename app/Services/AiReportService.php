@@ -151,16 +151,25 @@ class AiReportService
             return;
         }
 
-        $report->forceFill([
-            'status' => AiReport::COMPLETED,
-            'result' => $result['data'],
-            'content' => self::markdown($report->type, $result['data']),
-            'model' => $result['model'],
-            'input_tokens' => $result['input_tokens'],
-            'output_tokens' => $result['output_tokens'],
-            'cost_usd' => $result['cost_usd'],
-            'completed_at' => now(),
-        ])->save();
+        // The member may have withdrawn consent (which deletes the report) while the AI was writing.
+        $stored = DB::transaction(function () use ($report, $result) {
+            $pending = AiReport::whereKey($report->id)->where('status', AiReport::PENDING)->lockForUpdate()->first();
+
+            return (bool) $pending?->forceFill([
+                'status' => AiReport::COMPLETED,
+                'result' => $result['data'],
+                'content' => self::markdown($report->type, $result['data']),
+                'model' => $result['model'],
+                'input_tokens' => $result['input_tokens'],
+                'output_tokens' => $result['output_tokens'],
+                'cost_usd' => $result['cost_usd'],
+                'completed_at' => now(),
+            ])->save();
+        });
+
+        if (! $stored) {
+            return;
+        }
 
         $this->notifications->notify($member, PushMessage::make(
             'ai_report_ready',

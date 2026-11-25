@@ -8,7 +8,7 @@
         </div>
         @if ($status['has_consented'])
             <p class="text-sm text-gray-500">{{ $status['credits']['remaining'] }} of {{ $status['credits']['limit'] }} credits left this month. You accepted the AI terms on {{ \Illuminate\Support\Carbon::parse($status['consented_at'])->format('d M Y') }}.</p>
-            <button type="button" wire:click="setConsent(false)" wire:confirm="Withdraw your consent? Reports being prepared are cancelled." class="self-start text-sm text-gray-500 hover:underline">Withdraw consent</button>
+            <button type="button" wire:click="setConsent(false)" wire:confirm="Withdraw your consent? All your AI reports are deleted and cannot be restored. Your photos and measurements stay, and credits you already used are not refunded." class="self-start text-sm text-gray-500 hover:underline">Withdraw consent</button>
         @elseif ($status['available'])
             <p class="text-sm text-gray-500">{{ $status['consent_text'] }}</p>
             <button type="button" wire:click="setConsent(true)" class="btn-primary btn-sm self-start">I agree</button>

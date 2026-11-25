@@ -10,9 +10,11 @@ use App\Models\Member;
 use App\Models\MemberNotification;
 use App\Models\PlatformSetting;
 use App\Models\ProgressPhoto;
+use App\Services\AiAccessService;
 use App\Services\AiReportService;
 use App\Services\MembershipService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -264,6 +266,48 @@ class AiCoachApiTest extends TestCase
             ->assertJsonPath('data.report.status', 'failed')->assertJsonPath('data.credits.used', 0);
     }
 
+    public function test_withdrawing_consent_deletes_the_report_history_but_not_the_credits_used(): void
+    {
+        $this->consent();
+        $before = $this->uploadPhoto('2026-01-01');
+        $after = $this->uploadPhoto('2026-03-01');
+        $this->api()->postJson('/api/v1/me/ai/reports', ['type' => 'photo_comparison', 'before_photo_id' => $before, 'after_photo_id' => $after])->assertSuccessful();
+        $id = AiReport::withoutGlobalScopes()->sole()->id;
+        $this->api()->getJson("/api/v1/me/ai/reports/{$id}")->assertOk();
+        $otherReport = (new AiReport)->forceFill(['gym_id' => $this->gym->id, 'member_id' => $this->memberWithMembership($this->gym)->id, 'type' => 'progress', 'status' => 'completed', 'credits' => 1, 'requested_by' => 'member', 'content' => 'Keep me']);
+        $otherReport->saveQuietly();
+
+        $this->api()->postJson('/api/v1/me/ai/consent', ['accepted' => false])->assertOk();
+
+        $this->assertNull($this->api()->getJson('/api/v1/me/ai/reports')->assertOk()->json('data.reports.0'));
+        $this->api()->getJson("/api/v1/me/ai/reports/{$id}")->assertNotFound();
+        $this->api()->getJson('/api/v1/me/transformation')->assertOk()->assertJsonPath('data.latest_comparison', null);
+        $row = AiReport::withoutGlobalScopes()->findOrFail($id);
+        $this->assertSame([AiReport::ERASED, null, null, null, null], [$row->status, $row->content, $row->result, $row->before_photo_id, $row->after_photo_id]);
+        $this->assertSame('Keep me', $otherReport->fresh()->content);
+        $this->assertSame(2, $this->member->progressPhotos()->withoutGlobalScopes()->count());
+
+        // Agreeing again does not give the used credits back, and the old reports stay gone.
+        $this->consent();
+        $this->api()->getJson('/api/v1/me/ai')->assertJsonPath('data.credits.used', 2);
+        $this->api()->getJson("/api/v1/me/ai/reports/{$id}")->assertNotFound();
+    }
+
+    public function test_a_report_finished_after_consent_was_withdrawn_is_not_kept(): void
+    {
+        Http::swap(new HttpFactory);
+        Http::fake(['openrouter.ai/*' => function () {
+            $this->inGym($this->gym, fn () => app(AiAccessService::class)->setConsent($this->member->fresh(), false));
+
+            return Http::response(['model' => 'm', 'choices' => [['message' => ['content' => json_encode(['summary' => 'Late.', 'direction' => 'improved', 'wins' => [], 'focus_areas' => [], 'missing' => [], 'motivation' => 'x', 'confidence' => 'low'])]]], 'usage' => []]);
+        }]);
+        $this->consent();
+        $this->api()->postJson('/api/v1/me/ai/reports', ['type' => 'progress']);
+
+        Http::assertSentCount(1);
+        $this->assertSame(0, AiReport::withoutGlobalScopes()->count());
+    }
+
     public function test_nothing_is_sent_after_consent_is_withdrawn_and_stuck_reports_free_their_credits(): void
     {
         Queue::fake();
@@ -271,9 +315,11 @@ class AiCoachApiTest extends TestCase
         $this->api()->postJson('/api/v1/me/ai/reports', ['type' => 'progress'])->assertStatus(202)->assertJsonPath('data.credits.used', 1);
         $this->api()->postJson('/api/v1/me/ai/consent', ['accepted' => false])->assertOk()->assertJsonPath('data.credits.used', 0);
 
+        $this->assertSame(0, AiReport::withoutGlobalScopes()->count());
+
         // A report that is still pending is also re-checked when its job runs.
-        $report = AiReport::withoutGlobalScopes()->sole();
-        $report->forceFill(['status' => AiReport::PENDING])->saveQuietly();
+        $report = (new AiReport)->forceFill(['gym_id' => $this->gym->id, 'member_id' => $this->member->id, 'type' => 'progress', 'status' => AiReport::PENDING, 'credits' => 1, 'requested_by' => 'member']);
+        $report->saveQuietly();
         app()->call([new GenerateAiReport($report->id, $this->gym->id), 'handle']);
         $this->assertSame(AiReport::FAILED, AiReport::withoutGlobalScopes()->sole()->status);
         Http::assertNothingSent();

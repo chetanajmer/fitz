@@ -34,6 +34,9 @@ class AiReport extends Model
 
     public const FAILED = 'failed';
 
+    /** The member withdrew consent: the content is gone, only the usage (credits, tokens, cost) is kept. Never listed. */
+    public const ERASED = 'erased';
+
     public const DISCLAIMER = 'AI-generated guidance, not medical advice. Talk to your trainer or a doctor before changing your diet or training because of it.';
 
     protected $guarded = ['id'];

@@ -72,7 +72,7 @@ class AiCoach extends Component
             'plans' => MembershipPlan::orderBy('name')->get(['id', 'name']),
             'selectedCount' => Member::where('ai_access', true)->count(),
             'consentedCount' => Member::whereNotNull('ai_consent_at')->count(),
-            'reports' => AiReport::with('member:id,gym_id,trainer_id,name,member_code')->latest('id')->limit(15)->get(),
+            'reports' => AiReport::where('status', '!=', AiReport::ERASED)->with('member:id,gym_id,trainer_id,name,member_code')->latest('id')->limit(15)->get(),
         ]);
     }
 }
