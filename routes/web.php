@@ -129,6 +129,9 @@ Route::prefix('me')->name('portal.')
     ->group(function () {
         Route::livewire('/', Livewire\Portal\Dashboard::class)->name('dashboard');
         Route::get('/qr', [QrCodeController::class, 'self'])->name('qr');
+        Route::livewire('/membership', Livewire\Portal\Membership::class)->name('membership');
+        Route::livewire('/check-in', Livewire\Portal\CheckIn::class)->name('check-in');
+        Route::livewire('/notifications', Livewire\Portal\Notifications::class)->name('notifications');
         Route::livewire('/plans/view/{plan}', Livewire\Portal\PlanShow::class)->whereNumber('plan')->name('plans.show');
         Route::livewire('/plans/{type}', Livewire\Portal\Plans::class)->whereIn('type', ['diet', 'workout'])->name('plans');
         Route::livewire('/progress', Livewire\Portal\Progress::class)->name('progress');

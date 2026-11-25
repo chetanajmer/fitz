@@ -684,6 +684,68 @@ html:has(body.gym-page) { scroll-behavior: smooth; scroll-padding-top: 5.5rem; }
 } /* end gym page @layer components */
 
 /* ==========================================================================
+ * Member portal (components/layouts/portal.blade.php and livewire/portal/*).
+ * Motion is CSS only: entrance animations run once when an element is created, and scroll reveals use
+ * scroll-driven animations where the browser supports them. Nothing is hidden waiting for JavaScript,
+ * so Livewire re-renders can never leave content invisible. Transform/opacity only; off for reduced motion.
+ * ========================================================================== */
+@layer components {
+.pm-rise { animation: pm-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--d, 0ms); }
+@keyframes pm-rise { from { opacity: 0; transform: translateY(14px); } }
+/* Below-the-fold cards rise as they scroll into view (Chrome/Edge); elsewhere they simply show. */
+@supports (animation-timeline: view()) {
+    .pm-reveal { animation: pm-rise linear both; animation-timeline: view(); animation-range: entry 0% entry 60%; }
+}
+.pm-page { animation: pm-page 0.35s ease-out both; }
+@keyframes pm-page { from { opacity: 0; transform: translateY(6px); } }
+
+/* Glass card with a soft orange rim, for heroes and highlights. */
+.pm-glass { background: color-mix(in srgb, var(--color-surface) 82%, transparent); border: 1px solid color-mix(in srgb, var(--gym-orange) 22%, var(--color-gray-200)); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.pm-tile { transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease; }
+.pm-tile:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--gym-orange) 45%, transparent); }
+.theme-dark .pm-tile:hover { background-color: #292929; }
+.pm-tile:hover .pm-icon { transform: scale(1.08) rotate(-4deg); }
+.pm-icon { transition: transform 0.25s ease; }
+
+/* Sidebar link with an orange active bar. */
+.pm-nav { position: relative; display: flex; align-items: center; gap: 0.75rem; border-radius: 0.75rem; padding: 0.625rem 0.75rem; font-size: 0.875rem; font-weight: 500; color: var(--gym-muted); transition: color 0.2s ease, background-color 0.2s ease; }
+.pm-nav:hover { color: var(--gym-white); background: rgb(255 255 255 / 0.05); }
+.pm-nav:hover svg { transform: translateX(2px); }
+.pm-nav svg { transition: transform 0.2s ease; flex-shrink: 0; }
+.pm-nav.is-active { color: var(--gym-white); background: color-mix(in srgb, var(--gym-orange) 16%, transparent); }
+.pm-nav.is-active::before { content: ''; position: absolute; left: -0.75rem; top: 20%; bottom: 20%; width: 3px; border-radius: 0 3px 3px 0; background: var(--gym-orange); box-shadow: 0 0 12px var(--gym-orange); }
+.pm-nav.is-active svg { color: var(--gym-orange); }
+
+/* Thin progress bar while the next portal page loads (shown by js/motion.js on link clicks). */
+.pm-loadbar { position: fixed; inset: 0 0 auto; z-index: 80; height: 3px; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, var(--gym-orange), var(--gym-orange-light)); opacity: 0; pointer-events: none; }
+.pm-loadbar.is-loading { opacity: 1; animation: pm-load 2.5s cubic-bezier(0.1, 0.7, 0.2, 1) forwards; }
+@keyframes pm-load { from { transform: scaleX(0.05); } to { transform: scaleX(0.9); } }
+
+/* QR card: a scan line sweeps over the code while hovered (and once on load). */
+.pm-qr { position: relative; overflow: hidden; }
+.pm-qr::after { content: ''; position: absolute; inset-inline: 6%; top: 0; height: 3px; border-radius: 3px; background: var(--gym-orange); box-shadow: 0 0 14px 2px color-mix(in srgb, var(--gym-orange) 70%, transparent); opacity: 0; }
+.pm-qr:hover::after, .pm-qr.is-scanning::after { animation: pm-scan 1.6s ease-in-out 2; }
+@keyframes pm-scan { 0% { top: 6%; opacity: 0; } 10%, 90% { opacity: 1; } 100% { top: 92%; opacity: 0; } }
+.pm-corner { position: absolute; width: 1.5rem; height: 1.5rem; border-color: var(--gym-orange); }
+
+/* Ring progress (membership days, goals): set --p from 0 to 100. */
+.pm-ring { --p: 0; background: conic-gradient(var(--gym-orange) calc(var(--p) * 1%), color-mix(in srgb, var(--gym-orange) 14%, transparent) 0); border-radius: 9999px; }
+.pm-bar-grow { transform-origin: left; animation: pm-bar 1s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: 0.2s; }
+@keyframes pm-bar { from { transform: scaleX(0); } }
+.pm-col-grow { transform-origin: bottom; animation: pm-col 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--d, 0ms); }
+@keyframes pm-col { from { transform: scaleY(0); } }
+
+@media (max-width: 767px) {
+    .pm-tile:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pm-rise, .pm-reveal, .pm-page, .pm-bar-grow, .pm-col-grow { animation: none !important; }
+    .pm-qr::after, .pm-loadbar { display: none; }
+    .pm-tile, .pm-nav, .pm-icon, .pm-nav svg { transition: none; }
+}
+} /* end member portal @layer components */
+
+/* ==========================================================================
  * Member progress page (livewire/portal/progress.blade.php): the landing page's display type, highlighter,
  * stamp, step numbers and hard offset edge. Scoped, so the gym panel keeps its own look for the shared parts.
  * ========================================================================== */

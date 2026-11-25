@@ -1,6 +1,6 @@
 /**
  * The member dashboard's streak card: counts up on load, and celebrates when a check-in grows the streak
- * (the "streak-grew" event). Used as x-data="streakCard" with data-count and data-state:
+ * (the "streak-grew" event). Used as x-data="streakCard" with data-streak and data-state:
  * x-data itself must not change, or Livewire's refresh after the check-in would start the card again. The motion is in app.css.
  */
 const EMBERS = 14;
@@ -17,7 +17,7 @@ window.streakCard = () => ({
     still: () => matchMedia('(prefers-reduced-motion: reduce)').matches,
 
     init() {
-        const count = Number(this.$el.dataset.count);
+        const count = Number(this.$el.dataset.streak);
         this.shown = count;
         this.state = this.$el.dataset.state;
         if (count > 1 && !this.still()) this.roll(0, count);

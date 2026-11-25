@@ -3,6 +3,7 @@ import Chart from 'chart.js/auto';
 import './share-card';
 import './streak';
 import './qr-scanner';
+import './motion';
 
 window.Chart = Chart;
 

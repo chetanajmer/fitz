@@ -49,5 +49,28 @@
                 </div>
             </div>
         @endunless
+
+        @if (auth()->user()->isMember() && ($supportGym = current_gym()))
+            @php($whatsapp = $supportGym->setting('social.whatsapp'))
+            <div class="card">
+                <div class="card-header"><h2 class="card-title">Help &amp; support</h2><x-ui.icon name="phone" class="size-5 text-gray-400" /></div>
+                <div class="card-body space-y-3 text-sm">
+                    <p class="text-gray-600">Questions about your membership, payments or plans? Contact {{ $supportGym->name }}.</p>
+                    <div class="grid gap-2 sm:grid-cols-2">
+                        @if ($supportGym->phone)
+                            <a href="tel:{{ $supportGym->phone }}" class="flex items-center gap-3 rounded-xl border border-gray-200 px-3 py-2.5 transition hover:border-brand-600 dark:border-ink-700"><x-ui.icon name="phone" class="size-4 text-brand-600" /> {{ $supportGym->phone }}</a>
+                        @endif
+                        @if ($whatsapp)
+                            <a href="https://wa.me/{{ preg_replace('/\D/', '', $whatsapp) }}" target="_blank" rel="noopener" class="flex items-center gap-3 rounded-xl border border-gray-200 px-3 py-2.5 transition hover:border-brand-600 dark:border-ink-700"><x-ui.icon name="inbox" class="size-4 text-brand-600" /> WhatsApp</a>
+                        @endif
+                        @if ($supportGym->email)
+                            <a href="mailto:{{ $supportGym->email }}" class="flex min-w-0 items-center gap-3 rounded-xl border border-gray-200 px-3 py-2.5 transition hover:border-brand-600 dark:border-ink-700"><x-ui.icon name="mail" class="size-4 shrink-0 text-brand-600" /> <span class="truncate">{{ $supportGym->email }}</span></a>
+                        @endif
+                        <a href="{{ $supportGym->directionsUrl() }}" target="_blank" rel="noopener noreferrer" class="flex items-center gap-3 rounded-xl border border-gray-200 px-3 py-2.5 transition hover:border-brand-600 dark:border-ink-700"><x-ui.icon name="map-pin" class="size-4 text-brand-600" /> Directions</a>
+                    </div>
+                    <a href="{{ route('portal.notifications') }}" class="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline">Notification settings <x-ui.icon name="arrow-right" class="size-4" /></a>
+                </div>
+            </div>
+        @endif
     </div>
 </div>

@@ -7,9 +7,9 @@
                     <dt class="mt-1 text-sm text-gym-muted">{{ $h['label'] }}</dt>
                     <dd class="text-4xl font-bold tracking-tight text-white sm:text-5xl">
                         @isset($h['display'])
-                            <span data-gp-count="{{ $h['value'] }}" data-gp-count-label="{{ $h['display'] }}">{{ $h['display'] }}</span>
+                            <span data-count="{{ $h['value'] }}" data-count-label="{{ $h['display'] }}">{{ $h['display'] }}</span>
                         @else
-                            <span data-gp-count="{{ $h['value'] }}">{{ $h['value'] }}</span>
+                            <span data-count="{{ $h['value'] }}">{{ $h['value'] }}</span>
                         @endisset
                     </dd>
                 </div>
