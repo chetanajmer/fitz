@@ -137,6 +137,21 @@ class MemberSignupWebTest extends TestCase
         $this->assertSame([], $this->sent);
     }
 
+    public function test_checking_registered_numbers_is_rate_limited(): void
+    {
+        $gym = $this->gymOf($this->createGymOwner());
+        $this->createMember($gym, ['phone' => '9811100004']);
+
+        $page = Livewire::test(MemberSignup::class)
+            ->call('selectCity', $gym->city_id)->call('selectGym', $gym->id)
+            ->set('name', 'Probe')->set('phone', '9811100004');
+
+        foreach (range(1, 5) as $try) {
+            $page->call('sendOtp')->assertSee('already registered');
+        }
+        $page->call('sendOtp')->assertSee('Too many attempts')->assertDontSee('already registered');
+    }
+
     public function test_back_returns_to_the_previous_step(): void
     {
         $gym = $this->gymOf($this->createGymOwner());

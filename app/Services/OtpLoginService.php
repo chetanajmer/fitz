@@ -21,13 +21,15 @@ use Illuminate\Support\Str;
 /**
  * Website sign-in with a one-time code sent to an email address or a mobile number, for members
  * (any gym they belong to) and gym staff (their account email, or their verified sign-in mobile).
- * One email or number can belong to several accounts (two gyms, staff + member): the person picks one.
+ * One email or number can belong to several accounts (two gyms, staff + member): the person picks one
+ * after the code. Until a correct code is entered, every email or number is answered the same way,
+ * so strangers cannot learn who has an account or at which gym.
  * Same limits as the app OTPs (config gymai.otp). The Super Admin signs in with a password only.
  */
 class OtpLoginService
 {
-    /** Pseudo-account for checking the status of a registration that cannot sign in yet. */
-    public const STATUS = 'status';
+    /** login_codes.account: the code proves the email or number; the account is chosen afterwards. */
+    protected const ANY_ACCOUNT = 'any';
 
     public function __construct(
         protected SmsSender $sms,
@@ -71,15 +73,16 @@ class OtpLoginService
         return $staff->concat($members)->values()->all();
     }
 
-    /** Send a code for one of the identifier's accounts. Only the newest code is valid. */
-    public function sendCode(string $identifier, string $account, ?string $ip = null): void
+    /**
+     * Send a code to an email or number. Only the newest code is valid. An unknown one gets the same
+     * code record and limits, but nothing is delivered.
+     */
+    public function sendCode(string $identifier, ?string $ip = null): void
     {
-        $this->assertAccount($identifier, $account);
         $channel = self::channel($identifier);
         $destination = self::destination($identifier);
-
         $cooldown = (int) config('gymai.otp.resend_cooldown_seconds', 30);
-        $latest = LoginCode::where('destination', $destination)->where('account', $account)->latest('id')->first();
+        $latest = LoginCode::where('destination', $destination)->where('account', self::ANY_ACCOUNT)->latest('id')->first();
         if ($latest && $latest->consumed_at === null && $latest->created_at->gt(now()->subSeconds($cooldown))) {
             throw new ApiException('Please wait '.max(1, $cooldown - (int) $latest->created_at->diffInSeconds(now())).' seconds before requesting another code.', 'OTP_COOLDOWN', 429);
         }
@@ -94,17 +97,21 @@ class OtpLoginService
         $code = str_pad((string) random_int(0, (10 ** $length) - 1), $length, '0', STR_PAD_LEFT);
         $minutes = intdiv((int) config('gymai.otp.ttl_seconds', 300), 60);
 
-        DB::transaction(function () use ($channel, $destination, $account, $code, $ip) {
-            LoginCode::where('destination', $destination)->where('account', $account)->whereNull('consumed_at')->update(['consumed_at' => now()]);
+        DB::transaction(function () use ($channel, $destination, $code, $ip) {
+            LoginCode::where('destination', $destination)->where('account', self::ANY_ACCOUNT)->whereNull('consumed_at')->update(['consumed_at' => now()]);
             LoginCode::create([
                 'channel' => $channel,
                 'destination' => $destination,
-                'account' => $account,
+                'account' => self::ANY_ACCOUNT,
                 'code_hash' => LoginCode::hashCode($code),
                 'expires_at' => now()->addSeconds((int) config('gymai.otp.ttl_seconds', 300)),
                 'ip_address' => $ip,
             ]);
         });
+
+        if ($this->accounts($identifier) === [] && $this->registrations($identifier)->isEmpty()) {
+            return;
+        }
 
         $channel === 'email'
             ? Mail::to($destination)->send(new LoginCodeMail($code, $minutes))
@@ -128,18 +135,12 @@ class OtpLoginService
             ->get();
     }
 
-    /** Check a STATUS code and return the registrations to show. */
-    public function verifyStatusCode(string $identifier, string $code): Collection
+    /** Sign in to one of the accounts of an email or number whose code was checked (a member's portal account is created on first use). */
+    public function userFor(string $identifier, string $account): User
     {
-        $this->checkCode($identifier, self::STATUS, $code);
-
-        return $this->registrations($identifier);
-    }
-
-    /** Check the code and return the user to sign in (a member's portal account is created on first use). */
-    public function verifyCode(string $identifier, string $account, string $code): User
-    {
-        $this->checkCode($identifier, $account, $code);
+        if (! in_array($account, array_column($this->accounts($identifier), 'key'), true)) {
+            throw new ApiException('Choose where to sign in.', 'ACCOUNT_NOT_FOUND', 404);
+        }
 
         [$type, $id] = explode(':', $account);
 
@@ -152,15 +153,15 @@ class OtpLoginService
         return $this->tenant->runAs($member->gym, fn () => $this->members->portalUserFor($member));
     }
 
-    protected function checkCode(string $identifier, string $account, string $code): void
+    /** Check the newest code; throws on a wrong, expired or used-up one. */
+    public function verifyCode(string $identifier, string $code): void
     {
-        $this->assertAccount($identifier, $account);
         $destination = self::destination($identifier);
         $maxAttempts = (int) config('gymai.otp.max_attempts', 5);
 
         // The failure is returned (not thrown) so the attempt counter increment commits.
-        $failure = DB::transaction(function () use ($destination, $account, $code, $maxAttempts): ?ApiException {
-            $login = LoginCode::where('destination', $destination)->where('account', $account)->whereNull('consumed_at')->latest('id')->lockForUpdate()->first();
+        $failure = DB::transaction(function () use ($destination, $code, $maxAttempts): ?ApiException {
+            $login = LoginCode::where('destination', $destination)->where('account', self::ANY_ACCOUNT)->whereNull('consumed_at')->latest('id')->lockForUpdate()->first();
 
             if (! $login) {
                 return new ApiException('No code requested. Please request a new one.', 'OTP_NOT_FOUND', 422);
@@ -185,18 +186,6 @@ class OtpLoginService
 
         if ($failure) {
             throw $failure;
-        }
-    }
-
-    protected function assertAccount(string $identifier, string $account): void
-    {
-        // STATUS: no account can sign in yet, but a registration exists (pending, declined or inactive).
-        $allowed = $account === self::STATUS
-            ? $this->accounts($identifier) === [] && $this->registrations($identifier)->isNotEmpty()
-            : in_array($account, array_column($this->accounts($identifier), 'key'), true);
-
-        if (! $allowed) {
-            throw new ApiException('No active account found for this email or mobile number.', 'ACCOUNT_NOT_FOUND', 404);
         }
     }
 }

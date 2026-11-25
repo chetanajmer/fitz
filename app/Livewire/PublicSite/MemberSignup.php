@@ -156,14 +156,7 @@ class MemberSignup extends Component
             return; // silently drop bots
         }
 
-        $alreadyRegistered = Member::withoutGlobalScope(GymScope::class)->where('gym_id', $this->gymId)
-            ->where('phone_digits', Member::normalizePhone($this->phone))->exists();
-        if ($alreadyRegistered) {
-            $this->addError('phone', 'This mobile number is already registered with '.$this->gym()->name.'. Please log in to the app or contact the gym.');
-
-            return;
-        }
-
+        // Counted before the duplicate check, so its answer cannot be used to test unlimited numbers.
         $key = 'web-signup-otp:'.request()->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
             $this->addError('phone', 'Too many attempts. Please try again in a few minutes.');
@@ -171,6 +164,14 @@ class MemberSignup extends Component
             return;
         }
         RateLimiter::hit($key, 600);
+
+        $alreadyRegistered = Member::withoutGlobalScope(GymScope::class)->where('gym_id', $this->gymId)
+            ->where('phone_digits', Member::normalizePhone($this->phone))->exists();
+        if ($alreadyRegistered) {
+            $this->addError('phone', 'This mobile number is already registered with '.$this->gym()->name.'. Please log in to the app or contact the gym.');
+
+            return;
+        }
 
         try {
             $signup->sendOtp($this->phone, request()->ip());

@@ -2268,7 +2268,7 @@
                     "response": []
                 },
                 {
-                    "name": "Accept / withdraw AI consent",
+                    "name": "Accept / withdraw AI consent (withdrawing deletes all AI reports and progress photos)",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -2428,7 +2428,7 @@
                                 "1"
                             ]
                         },
-                        "description": "One report (poll this after requesting one)."
+                        "description": "One report (poll this after requesting one).\n\n`result` holds the answer as fields (null for older reports); `content` is the same answer as Markdown.\n- progress: summary, direction (improved | mixed | declined | unknown), wins[], focus_areas[{title, why, tip}], missing[], motivation, confidence (low | medium | high). focus_areas: most important first. Reports made before this was added have no direction, why or missing, and no focus_areas in photo_comparison\n- photo_comparison: summary, direction, change_level (none | slight | moderate | strong | unclear), changes[{area, observation, direction (better | worse | neutral)}], numbers, photo_quality (good | fair | poor), photo_tips[], focus_areas[{title, why, tip}], missing[], motivation, confidence"
                     },
                     "response": []
                 },
@@ -2635,6 +2635,30 @@
                             ]
                         },
                         "description": "Deletes the photo and its file. Returns the full list."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Transformation",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/transformation",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "transformation"
+                            ]
+                        },
+                        "description": "First versus latest weight, body measurements and photos, with the history between.\n\n- `weight`: first_kg, latest_kg, change_kg, history [{date, value}] (null / empty without weigh-ins).\n- `measurements`: one entry per recorded field with first, latest, change (null with a single entry) and history.\n- `photos`: first (`before`) and latest (`after`) photo of each pose that has at least two. `image_url` needs the same bearer token.\n- `latest_comparison`: the newest finished AI photo comparison, or null."
                     },
                     "response": []
                 }

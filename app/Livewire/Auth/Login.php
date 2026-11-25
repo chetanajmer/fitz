@@ -25,6 +25,9 @@ use Livewire\Component;
 #[Title('Sign in')]
 class Login extends Component
 {
+    /** Session: the email or number whose code was just checked, while the person picks an account. */
+    protected const VERIFIED = 'otp_login_verified';
+
     /** password | otp (?mode=otp opens the OTP tab, e.g. from "Already a member? Sign in"). */
     #[Url(except: 'password')]
     public string $mode = 'password';
@@ -81,7 +84,7 @@ class Login extends Component
         return $this->completeLogin(Auth::user(), 'email');
     }
 
-    /** Step 1: find the identifier's accounts (the person picks one when there are several), then send the code. */
+    /** Step 1: send a code. The answer is the same whether or not an account exists. */
     public function sendCode(OtpLoginService $otp): void
     {
         $this->identifier = trim($this->identifier);
@@ -94,32 +97,18 @@ class Login extends Component
         $this->validate(['identifier' => $byEmail ? ['required', 'email', 'max:255'] : ['required', 'regex:/^(\+?91|0)?[6-9]\d{9}$/']],
             ['identifier.regex' => 'Enter a valid email address or 10-digit mobile number.'], ['identifier' => 'email or mobile number']);
 
-        $this->accounts = $otp->accounts($this->identifier);
-
-        if ($this->accounts === [] && $otp->registrations($this->identifier)->isEmpty()) {
-            $this->addError('identifier', 'No active account uses this '.($byEmail ? 'email' : 'mobile number').'.'.($byEmail ? '' : ' Gym staff: verify your mobile under My account first.'));
-
-            return;
-        }
-
-        if ($this->accounts === []) {
-            // A registration that cannot sign in yet: the code proves it is theirs, then we show its status.
-            $this->account = OtpLoginService::STATUS;
-        } elseif (count($this->accounts) === 1) {
-            $this->account = $this->accounts[0]['key'];
-        }
-
-        if ($this->account !== OtpLoginService::STATUS && ! in_array($this->account, array_column($this->accounts, 'key'), true)) {
-            $this->account = '';
-            $this->addError('account', 'More than one account uses this '.($byEmail ? 'email' : 'number').'. Choose where to sign in.');
+        $key = 'web-login-otp:'.request()->ip();
+        if (RateLimiter::tooManyAttempts($key, 10)) {
+            $this->addError($this->codeSent ? 'code' : 'identifier', 'Too many attempts. Please try again in a few minutes.');
 
             return;
         }
+        RateLimiter::hit($key, 600);
 
         try {
-            $otp->sendCode($this->identifier, $this->account, request()->ip());
+            $otp->sendCode($this->identifier, request()->ip());
         } catch (ApiException $e) {
-            $this->addError('identifier', $e->getMessage());
+            $this->addError($this->codeSent ? 'code' : 'identifier', $e->getMessage());
 
             return;
         }
@@ -128,37 +117,71 @@ class Login extends Component
         $this->code = '';
     }
 
-    /** Step 2: check the code and sign in. */
+    /** Step 2: check the code, then sign in, show the registration status, or ask which account. */
     public function verifyCode(OtpLoginService $otp)
     {
         $this->validate(['code' => 'required|digits:'.config('gymai.otp.length', 6)], [], ['code' => 'code']);
 
         try {
-            if ($this->account === OtpLoginService::STATUS) {
-                $this->statuses = $otp->verifyStatusCode($this->identifier, $this->code)->map(fn (Member $m) => [
-                    'gym' => $m->gym->name,
-                    'status' => app(MemberSignupService::class)->statusOf($m),
-                    'member_code' => $m->member_code,
-                    'registered_on' => $m->created_at->format('d M Y'),
-                ])->all();
-
-                return;
-            }
-
-            $user = $otp->verifyCode($this->identifier, $this->account, $this->code);
+            $otp->verifyCode($this->identifier, $this->code);
         } catch (ApiException $e) {
             $this->addError('code', $e->getMessage());
 
             return;
         }
 
+        $this->accounts = $otp->accounts($this->identifier);
+
+        if ($this->accounts === []) {
+            $this->statuses = $otp->registrations($this->identifier)->map(fn (Member $m) => [
+                'gym' => $m->gym->name,
+                'status' => app(MemberSignupService::class)->statusOf($m),
+                'member_code' => $m->member_code,
+                'registered_on' => $m->created_at->format('d M Y'),
+            ])->all();
+
+            return;
+        }
+
+        // Kept in the session, not the page: the browser can neither edit nor replay it.
+        session([self::VERIFIED => ['identifier' => $this->identifier, 'expires' => now()->addMinutes(10)->timestamp]]);
+
+        if (count($this->accounts) === 1) {
+            $this->account = $this->accounts[0]['key'];
+
+            return $this->chooseAccount($otp);
+        }
+    }
+
+    /** Step 3 (several accounts): sign in to the chosen one. */
+    public function chooseAccount(OtpLoginService $otp)
+    {
+        $verified = session(self::VERIFIED);
+
+        if (! $verified || $verified['expires'] < now()->timestamp) {
+            $this->addError('account', 'Your code check has expired. Please request a new code.');
+
+            return;
+        }
+
+        try {
+            $user = $otp->userFor($verified['identifier'], $this->account);
+        } catch (ApiException $e) {
+            $this->addError('account', $e->getMessage());
+
+            return;
+        }
+
+        session()->forget(self::VERIFIED);
         Auth::login($user, $this->remember);
 
-        return $this->completeLogin($user, 'code');
+        // A single account signs in straight from the code field.
+        return $this->completeLogin($user, count($this->accounts) === 1 ? 'code' : 'account');
     }
 
     public function changeIdentifier(): void
     {
+        session()->forget(self::VERIFIED);
         $this->reset('accounts', 'account', 'codeSent', 'code', 'statuses');
         $this->resetValidation();
     }

@@ -96,6 +96,21 @@
                     <span wire:loading wire:target="login">Signing in…</span>
                 </button>
             </form>
+        @elseif (count($accounts) > 1)
+            {{-- The code was correct and the email or number has several accounts. --}}
+            <form wire:key="form-account" wire:submit="chooseAccount" class="mt-8 space-y-5">
+                <x-ui.field label="Sign in to" name="account">
+                    <div class="space-y-2">
+                        @foreach ($accounts as $a)
+                            <label wire:key="acc-{{ $a['key'] }}" class="flex cursor-pointer items-center gap-3 rounded-xl border border-gym-border bg-gym-charcoal px-4 py-3 text-sm text-white transition has-checked:border-gym-orange has-checked:bg-gym-orange/10">
+                                <input wire:model="account" type="radio" value="{{ $a['key'] }}" class="border-gym-border bg-gym-black text-gym-orange focus:ring-gym-orange/40"> {{ $a['label'] }}
+                            </label>
+                        @endforeach
+                    </div>
+                </x-ui.field>
+                <button type="submit" class="btn-primary h-13 w-full rounded-full text-base" wire:loading.attr="disabled">Continue</button>
+                <button type="button" wire:click="changeIdentifier" class="w-full text-center text-sm font-medium text-gym-muted hover:text-gym-orange">Use another number or email</button>
+            </form>
         @elseif (! $codeSent)
             <form wire:key="form-otp" wire:submit="sendCode" class="mt-8 space-y-5">
                 <x-ui.field label="Email or mobile number" name="identifier" hint="We send a one-time code to your email or by SMS to your mobile.">
@@ -104,17 +119,6 @@
                         <input wire:model="identifier" id="identifier" type="text" autocomplete="username" autofocus class="input h-12 rounded-xl pl-12">
                     </div>
                 </x-ui.field>
-                @if (count($accounts) > 1)
-                    <x-ui.field label="Sign in to" name="account">
-                        <div class="space-y-2">
-                            @foreach ($accounts as $a)
-                                <label wire:key="acc-{{ $a['key'] }}" class="flex cursor-pointer items-center gap-3 rounded-xl border border-gym-border bg-gym-charcoal px-4 py-3 text-sm text-white transition has-checked:border-gym-orange has-checked:bg-gym-orange/10">
-                                    <input wire:model="account" type="radio" value="{{ $a['key'] }}" class="border-gym-border bg-gym-black text-gym-orange focus:ring-gym-orange/40"> {{ $a['label'] }}
-                                </label>
-                            @endforeach
-                        </div>
-                    </x-ui.field>
-                @endif
                 <button type="submit" class="btn-primary h-13 w-full rounded-full text-base" wire:loading.attr="disabled">
                     <span wire:loading.remove wire:target="sendCode" class="inline-flex items-center gap-2">Send code <x-ui.icon name="arrow-right" class="size-5" /></span>
                     <span wire:loading wire:target="sendCode">Sending…</span>
@@ -122,7 +126,7 @@
             </form>
         @else
             <form wire:key="form-code" wire:submit="verifyCode" class="mt-8 space-y-5">
-                <p class="text-sm text-gym-muted">We sent a code to <strong class="text-white">{{ $this->sentTo() }}</strong>.@if ($account === \App\Services\OtpLoginService::STATUS) Enter it to see your registration status.@endif
+                <p class="text-sm text-gym-muted">If an account or registration uses <strong class="text-white">{{ $this->sentTo() }}</strong>, we sent it a code. Gym staff: verify your mobile under My account before using it here.
                     <button type="button" wire:click="changeIdentifier" class="font-semibold text-gym-orange hover:underline">Change</button></p>
                 <x-ui.field label="Code" name="code">
                     <input wire:model="code" id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="{{ config('gymai.otp.length', 6) }}" autofocus class="input h-14 rounded-xl text-center text-2xl font-semibold tracking-[0.5em]">

@@ -5,6 +5,7 @@
         ['route' => 'portal.dashboard', 'params' => [], 'active' => request()->routeIs('portal.dashboard'), 'icon' => 'home', 'label' => 'Home'],
         ['route' => 'portal.plans', 'params' => ['diet'], 'active' => request()->routeIs('portal.plans') && request()->route('type') === 'diet', 'icon' => 'tag', 'label' => 'Diet'],
         ['route' => 'portal.plans', 'params' => ['workout'], 'active' => request()->routeIs('portal.plans') && request()->route('type') === 'workout', 'icon' => 'whistle', 'label' => 'Workouts'],
+        ['route' => 'portal.progress', 'params' => [], 'active' => request()->routeIs('portal.progress'), 'icon' => 'sparkles', 'label' => 'Progress'],
         ['route' => 'portal.account', 'params' => [], 'active' => request()->routeIs('portal.account'), 'icon' => 'user', 'label' => 'Account'],
     ];
 @endphp
@@ -37,7 +38,7 @@
 
     {{-- Mobile bottom navigation --}}
     <nav class="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200 bg-white/95 backdrop-blur sm:hidden dark:border-ink-700 dark:bg-ink-900/95 no-print">
-        <div class="mx-auto grid max-w-md grid-cols-4">
+        <div class="mx-auto grid max-w-md grid-cols-5">
             @foreach ($links as $link)
                 <a href="{{ route($link['route'], $link['params']) }}" class="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium {{ $link['active'] ? 'text-brand-600 dark:text-brand-500' : 'text-gray-500 dark:text-zinc-500' }}">
                     <x-ui.icon :name="$link['icon']" class="size-5" />

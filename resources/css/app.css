@@ -683,6 +683,36 @@ html:has(body.gym-page) { scroll-behavior: smooth; scroll-padding-top: 5.5rem; }
 }
 } /* end gym page @layer components */
 
+/* ==========================================================================
+ * Member progress page (livewire/portal/progress.blade.php): the landing page's display type, highlighter,
+ * stamp, step numbers and hard offset edge. Scoped, so the gym panel keeps its own look for the shared parts.
+ * ========================================================================== */
+/* Unlayered: these re-style shared markup, so they must beat its utilities. */
+.progress-page { counter-reset: pp-step; }
+.progress-page .card-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.01em; }
+.progress-page .pp-step { counter-increment: pp-step; }
+.progress-page .pp-step .card-title::before { content: counter(pp-step); display: inline-block; margin-right: 0.6rem; color: var(--gym-orange); }
+.progress-page .card-header { flex-wrap: wrap; border-left: 4px solid var(--gym-orange); border-top-left-radius: 1rem; }
+.progress-page details:not([open]) > .card-header { border-bottom-color: transparent; border-bottom-left-radius: 1rem; }
+.progress-page .progress-poster { margin-right: 6px; box-shadow: 0 0 0 1px var(--gym-border), 6px 6px 0 1px var(--gym-orange); }
+
+.pp-hl { display: inline-block; background: var(--gym-orange); color: var(--pp-ink); padding: 0.08em 0.1em; line-height: 1; }
+.pp-hero-photo { opacity: 0.85; mask-image: linear-gradient(to right, transparent 0%, #000 35%, #000 65%, transparent 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 35%, #000 65%, transparent 100%); }
+.pp-stamp {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 11.5rem; aspect-ratio: 1; border-radius: 9999px; text-align: center; color: var(--gym-white);
+    background: rgb(13 13 13 / 0.85); border: 3px solid var(--gym-orange); outline: 1px solid var(--gym-orange); outline-offset: -12px;
+}
+.pp-pick { flex: none; width: 6.5rem; cursor: pointer; overflow: hidden; border: 2px solid var(--color-gray-200); border-radius: 0.75rem; font-size: 0.75rem; line-height: 1.3; transition: border-color 0.2s ease; }
+.pp-pick img { aspect-ratio: 3 / 4; width: 100%; object-fit: cover; }
+.pp-pick span { display: block; padding: 0.4rem 0.5rem; }
+.pp-pick:hover { border-color: var(--gym-orange); }
+.pp-pick:has(:checked) { border-color: var(--gym-orange); background: var(--gym-orange); color: var(--pp-ink); }
+.pp-pick:has(:focus-visible) { outline: 3px solid var(--gym-orange-light); outline-offset: 2px; }
+@media (max-width: 639px) {
+    .pp-hero-photo { opacity: 0.3; mask-image: linear-gradient(to bottom, #000, transparent); -webkit-mask-image: linear-gradient(to bottom, #000, transparent); }
+}
+
 @media print {
     .no-print { display: none !important; }
     body { background: white !important; color: #111 !important; }

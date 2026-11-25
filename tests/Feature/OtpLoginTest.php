@@ -124,7 +124,6 @@ class OtpLoginTest extends TestCase
         Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '9123456781')->call('sendCode')
             ->assertHasNoErrors()->assertSet('codeSent', true)
             ->assertDontSee('Waiting for approval') // nothing is revealed before the code
-            ->assertSee('Enter it to see your registration status')
             ->set('code', $this->lastSmsCode())->call('verifyCode')
             ->assertHasNoErrors()
             ->assertSee('Waiting for approval')->assertSee('Mobile Gym');
@@ -143,17 +142,36 @@ class OtpLoginTest extends TestCase
         $this->assertNull(Auth::id());
     }
 
-    public function test_unknown_and_super_admin_identifiers_get_no_code(): void
+    public function test_unknown_and_super_admin_identifiers_look_the_same_but_get_no_code(): void
     {
-        Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '9123456780')->call('sendCode')
-            ->assertHasErrors('identifier')->assertSee('No active account uses this mobile number');
-
         $admin = User::factory()->create(['email' => 'boss@gymai.test']);
         $admin->assignRole('super_admin');
-        Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', 'boss@gymai.test')->call('sendCode')->assertHasErrors('identifier');
+
+        foreach (['9123456780', 'boss@gymai.test'] as $identifier) {
+            $page = Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', $identifier)->call('sendCode')
+                ->assertHasNoErrors()->assertSet('codeSent', true);
+
+            // Wrong codes, the attempt limit and the resend cooldown answer as for a real account.
+            foreach (range(1, 5) as $try) {
+                $page->set('code', '000000')->call('verifyCode')->assertSee('Incorrect code.');
+            }
+            $page->call('verifyCode')->assertSee('Too many wrong attempts');
+            $page->call('sendCode')->assertSee('before requesting another code');
+        }
 
         $this->assertSame([], $this->sms);
         Mail::assertNothingSent();
+        $this->assertNull(Auth::id());
+    }
+
+    public function test_code_requests_are_limited_per_ip_across_different_numbers(): void
+    {
+        foreach (range(0, 9) as $n) {
+            Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '912345670'.$n)->call('sendCode')->assertHasNoErrors();
+        }
+
+        Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '9123456799')->call('sendCode')
+            ->assertHasErrors('identifier')->assertSet('codeSent', false);
     }
 
     public function test_staff_verify_their_mobile_then_sign_in_with_a_password_or_a_code(): void
@@ -196,25 +214,50 @@ class OtpLoginTest extends TestCase
         $this->createMember($otherGym, ['phone' => '9822222222']);
 
         $login = Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '9822222222')->call('sendCode')
-            ->assertHasErrors('account')
-            ->assertSee('Mobile Gym · Gym admin')->assertSee('Mobile Gym · Member')->assertSee('Second Gym · Member');
-        $this->assertSame([], $this->sms);
-
-        $login->set('account', 'staff:'.$this->owner->id)->call('sendCode')->assertSet('codeSent', true)
+            ->assertHasNoErrors()
+            ->assertDontSee('Mobile Gym')->assertDontSee('Second Gym') // nothing is revealed before the code
             ->set('code', $this->lastSmsCode())->call('verifyCode')
-            ->assertRedirect(route('gym.dashboard'));
+            ->assertSee('Mobile Gym · Gym admin')->assertSee('Mobile Gym · Member')->assertSee('Second Gym · Member');
+        $this->assertNull(Auth::id());
+        $this->assertCount(1, $this->sms);
+
+        $login->set('account', 'staff:'.$this->owner->id)->call('chooseAccount')->assertRedirect(route('gym.dashboard'));
         $this->assertSame($this->owner->id, Auth::id());
     }
 
-    public function test_a_code_only_works_for_the_account_it_was_sent_for(): void
+    public function test_choosing_an_account_needs_a_recent_code_and_one_of_its_own_accounts(): void
     {
         $this->owner->forceFill(['login_phone' => '9844444444'])->save();
-        $member = $this->createMember($this->gym, ['phone' => '9844444444']);
+        $this->createMember($this->gym, ['phone' => '9844444444']);
+        $stranger = $this->createMember($this->gym, ['phone' => '9855555555']);
+        $key = 'staff:'.$this->owner->id;
 
-        Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '9844444444')
-            ->set('account', 'member:'.$member->id)->call('sendCode')->assertSet('codeSent', true)
-            ->set('account', 'staff:'.$this->owner->id)->set('code', $this->lastSmsCode())->call('verifyCode')
-            ->assertHasErrors('code');
+        // No code at all.
+        Livewire::test(Login::class)->set('identifier', '9844444444')->set('account', $key)->call('chooseAccount')->assertHasErrors('account');
+
+        // A code for this number does not open somebody else's account, even if the number is edited afterwards.
+        $page = Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '9844444444')->call('sendCode')
+            ->set('code', $this->lastSmsCode())->call('verifyCode')
+            ->set('identifier', '9855555555')->set('account', 'member:'.$stranger->id)->call('chooseAccount')->assertHasErrors('account');
+        $this->assertNull(Auth::id());
+
+        // The check expires.
+        $this->travel(11)->minutes();
+        $page->set('account', $key)->call('chooseAccount')->assertHasErrors('account');
+        $this->assertNull(Auth::id());
+    }
+
+    public function test_a_verified_code_signs_in_only_once(): void
+    {
+        $this->owner->forceFill(['login_phone' => '9844444444'])->save();
+        $this->createMember($this->gym, ['phone' => '9844444444']);
+
+        $page = Livewire::test(Login::class)->set('mode', 'otp')->set('identifier', '9844444444')->call('sendCode')
+            ->set('code', $this->lastSmsCode())->call('verifyCode')
+            ->set('account', 'staff:'.$this->owner->id)->call('chooseAccount')->assertRedirect(route('gym.dashboard'));
+
+        Auth::logout();
+        $page->call('chooseAccount')->assertHasErrors('account');
         $this->assertNull(Auth::id());
     }
 

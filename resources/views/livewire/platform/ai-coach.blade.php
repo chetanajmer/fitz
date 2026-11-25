@@ -15,8 +15,8 @@
                 <x-ui.field label="AI coach" name="settings.ai_enabled">
                     <select wire:model="settings.ai_enabled" class="input"><option value="1">On — gyms you allow can use it</option><option value="0">Off for every gym</option></select>
                 </x-ui.field>
-                <x-ui.field label="OpenRouter model" name="settings.ai_model" hint="Must read images for photo comparisons. Only providers that do not store prompts are used.">
-                    <input wire:model="settings.ai_model" class="input" placeholder="openai/gpt-4o-mini">
+                <x-ui.field label="OpenRouter model" name="settings.ai_model" hint="Must read images, support structured output and have a zero-data-retention provider; otherwise reports fail.">
+                    <input wire:model="settings.ai_model" class="input" placeholder="openai/gpt-6-luna">
                 </x-ui.field>
                 <div class="grid grid-cols-2 gap-3">
                     <x-ui.field label="Credits: progress report" name="settings.ai_credits_progress"><input wire:model="settings.ai_credits_progress" type="number" min="1" class="input"></x-ui.field>

@@ -22,11 +22,20 @@ class AiReport extends Model
 
     public const TYPES = [self::PROGRESS => 'Progress report', self::PHOTO_COMPARISON => 'Photo comparison'];
 
+    /** How much visibly changed between two photos. */
+    public const CHANGE_LEVELS = ['none' => 'No visible change', 'slight' => 'Slight change', 'moderate' => 'Clear change', 'strong' => 'Strong change', 'unclear' => 'Not comparable'];
+
+    /** Whether the change is good for the member. Reports made before this was asked have none. */
+    public const DIRECTIONS = ['improved', 'mixed', 'declined', 'unknown'];
+
     public const PENDING = 'pending';
 
     public const COMPLETED = 'completed';
 
     public const FAILED = 'failed';
+
+    /** The member withdrew consent: the content is gone, only the usage (credits, tokens, cost) is kept. Never listed. */
+    public const ERASED = 'erased';
 
     public const DISCLAIMER = 'AI-generated guidance, not medical advice. Talk to your trainer or a doctor before changing your diet or training because of it.';
 
@@ -36,6 +45,7 @@ class AiReport extends Model
     {
         return [
             'credits' => 'integer',
+            'result' => 'array',
             'cost_usd' => 'float',
             'completed_at' => 'datetime',
         ];

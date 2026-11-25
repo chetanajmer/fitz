@@ -86,6 +86,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::post('progress-photos', [BodyProgressController::class, 'storePhoto'])->middleware('throttle:10,1')->name('progress-photos.store');
             Route::delete('progress-photos/{photoId}', [BodyProgressController::class, 'destroyPhoto'])->whereNumber('photoId')->name('progress-photos.destroy');
             Route::get('progress-photos/{photoId}/image', [BodyProgressController::class, 'photoImage'])->whereNumber('photoId')->name('progress-photos.image');
+            Route::get('transformation', [BodyProgressController::class, 'transformation'])->name('transformation');
             Route::get('ai', [AiCoachController::class, 'status'])->name('ai.status');
             Route::post('ai/consent', [AiCoachController::class, 'consent'])->middleware('throttle:20,1')->name('ai.consent');
             Route::get('ai/reports', [AiCoachController::class, 'index'])->name('ai.reports.index');
