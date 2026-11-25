@@ -1,6 +1,6 @@
 /**
  * Public gym page motion (public/gym-profile.blade.php). Plain JS, no libraries:
- * scroll reveals and count-ups via IntersectionObserver, a reading-progress bar, the sticky nav state,
+ * scroll reveals via IntersectionObserver (count-ups are shared, in motion.js), a reading-progress bar, the sticky nav state,
  * active section links, and a light hero parallax on desktop pointers. Everything is readable without
  * JavaScript, and with prefers-reduced-motion nothing moves (CSS shows the final states).
  */
@@ -8,43 +8,19 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').match
 const desktopPointer = window.matchMedia('(pointer: fine) and (min-width: 1024px)').matches;
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
-/* ------------------------------------------------- Reveals and count-ups */
-const countUp = (el) => {
-    const target = Number(el.dataset.gpCount);
-    if (!Number.isFinite(target) || reduceMotion) {
-        el.textContent = el.dataset.gpCountLabel ?? String(target);
-        return;
-    }
-    const start = performance.now();
-    const duration = 1200;
-    const step = (now) => {
-        const t = Math.min((now - start) / duration, 1);
-        el.textContent = String(Math.round(target * (1 - Math.pow(1 - t, 3))));
-        if (t < 1) {
-            requestAnimationFrame(step);
-        } else {
-            el.textContent = el.dataset.gpCountLabel ?? String(target);
-        }
-    };
-    requestAnimationFrame(step);
-};
-
-const revealables = $$('.gp-reveal, .gp-img-reveal, [data-gp-count]');
+/* ------------------------------------------------- Reveals (count-ups: [data-count] in js/motion.js) */
+const revealables = $$('.gp-reveal, .gp-img-reveal');
 if ('IntersectionObserver' in window && !reduceMotion) {
     const observer = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
             if (!entry.isIntersecting) return;
             entry.target.classList.add('is-in');
-            if (entry.target.dataset.gpCount !== undefined) countUp(entry.target);
             observer.unobserve(entry.target);
         });
     }, { rootMargin: '0px 0px -10% 0px', threshold: 0.12 });
     revealables.forEach((el) => observer.observe(el));
 } else {
-    revealables.forEach((el) => {
-        el.classList.add('is-in');
-        if (el.dataset.gpCount !== undefined) countUp(el);
-    });
+    revealables.forEach((el) => el.classList.add('is-in'));
 }
 
 /* ------------------------------------- Active nav link for the section in view */

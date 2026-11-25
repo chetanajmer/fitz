@@ -33,6 +33,8 @@
         </div>
     </section>
 
+    @include('livewire.portal.partials.analytics', ['weight' => $weight, 'visits' => $visits])
+
     <div class="card pp-step">
         @include('livewire.partials.progress.photos', ['photoColumns' => 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-5'])
     </div>

@@ -1,11 +1,20 @@
 <div class="space-y-8">
-    <div class="flex items-center justify-between gap-3">
-        <h1 class="text-2xl font-bold">{{ $planType->pluralLabel() }}</h1>
-        <div class="inline-flex rounded-lg border border-gray-300 bg-white p-0.5">
-            <a href="{{ route('portal.plans', 'diet') }}" class="rounded-md px-3 py-1.5 text-sm font-medium {{ $planType->value === 'diet' ? 'bg-gray-900 text-white' : 'text-gray-600' }}">Diet</a>
-            <a href="{{ route('portal.plans', 'workout') }}" class="rounded-md px-3 py-1.5 text-sm font-medium {{ $planType->value === 'workout' ? 'bg-gray-900 text-white' : 'text-gray-600' }}">Workouts</a>
+    <section class="pm-rise card relative isolate overflow-hidden">
+        <div aria-hidden="true" class="pointer-events-none absolute -top-24 -right-16 -z-10 size-72 rounded-full bg-brand-600/20 blur-3xl"></div>
+        <div class="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-7">
+            <div class="flex items-center gap-4">
+                <span class="flex size-12 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-[0_10px_30px_-10px_color-mix(in_srgb,var(--gym-orange)_80%,transparent)]"><x-ui.icon :name="$planType->value === 'diet' ? 'meal' : 'dumbbell'" class="size-6" /></span>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-tight text-gray-900">{{ $planType->pluralLabel() }}</h1>
+                    <p class="text-sm text-gray-500">{{ $planType->value === 'diet' ? 'Your meals for today and the week ahead.' : 'Your training for today and the week ahead.' }}</p>
+                </div>
+            </div>
+            <div class="inline-flex rounded-full border border-gray-200 bg-white p-1 text-sm font-medium dark:border-ink-700 dark:bg-ink-800">
+                <a href="{{ route('portal.plans', 'workout') }}" @class(['rounded-full px-4 py-1.5 transition', 'bg-brand-600 text-white' => $planType->value === 'workout', 'text-gray-600 hover:text-gray-900' => $planType->value !== 'workout'])>Workouts</a>
+                <a href="{{ route('portal.plans', 'diet') }}" @class(['rounded-full px-4 py-1.5 transition', 'bg-brand-600 text-white' => $planType->value === 'diet', 'text-gray-600 hover:text-gray-900' => $planType->value !== 'diet'])>Diet</a>
+            </div>
         </div>
-    </div>
+    </section>
 
     @include('livewire.portal.partials.programs', ['programs' => $programs, 'types' => [$planType->value], 'detailed' => true])
 

@@ -7,7 +7,9 @@ use App\Models\AiReport;
 use App\Models\Member;
 use App\Services\AiAccessService;
 use App\Services\TransformationService;
+use App\Services\WeightTrackingService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
@@ -63,6 +65,32 @@ class Progress extends Component
             'shareName' => Str::before($member->name, ' '),
             'photoUrl' => fn (int $id) => route('portal.progress-photo', $id),
             'reports' => $member->aiReports()->with(['beforePhoto', 'afterPhoto', 'requester'])->limit(20)->get(),
+            'weight' => app(WeightTrackingService::class)->summary($member, 200),
+            'visits' => $this->visitSeries($member),
         ]);
+    }
+
+    /**
+     * Visits per week (last 12 weeks) and per month (last 6 months), oldest first, for the attendance chart.
+     *
+     * @return array{weekly: list<array{0: string, 1: int}>, monthly: list<array{0: string, 1: int}>}
+     */
+    protected function visitSeries(Member $member): array
+    {
+        $from = Carbon::today()->startOfMonth()->subMonths(5)->min(Carbon::today()->startOfWeek()->subWeeks(11));
+        $dates = $member->attendances()->reorder()->where('date', '>=', $from)->pluck('date')->map(fn ($d) => Carbon::parse($d));
+
+        $weekly = collect(range(11, 0))->map(function (int $ago) use ($dates) {
+            $start = Carbon::today()->startOfWeek()->subWeeks($ago);
+
+            return [$ago === 0 ? 'This week' : $start->format('d M'), $dates->filter(fn (Carbon $d) => $d->betweenIncluded($start, $start->copy()->endOfWeek()))->count()];
+        });
+        $monthly = collect(range(5, 0))->map(function (int $ago) use ($dates) {
+            $start = Carbon::today()->startOfMonth()->subMonths($ago);
+
+            return [$start->format('M Y'), $dates->filter(fn (Carbon $d) => $d->isSameMonth($start))->count()];
+        });
+
+        return ['weekly' => $weekly->values()->all(), 'monthly' => $monthly->values()->all()];
     }
 }

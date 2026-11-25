@@ -1,6 +1,7 @@
 // Alpine.js ships with Livewire 4 and is started by it — do not import or start Alpine here.
 import Chart from 'chart.js/auto';
 import './share-card';
+import './motion';
 
 window.Chart = Chart;
 
