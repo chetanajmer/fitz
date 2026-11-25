@@ -60,7 +60,7 @@ class AiProgress extends Component
             'measurements' => $this->member->measurements()->get()->reverse(),
             'photos' => $this->member->progressPhotos()->get(),
             'transformation' => $summary,
-            'readings' => fn (AiReport $report) => $transformation->readingsFor($report, $summary),
+            'highlight' => fn (AiReport $report) => $transformation->highlight($report, $this->member, $summary),
             'photoUrl' => fn (int $id) => route('gym.members.progress-photo', [$this->member, $id]),
             'reports' => $this->member->aiReports()->with(['beforePhoto', 'afterPhoto', 'requester'])->limit(20)->get(),
         ]);

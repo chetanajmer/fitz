@@ -25,7 +25,7 @@
                         @isset($report->result['change_level'])<span class="text-gray-700 group-open:hidden">{{ \App\Models\AiReport::CHANGE_LEVELS[$report->result['change_level']] ?? '' }}</span>@endisset
                         <span class="ml-auto text-xs text-gray-500">{{ $report->created_at->format('d M Y') }}@if ($requester), {{ $requester }}@endif</span>
                     </summary>
-                    <div class="px-5 pt-2 pb-6"><x-progress.report :report="$report" :photo-url="$photoUrl" :readings="$readings($report)" /></div>
+                    <div class="px-5 pt-2 pb-6"><x-progress.report :report="$report" :photo-url="$photoUrl" :highlight="$highlight($report)" :share-name="$shareName ?? null" /></div>
                 </details>
             @else
                 <div wire:key="air-{{ $report->id }}" class="flex flex-wrap items-center gap-3 px-5 py-4 text-sm">

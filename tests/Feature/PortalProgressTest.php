@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Livewire\Gym\Members\AiProgress;
 use App\Livewire\Portal\Progress;
 use App\Models\AiReport;
 use App\Models\Gym;
@@ -9,6 +10,7 @@ use App\Models\GymAiSetting;
 use App\Models\Member;
 use App\Models\PlatformSetting;
 use App\Models\ProgressPhoto;
+use App\Services\AttendanceService;
 use App\Services\MembershipService;
 use App\Services\TransformationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -92,7 +94,7 @@ class PortalProgressTest extends TestCase
         $page->assertSeeInOrder(['Progress photos', 'Before photo', 'After photo', 'AI reports'])
             ->set('beforePhotoId', (string) $before)->set('afterPhotoId', (string) $after)
             ->call('requestReport', 'photo_comparison')->assertHasNoErrors()->assertSee('Leaner waist.')
-            ->assertSee('None logged.')->assertDontSee('Your numbers');
+            ->assertSee('None logged.')->assertSee('in 3 months')->assertSee('Share your progress')->assertSee('Show my photos');
         $this->assertSame(0, $this->member->measurements()->withoutGlobalScopes()->count());
 
         // Only readings within two weeks of each photo are shown, the closest one first.
@@ -101,7 +103,34 @@ class PortalProgressTest extends TestCase
         }
         $summary = $this->inGym($this->gym, fn () => app(TransformationService::class)->readingsFor(AiReport::sole(), app(TransformationService::class)->summary($this->member)));
         $this->assertSame([['label' => 'Waist', 'unit' => 'cm', 'before' => 90.0, 'after' => 84.0, 'change' => -6.0]], $summary);
-        $page->assertSeeInOrder(['Your numbers', 'Waist', '90', '84'])->assertSee('−6 cm')->assertDontSee('None logged.');
+        $page->assertSee('−6 cm')->assertSee('90 to 84')->assertDontSee('None logged.');
+    }
+
+    public function test_only_the_member_can_share_and_only_a_report_with_something_to_show(): void
+    {
+        $report = $this->inGym($this->gym, function () {
+            foreach ([4, 3, 2, 1] as $daysAgo) {
+                $this->travel(-$daysAgo)->days();
+                app(AttendanceService::class)->checkIn($this->member, requireValidMembership: false);
+                $this->travelBack();
+            }
+            $report = new AiReport;
+            $report->forceFill(['member_id' => $this->member->id, 'type' => 'progress', 'status' => 'completed', 'credits' => 1, 'requested_by' => 'member',
+                'result' => ['summary' => 'Good.', 'wins' => [], 'focus_areas' => [], 'motivation' => 'Go on!', 'confidence' => 'low']])->save();
+
+            return $report;
+        });
+
+        $this->actingAs($this->member->user);
+        Livewire::test(Progress::class)->assertSee('4 day streak')->assertSee('Share your progress');
+
+        $report->forceFill(['type' => 'photo_comparison', 'result' => ['change_level' => 'none', 'changes' => [], 'numbers' => '', 'photo_quality' => 'good', 'photo_tips' => []] + $report->result])->save();
+        Livewire::test(Progress::class)->assertSee('No visible change')->assertDontSee('Share your progress');
+
+        $report->forceFill(['result' => ['change_level' => 'strong'] + $report->result])->save();
+        Livewire::test(Progress::class)->assertSee('Share your progress');
+        $this->actingAs($this->gym->owner);
+        $this->inGym($this->gym, fn () => Livewire::test(AiProgress::class, ['member' => $this->member])->assertSee('Strong change')->assertDontSee('Share your progress'));
     }
 
     public function test_member_cannot_reach_another_members_photos_or_measurements(): void

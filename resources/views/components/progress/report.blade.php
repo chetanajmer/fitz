@@ -1,47 +1,49 @@
-{{-- One finished AI report: cards from its fields, or the Markdown of older reports. $readings: before/after values near the two photos. --}}
-@props(['report', 'photoUrl', 'readings' => []])
+{{-- One finished AI report: a poster panel and lists from its fields, or the Markdown of older reports. $shareName: set only for the member's own page. --}}
+@props(['report', 'photoUrl', 'highlight' => null, 'shareName' => null])
 @php
     $r = $report->result;
     $hasPhotos = $report->type === \App\Models\AiReport::PHOTO_COMPARISON && $report->before_photo_id && $report->after_photo_id;
     $step = ['none' => 0, 'slight' => 1, 'moderate' => 2, 'strong' => 3][$r['change_level'] ?? ''] ?? null;
-    $signed = fn (float $value) => ($value > 0 ? '+' : ($value < 0 ? '−' : '')).abs($value);
 @endphp
-<div @class(['grid gap-6 text-sm', 'md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)]' => $hasPhotos])>
-    @if ($hasPhotos)
-        <div class="max-w-60">
-            <x-progress.before-after :before="$photoUrl($report->before_photo_id)" :after="$photoUrl($report->after_photo_id)" />
-            <p class="hint text-center">Drag to compare</p>
+<div class="space-y-6 text-sm">
+    @if ($highlight || $hasPhotos)
+        {{-- Always black, in both themes: the poster the member can share. --}}
+        <div @class(['overflow-hidden rounded-xl bg-gym-black text-white ring-1 ring-gym-border', 'grid md:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]' => $hasPhotos])>
+            @if ($hasPhotos)
+                <x-progress.before-after :before="$photoUrl($report->before_photo_id)" :after="$photoUrl($report->after_photo_id)" reveal class="rounded-none border-0" />
+            @endif
+            <div class="flex min-w-0 flex-col justify-center gap-5 p-6 sm:p-8">
+                <div>
+                    <p class="font-display text-5xl leading-none text-balance uppercase sm:text-6xl">{{ $highlight['headline'] ?? \App\Models\AiReport::CHANGE_LEVELS[$r['change_level'] ?? ''] ?? '' }}</p>
+                    @if ($highlight['period'] ?? null)<p class="mt-2 text-lg text-gym-orange-light">{{ $highlight['period'] }}</p>@endif
+                </div>
+                @if ($step)
+                    <div class="flex max-w-72 gap-1.5" aria-hidden="true">
+                        @foreach ([1, 2, 3] as $bar)<span @class(['h-2.5 flex-1 -skew-x-12', 'bg-gym-orange' => $bar <= $step, 'bg-gym-border' => $bar > $step])></span>@endforeach
+                    </div>
+                @endif
+                @if ($highlight['stats'] ?? [])
+                    <dl class="flex flex-wrap gap-x-8 gap-y-4">
+                        @foreach ($highlight['stats'] as $stat)
+                            <div>
+                                <dd class="font-display text-3xl leading-tight text-gym-orange">{{ $stat['value'] }}</dd>
+                                <dt class="text-gym-muted">{{ $stat['label'] }}@if ($stat['detail']) <span class="tabular-nums">{{ $stat['detail'] }}</span>@endif</dt>
+                            </div>
+                        @endforeach
+                    </dl>
+                @endif
+                @if ($highlight && $highlight['shareable'] && $shareName)
+                    <x-progress.share :report="$report" :highlight="$highlight" :photo-url="$photoUrl" :name="$shareName" :step="$step" />
+                @endif
+            </div>
         </div>
     @endif
 
     @if ($r)
         <div class="min-w-0 space-y-6">
-            <div class="space-y-3">
-                @isset($r['change_level'])
-                    <p class="text-xl font-semibold text-gray-900">{{ \App\Models\AiReport::CHANGE_LEVELS[$r['change_level']] ?? $r['change_level'] }}</p>
-                    @if ($step !== null)
-                        <div class="flex max-w-60 gap-1.5" aria-hidden="true">
-                            @foreach ([1, 2, 3] as $bar)<span @class(['h-2 flex-1 rounded-full', 'bg-emerald-600' => $bar <= $step, 'bg-gray-200' => $bar > $step])></span>@endforeach
-                        </div>
-                    @endif
-                @endisset
-                <p class="max-w-prose text-base leading-relaxed text-gray-700">{{ $r['summary'] }}</p>
-            </div>
+            <p class="max-w-prose text-base leading-relaxed text-gray-700">{{ $r['summary'] }}</p>
 
-            @if ($readings)
-                <div>
-                    <h3 class="mb-1 font-semibold text-gray-900">Your numbers</h3>
-                    <dl class="max-w-md divide-y divide-gray-100">
-                        @foreach ($readings as $reading)
-                            <div class="grid grid-cols-[1fr_auto_5rem] items-center gap-3 py-2">
-                                <dt class="text-gray-500">{{ $reading['label'] }}</dt>
-                                <dd class="flex items-center gap-2 tabular-nums text-gray-700">{{ $reading['before'] }} <x-ui.icon name="arrow-right" class="size-3.5 text-gray-400" /> {{ $reading['after'] }}</dd>
-                                <dd class="text-right font-semibold tabular-nums text-gray-900">{{ $reading['change'] == 0 ? 'Same' : $signed($reading['change']).' '.$reading['unit'] }}</dd>
-                            </div>
-                        @endforeach
-                    </dl>
-                </div>
-            @elseif (! empty($r['numbers']))
+            @if (! ($highlight['stats'] ?? []) && ! empty($r['numbers']))
                 <p class="max-w-prose text-gray-500">{{ $r['numbers'] }}</p>
             @endif
 

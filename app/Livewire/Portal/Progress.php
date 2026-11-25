@@ -9,6 +9,7 @@ use App\Services\AiAccessService;
 use App\Services\TransformationService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -58,7 +59,8 @@ class Progress extends Component
             'measurements' => $member->measurements()->get()->reverse(),
             'photos' => $member->progressPhotos()->get(),
             'transformation' => $summary,
-            'readings' => fn (AiReport $report) => $transformation->readingsFor($report, $summary),
+            'highlight' => fn (AiReport $report) => $transformation->highlight($report, $member, $summary),
+            'shareName' => Str::before($member->name, ' '),
             'photoUrl' => fn (int $id) => route('portal.progress-photo', $id),
             'reports' => $member->aiReports()->with(['beforePhoto', 'afterPhoto', 'requester'])->limit(20)->get(),
         ]);
