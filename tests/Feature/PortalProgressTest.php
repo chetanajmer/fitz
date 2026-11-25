@@ -11,6 +11,7 @@ use App\Models\PlatformSetting;
 use App\Models\ProgressPhoto;
 use App\Services\MembershipService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -70,6 +71,27 @@ class PortalProgressTest extends TestCase
 
         $page->call('setConsent', false)->assertSee('I agree');
         $this->assertNull($this->member->refresh()->ai_consent_at);
+    }
+
+    public function test_photos_come_first_and_two_photos_are_enough_to_compare(): void
+    {
+        Http::swap(new HttpFactory);
+        Http::fake(['openrouter.ai/*' => Http::response(['model' => 'm', 'choices' => [['message' => ['content' => json_encode(
+            ['summary' => 'Leaner waist.', 'change_level' => 'moderate', 'changes' => [], 'numbers' => 'None logged.', 'photo_quality' => 'good', 'photo_tips' => [], 'motivation' => 'Go on!', 'confidence' => 'medium'])]]], 'usage' => []])]);
+        $this->actingAs($this->member->user);
+
+        $page = Livewire::test(Progress::class)->call('setConsent', true)
+            ->assertSeeInOrder(['Progress photos', 'Add two photos to compare them.', 'AI reports', 'Add measurements (optional)'])
+            ->assertDontSee('Before photo');
+        foreach ([now()->subMonths(3), now()] as $day) {
+            $page->set('photo', UploadedFile::fake()->image('me.jpg', 300, 400))->set('takenOn', $day->toDateString())->call('uploadPhoto')->assertHasNoErrors();
+        }
+        [$before, $after] = ProgressPhoto::withoutGlobalScopes()->orderBy('taken_on')->pluck('id')->all();
+
+        $page->assertSeeInOrder(['Progress photos', 'Before photo', 'After photo', 'AI reports'])
+            ->set('beforePhotoId', (string) $before)->set('afterPhotoId', (string) $after)
+            ->call('requestReport', 'photo_comparison')->assertHasNoErrors()->assertSee('Leaner waist.');
+        $this->assertSame(0, $this->member->measurements()->withoutGlobalScopes()->count());
     }
 
     public function test_member_cannot_reach_another_members_photos_or_measurements(): void

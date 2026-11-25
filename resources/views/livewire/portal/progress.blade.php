@@ -17,5 +17,31 @@
         @endif
     </div>
 
-    @include('livewire.partials.body-progress')
+    <div class="card">
+        @include('livewire.partials.progress.photos', ['photoColumns' => 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-6'])
+        @if ($status['features']['photo_comparison']['available'])
+            <div class="card-body space-y-3 border-t border-gray-100">
+                <p class="text-sm text-gray-500">Two photos are all you need. AI coach compares them and describes what changed.</p>
+                @if ($photos->count() < 2)
+                    <p class="hint">Add two photos to compare them.</p>
+                @else
+                    <div class="flex flex-wrap items-center gap-2">
+                        @include('livewire.partials.progress.compare-controls')
+                    </div>
+                    @unless ($status['has_consented'])
+                        <p class="hint">Accept the AI terms above first.</p>
+                    @endunless
+                @endif
+            </div>
+        @endif
+    </div>
+
+    @include('livewire.partials.progress.reports', ['compareInReports' => false])
+
+    <x-progress.transformation :data="$transformation" :photo-url="$photoUrl" />
+
+    <details wire:ignore.self class="card">
+        <summary class="card-header cursor-pointer"><h2 class="card-title">Add measurements (optional)</h2><x-ui.icon name="plus" class="size-4" /></summary>
+        @include('livewire.partials.progress.measurements')
+    </details>
 </div>
