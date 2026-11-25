@@ -3,6 +3,7 @@
 namespace App\Livewire\Portal;
 
 use App\Livewire\Concerns\RecordsBodyProgress;
+use App\Models\AiReport;
 use App\Models\Member;
 use App\Services\AiAccessService;
 use App\Services\TransformationService;
@@ -50,13 +51,16 @@ class Progress extends Component
     {
         $member = $this->progressMember();
 
+        $summary = $transformation->summary($member);
+
         return view('livewire.portal.progress', [
             'status' => $access->status($member),
             'measurements' => $member->measurements()->get()->reverse(),
             'photos' => $member->progressPhotos()->get(),
-            'transformation' => $transformation->summary($member),
+            'transformation' => $summary,
+            'readings' => fn (AiReport $report) => $transformation->readingsFor($report, $summary),
             'photoUrl' => fn (int $id) => route('portal.progress-photo', $id),
-            'reports' => $member->aiReports()->limit(20)->get(),
+            'reports' => $member->aiReports()->with(['beforePhoto', 'afterPhoto', 'requester'])->limit(20)->get(),
         ]);
     }
 }

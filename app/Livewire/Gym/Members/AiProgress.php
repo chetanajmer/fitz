@@ -3,6 +3,7 @@
 namespace App\Livewire\Gym\Members;
 
 use App\Livewire\Concerns\RecordsBodyProgress;
+use App\Models\AiReport;
 use App\Models\Member;
 use App\Services\AiAccessService;
 use App\Services\TransformationService;
@@ -52,13 +53,16 @@ class AiProgress extends Component
 
     public function render(AiAccessService $access, TransformationService $transformation): View
     {
+        $summary = $transformation->summary($this->member);
+
         return view('livewire.gym.members.ai-progress', [
             'status' => $access->status($this->member),
             'measurements' => $this->member->measurements()->get()->reverse(),
             'photos' => $this->member->progressPhotos()->get(),
-            'transformation' => $transformation->summary($this->member),
+            'transformation' => $summary,
+            'readings' => fn (AiReport $report) => $transformation->readingsFor($report, $summary),
             'photoUrl' => fn (int $id) => route('gym.members.progress-photo', [$this->member, $id]),
-            'reports' => $this->member->aiReports()->limit(20)->get(),
+            'reports' => $this->member->aiReports()->with(['beforePhoto', 'afterPhoto', 'requester'])->limit(20)->get(),
         ]);
     }
 }

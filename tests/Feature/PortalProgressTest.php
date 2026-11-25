@@ -10,6 +10,7 @@ use App\Models\Member;
 use App\Models\PlatformSetting;
 use App\Models\ProgressPhoto;
 use App\Services\MembershipService;
+use App\Services\TransformationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\UploadedFile;
@@ -90,8 +91,17 @@ class PortalProgressTest extends TestCase
 
         $page->assertSeeInOrder(['Progress photos', 'Before photo', 'After photo', 'AI reports'])
             ->set('beforePhotoId', (string) $before)->set('afterPhotoId', (string) $after)
-            ->call('requestReport', 'photo_comparison')->assertHasNoErrors()->assertSee('Leaner waist.');
+            ->call('requestReport', 'photo_comparison')->assertHasNoErrors()->assertSee('Leaner waist.')
+            ->assertSee('None logged.')->assertDontSee('Your numbers');
         $this->assertSame(0, $this->member->measurements()->withoutGlobalScopes()->count());
+
+        // Only readings within two weeks of each photo are shown, the closest one first.
+        foreach ([[now()->subMonths(3)->addDays(10), 95], [now()->subMonths(3)->addDays(2), 90], [now()->subMonth(), 70], [now(), 84]] as [$day, $waist]) {
+            $page->set('measurement.measured_on', $day->toDateString())->set('measurement.waist_cm', (string) $waist)->call('saveMeasurement')->assertHasNoErrors();
+        }
+        $summary = $this->inGym($this->gym, fn () => app(TransformationService::class)->readingsFor(AiReport::sole(), app(TransformationService::class)->summary($this->member)));
+        $this->assertSame([['label' => 'Waist', 'unit' => 'cm', 'before' => 90.0, 'after' => 84.0, 'change' => -6.0]], $summary);
+        $page->assertSeeInOrder(['Your numbers', 'Waist', '90', '84'])->assertSee('−6 cm')->assertDontSee('None logged.');
     }
 
     public function test_member_cannot_reach_another_members_photos_or_measurements(): void

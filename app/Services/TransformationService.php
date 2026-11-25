@@ -6,11 +6,45 @@ use App\Models\AiReport;
 use App\Models\Member;
 use App\Models\MemberMeasurement;
 use App\Models\ProgressPhoto;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 /** A member's transformation: first versus latest weight, measurements and photos, with the history between. */
 class TransformationService
 {
     public function __construct(protected WeightTrackingService $weights) {}
+
+    /**
+     * Weight and measurements next to the two photos of a comparison: for each, the reading closest to the
+     * photo and at most two weeks away. Needs a reading for both photos. $summary comes from summary().
+     *
+     * @param  array<string, mixed>  $summary
+     * @return list<array{label: string, unit: string, before: float, after: float, change: float}>
+     */
+    public function readingsFor(AiReport $report, array $summary): array
+    {
+        if (! $report->beforePhoto || ! $report->afterPhoto) {
+            return [];
+        }
+
+        $closest = fn (array $history, Carbon $day) => collect($history)
+            ->map(fn (array $h) => $h + ['days' => abs(Carbon::parse($h['date'])->startOfDay()->diffInDays($day))])
+            ->where('days', '<=', 14)->sortBy('days')->first();
+
+        return collect([['label' => 'Weight (kg)', 'history' => $summary['weight']['history']], ...$summary['measurements']])
+            ->map(function (array $series) use ($report, $closest) {
+                $before = $closest($series['history'], $report->beforePhoto->taken_on);
+                $after = $closest($series['history'], $report->afterPhoto->taken_on);
+
+                return ! $before || ! $after || $before['date'] >= $after['date'] ? null : [
+                    'label' => Str::before($series['label'], ' ('),
+                    'unit' => Str::between($series['label'], '(', ')'),
+                    'before' => (float) $before['value'],
+                    'after' => (float) $after['value'],
+                    'change' => round($after['value'] - $before['value'], 1),
+                ];
+            })->filter()->values()->all();
+    }
 
     /**
      * Photos are models (callers turn them into URLs); everything else is plain data.

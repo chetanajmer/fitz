@@ -14,22 +14,34 @@
         @error($field)<p class="input-error px-5 pt-3">{{ $message }}</p>@enderror
     @endforeach
     <div class="divide-y divide-gray-100" @if ($reports->contains('status', 'pending')) wire:poll.5s @endif>
+        @php($newest = $reports->firstWhere('status', \App\Models\AiReport::COMPLETED)?->id)
         @forelse ($reports as $report)
-            <div wire:key="air-{{ $report->id }}" class="card-body">
-                <div class="mb-2 flex flex-wrap items-center gap-2 text-sm">
-                    <span class="font-semibold">{{ \App\Models\AiReport::TYPES[$report->type] }}</span>
-                    <x-ui.badge :color="['completed' => 'green', 'failed' => 'red'][$report->status] ?? 'amber'">{{ $report->status === 'pending' ? 'Preparing…' : ucfirst($report->status) }}</x-ui.badge>
-                    <span class="text-gray-500">{{ $report->created_at->format('d M Y, h:i A') }} · requested by {{ $report->requested_by === 'staff' ? ($report->requester?->name ?? 'gym') : $report->requested_by }}</span>
+            @php($requester = ['member' => null, 'staff' => 'requested by '.($report->requester?->name ?? 'your gym'), 'auto' => 'monthly report'][$report->requested_by] ?? null)
+            @if ($report->status === 'completed')
+                <details wire:key="air-{{ $report->id }}-done" wire:ignore.self class="group" @if ($report->id === $newest) open @endif>
+                    <summary class="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 px-5 py-4 text-sm hover:bg-gray-50 [&::-webkit-details-marker]:hidden">
+                        <x-ui.icon name="arrow-right" class="size-4 shrink-0 text-gray-400 transition-transform group-open:rotate-90 motion-reduce:transition-none" />
+                        <span class="font-semibold text-gray-900">{{ \App\Models\AiReport::TYPES[$report->type] }}</span>
+                        @isset($report->result['change_level'])<span class="text-gray-700 group-open:hidden">{{ \App\Models\AiReport::CHANGE_LEVELS[$report->result['change_level']] ?? '' }}</span>@endisset
+                        <span class="ml-auto text-xs text-gray-500">{{ $report->created_at->format('d M Y') }}@if ($requester), {{ $requester }}@endif</span>
+                    </summary>
+                    <div class="px-5 pt-2 pb-6"><x-progress.report :report="$report" :photo-url="$photoUrl" :readings="$readings($report)" /></div>
+                </details>
+            @else
+                <div wire:key="air-{{ $report->id }}" class="flex flex-wrap items-center gap-3 px-5 py-4 text-sm">
+                    <span class="font-semibold text-gray-900">{{ \App\Models\AiReport::TYPES[$report->type] }}</span>
+                    <x-ui.badge :color="$report->status === 'failed' ? 'red' : 'amber'">{{ $report->status === 'pending' ? 'Preparing…' : ucfirst($report->status) }}</x-ui.badge>
+                    <span class="ml-auto text-xs text-gray-500">{{ $report->created_at->format('d M Y') }}@if ($requester), {{ $requester }}@endif</span>
+                    @if ($report->status === 'failed')
+                        <p class="w-full text-gray-500">The AI could not write this report. No credits were used.</p>
+                    @endif
                 </div>
-                @if ($report->status === 'completed')
-                    <x-progress.report :report="$report" :photo-url="$photoUrl" />
-                    <p class="hint mt-2">{{ \App\Models\AiReport::DISCLAIMER }}</p>
-                @elseif ($report->status === 'failed')
-                    <p class="text-sm text-gray-500">The AI could not write this report. No credits were used.</p>
-                @endif
-            </div>
+            @endif
         @empty
             <div class="card-body"><x-ui.empty message="No AI reports yet." icon="sparkles" /></div>
         @endforelse
     </div>
+    @if ($newest)
+        <p class="hint border-t border-gray-100 px-5 py-3">{{ \App\Models\AiReport::DISCLAIMER }}</p>
+    @endif
 </div>

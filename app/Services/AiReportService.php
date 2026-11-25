@@ -30,13 +30,14 @@ class AiReportService
         Rules:
         - Speak to the member as "you". Simple English, short sentences. Use kg, cm and Indian context.
         - Base every statement on the data. If data is missing or too little, say what to log next instead of guessing.
-        - wins: what is working. focus_areas: 2 to 4 specific, practical suggestions about training consistency, weigh-ins, measurements and general healthy habits.
+        - The member reads this on a phone, so be brief: summary is at most 2 short sentences, every other line one short sentence of at most 15 words. Never say the same thing twice.
+        - wins: what is working, at most 3. focus_areas: 2 or 3 specific, practical suggestions (title of at most 4 words) about training consistency, weigh-ins, measurements and general healthy habits.
         - confidence: "low" when there is little data.
         - Coach training and habits only; never comment on account details such as the joining date.
         - Never diagnose, never mention diseases or medication, never prescribe calorie numbers or supplements.
         - Be body-positive. No shaming language.
         - Never call the member overweight, obese, fat or similar, and do not mention BMI.
-        - Plain text in every field, no Markdown. Keep it under 300 words in total.
+        - Plain text in every field, no Markdown. Keep it under 150 words in total.
         TXT;
 
     protected const PHOTO_PROMPT = <<<'TXT'
@@ -48,15 +49,17 @@ class AiReportService
         - Never comment on attractiveness, skin, identity or anything not related to fitness. Never diagnose.
         - Be body-positive. No shaming language.
         - Never call the member overweight, obese, fat or similar, and do not mention BMI.
-        - changes: each visible change with the body area. Leave it empty when nothing clear is visible.
+        - The member reads this on a phone, so be brief: summary is at most 2 short sentences, every other line one short sentence of at most 15 words. Never say the same thing twice.
+        - Put readings (kg, cm, %) only in numbers; the app shows them separately. Use none in summary, changes or motivation.
+        - changes: each visible change with the body area, at most 4. Leave it empty when nothing clear is visible.
         - change_level: judge the body shape you can see (waist, arms, chest, legs, muscle definition). "none" when the two photos look the same, "slight", "moderate" or "strong" for real differences.
           Use "unclear" only when a person's body is missing, hidden or cut off in a photo, or the poses are so different that shape cannot be judged. Different light, muscle pump, background or framing lower photo_quality and confidence, not change_level.
         - Progress photos in shorts, sportswear or without a shirt are normal. If a photo shows nudity or is not of a person, use "unclear" and photo_quality "poor".
         - Both photos are of this member, months apart; a large change is possible. Ignore the face and never judge whether it is the same person.
         - Never guess weight or body fat from a photo.
         - numbers: what the readings in the data say. If there are no readings, say that none were logged around these photos.
-        - photo_quality and photo_tips: how comparable the photos are and how to take the next ones.
-        - Plain text in every field, no Markdown. Keep it under 250 words in total.
+        - photo_quality and photo_tips: how comparable the photos are and how to take the next ones, at most 3 tips.
+        - Plain text in every field, no Markdown. Keep it under 150 words in total.
         TXT;
 
     public function __construct(
