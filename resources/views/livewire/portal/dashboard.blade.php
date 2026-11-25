@@ -67,36 +67,27 @@
         <x-ui.stat class="flex-col gap-3 sm:flex-row sm:gap-4" label="Pending fees" :value="$pending > 0 ? money($pending, false) : 'None'" icon="receipt" :color="$pending > 0 ? 'amber' : 'green'" :hint="$pending > 0 ? 'Pay at the front desk' : 'All paid'" />
     </div>
 
-    {{-- Streak + QR --}}
-    <div class="grid gap-6 lg:grid-cols-3">
-        <div class="card card-body lg:col-span-2">
-            <div class="flex items-center gap-4">
-                <div class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-[0_10px_30px_-10px_color-mix(in_srgb,var(--gym-orange)_80%,transparent)]"><x-ui.icon name="fire" class="size-7" /></div>
-                <div class="flex-1">
-                    <p class="text-2xl font-bold text-gray-900">{{ $streak['current_streak'] }} day streak</p>
-                    <p class="text-sm text-gray-500">{{ $streak['visits_this_month'] }} visits this month · best {{ $streak['longest_streak'] }}</p>
-                </div>
+    {{-- Streak --}}
+    <div class="card card-body">
+        <div class="flex items-center gap-4">
+            <div class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-[0_10px_30px_-10px_color-mix(in_srgb,var(--gym-orange)_80%,transparent)]"><x-ui.icon name="fire" class="size-7" /></div>
+            <div class="flex-1">
+                <p class="text-2xl font-bold text-gray-900">{{ $streak['current_streak'] }} day streak</p>
+                <p class="text-sm text-gray-500">{{ $streak['visits_this_month'] }} visits this month · best {{ $streak['longest_streak'] }}</p>
             </div>
-            @if ($streak['at_risk'])<p class="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">Visit today to keep your streak alive!</p>@endif
-            <x-streak.week :week="$streak['week']" class="mt-6" />
-            @if ($streak['next_milestone'])
-                @php($milestonePct = (int) round(($streak['next_milestone']['target'] - $streak['next_milestone']['remaining']) / max(1, $streak['next_milestone']['target']) * 100))
-                <div class="mt-6">
-                    <div class="flex items-center justify-between text-sm">
-                        <p class="text-gray-500">{{ $streak['next_milestone']['remaining'] }} more visit days to your {{ $streak['next_milestone']['target'] }}-day milestone.</p>
-                        <x-ui.icon name="trophy" class="size-5 shrink-0 text-brand-600" />
-                    </div>
-                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-gradient-to-r from-brand-600 to-brand-400" style="width: {{ $milestonePct }}%"></div></div>
+        </div>
+        @if ($streak['at_risk'])<p class="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">Visit today to keep your streak alive!</p>@endif
+        <x-streak.week :week="$streak['week']" class="mt-6" />
+        @if ($streak['next_milestone'])
+            @php($milestonePct = (int) round(($streak['next_milestone']['target'] - $streak['next_milestone']['remaining']) / max(1, $streak['next_milestone']['target']) * 100))
+            <div class="mt-6">
+                <div class="flex items-center justify-between text-sm">
+                    <p class="text-gray-500">{{ $streak['next_milestone']['remaining'] }} more visit days to your {{ $streak['next_milestone']['target'] }}-day milestone.</p>
+                    <x-ui.icon name="trophy" class="size-5 shrink-0 text-brand-600" />
                 </div>
-            @endif
-        </div>
-        <div class="card card-body flex flex-col items-center text-center">
-            <h2 class="card-title">My check-in QR</h2>
-            <div class="mt-4 rounded-2xl bg-white p-3 ring-1 ring-gray-200 dark:ring-ink-700">
-                <img src="{{ route('portal.qr') }}" alt="My QR code" class="size-40">
+                <div class="mt-2 h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-gradient-to-r from-brand-600 to-brand-400" style="width: {{ $milestonePct }}%"></div></div>
             </div>
-            <p class="mt-3 text-xs text-gray-500">Show this at the front desk to check in or out.</p>
-        </div>
+        @endif
     </div>
 
     @include('livewire.portal.partials.programs', ['programs' => $programs, 'types' => ['workout', 'diet'], 'detailed' => false])
