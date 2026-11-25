@@ -12,6 +12,36 @@ use Illuminate\Support\Str;
 /** A member's transformation: first versus latest weight, measurements and photos, with the history between. */
 class TransformationService
 {
+    /**
+     * Poster headlines, written by hand (never by the AI) because members post them publicly: about effort, never
+     * about a body. At most three words, so they stay big.
+     */
+    protected const COMPARISON_HEADLINES = [
+        'strong' => ['Level unlocked', 'Built, not bought', 'Earned every bit', 'New chapter', 'Hard work shows'],
+        'moderate' => ["It's showing", 'Momentum is real', 'Work in motion', 'Keep watching', 'Getting there'],
+        'slight' => ['Game on', 'Small steps count', 'Just warming up', 'Step by step'],
+        'none' => ['Holding steady'],
+        'unclear' => ["Let's reshoot"],
+    ];
+
+    /** Streak length => headlines, highest first. */
+    protected const STREAK_HEADLINES = [
+        100 => ['Living legend', 'Triple digits'],
+        30 => ['Unstoppable', 'No days wasted'],
+        14 => ['On fire', 'Locked in'],
+        7 => ['In the zone', 'Habit unlocked'],
+        3 => ['Heating up', 'Streak mode on'],
+    ];
+
+    /** Total gym visits => headlines, highest first; used when there is no streak. The bare minimum is 1. */
+    protected const VISIT_HEADLINES = [
+        100 => ['Century club', 'Hundred not out'],
+        50 => ['Half century', 'Fifty up'],
+        25 => ['Regular now', 'Part of the gym'],
+        10 => ['Double digits', 'Finding the rhythm'],
+        1 => ['Game on', 'Showing up counts'],
+    ];
+
     public function __construct(protected WeightTrackingService $weights, protected StreakService $streaks) {}
 
     /**
@@ -71,12 +101,12 @@ class TransformationService
         $days = $report->beforePhoto && $report->afterPhoto ? (int) $report->beforePhoto->taken_on->diffInDays($report->afterPhoto->taken_on) : 0;
 
         return [
-            'headline' => AiReport::CHANGE_LEVELS[$level] ?? $level,
-            'period' => match (true) {
-                $days < 1 => null,
-                $days < 14 => "in {$days} ".Str::plural('day', $days),
-                $days < 60 => 'in '.intdiv($days, 7).' weeks',
-                default => 'in '.(int) round($days / 30.4).' months',
+            'headline' => $this->pick(self::COMPARISON_HEADLINES[$level], $report),
+            'period' => AiReport::CHANGE_LEVELS[$level].match (true) {
+                $days < 1 || $level === 'unclear' => '',
+                $days < 14 => " in {$days} ".Str::plural('day', $days),
+                $days < 60 => ' in '.intdiv($days, 7).' weeks',
+                default => ' in '.(int) round($days / 30.4).' months',
             },
             // Biggest change first.
             'stats' => collect($this->readingsFor($report, $summary))->where('change', '!=', 0)
@@ -93,16 +123,17 @@ class TransformationService
         $streak = $this->streaks->calculate($member, $report->created_at);
         $visits = $streak['total_visit_days'];
         $showStreak = $streak['current'] >= 3;
+        [$headlines, $reached] = $showStreak ? [self::STREAK_HEADLINES, $streak['current']] : [self::VISIT_HEADLINES, $visits];
         $weights = collect($summary['weight']['history'])->where('date', '<=', $report->created_at->toDateString())->sortBy('date')->values();
         $change = $weights->count() > 1 ? round($weights->last()['value'] - $weights->first()['value'], 1) : 0.0;
 
         return [
-            'headline' => match (true) {
+            'headline' => $this->pick(collect($headlines)->first(fn (array $lines, int $from) => $reached >= $from, ['Day one']), $report),
+            'period' => match (true) {
                 $showStreak => "{$streak['current']} day streak",
                 $visits > 0 => $visits.' gym '.Str::plural('visit', $visits),
-                default => 'Day one',
+                default => null,
             },
-            'period' => null,
             'stats' => array_values(array_filter([
                 $showStreak ? ['label' => 'gym visits', 'value' => (string) $visits, 'detail' => null] : null,
                 $streak['longest'] > 1 && $streak['longest'] > $streak['current'] ? ['label' => 'best streak', 'value' => "{$streak['longest']} days", 'detail' => null] : null,
@@ -110,6 +141,12 @@ class TransformationService
             ])),
             'shareable' => $visits > 0,
         ];
+    }
+
+    /** One of the headlines: always the same for a report, different for the next one. @param  list<string>  $headlines */
+    protected function pick(array $headlines, AiReport $report): string
+    {
+        return $headlines[$report->id % count($headlines)];
     }
 
     protected function signed(float $value): string

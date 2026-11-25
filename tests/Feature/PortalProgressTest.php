@@ -12,6 +12,7 @@ use App\Models\PlatformSetting;
 use App\Models\ProgressPhoto;
 use App\Services\AttendanceService;
 use App\Services\MembershipService;
+use App\Services\StreakService;
 use App\Services\TransformationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -94,7 +95,7 @@ class PortalProgressTest extends TestCase
         $page->assertSeeInOrder(['Progress photos', 'Before photo', 'After photo', 'AI reports'])
             ->set('beforePhotoId', (string) $before)->set('afterPhotoId', (string) $after)
             ->call('requestReport', 'photo_comparison')->assertHasNoErrors()->assertSee('Leaner waist.')
-            ->assertSee('None logged.')->assertSee('in 3 months')->assertSee('Share your progress')->assertSee('Show my photos');
+            ->assertSee('None logged.')->assertSee('Clear change in 3 months')->assertSee('Share your progress')->assertSee('Show my photos');
         $this->assertSame(0, $this->member->measurements()->withoutGlobalScopes()->count());
 
         // Only readings within two weeks of each photo are shown, the closest one first.
@@ -131,6 +132,27 @@ class PortalProgressTest extends TestCase
         Livewire::test(Progress::class)->assertSee('Share your progress');
         $this->actingAs($this->gym->owner);
         $this->inGym($this->gym, fn () => Livewire::test(AiProgress::class, ['member' => $this->member])->assertSee('Strong change')->assertDontSee('Share your progress'));
+    }
+
+    public function test_the_headline_fits_what_the_member_reached_and_stays_the_same(): void
+    {
+        $this->inGym($this->gym, function () {
+            $headline = function (int $id, int $visitDays, string $type = 'progress', array $result = ['summary' => 'x']) {
+                $this->mock(StreakService::class)->shouldReceive('calculate')->andReturn(['current' => min($visitDays, 2), 'longest' => 0, 'total_visit_days' => $visitDays]);
+                $report = (new AiReport)->forceFill(['id' => $id, 'type' => $type, 'result' => $result, 'created_at' => now()]);
+
+                return app(TransformationService::class)->highlight($report, $this->member, ['weight' => ['history' => []], 'measurements' => []]);
+            };
+
+            $this->assertSame(['Day one', 'Double digits', 'Century club', 'Hundred not out'],
+                [$headline(2, 0)['headline'], $headline(2, 24)['headline'], $headline(2, 100)['headline'], $headline(3, 100)['headline']]);
+            $this->assertSame('24 gym visits', $headline(2, 24)['period']);
+            foreach (array_keys(AiReport::CHANGE_LEVELS) as $level) {
+                $highlight = $headline(1, 0, 'photo_comparison', ['change_level' => $level]);
+                $this->assertNotEmpty($highlight['headline']);
+                $this->assertSame(AiReport::CHANGE_LEVELS[$level], $highlight['period']);
+            }
+        });
     }
 
     public function test_member_cannot_reach_another_members_photos_or_measurements(): void

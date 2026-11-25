@@ -153,20 +153,18 @@ window.shareCard = (report) => ({
 
         if (report.period) {
             ctx.fillStyle = ink;
-            ctx.font = body(46);
-            ctx.fillText(report.period, MARGIN, y);
-            y -= 80;
+            ctx.font = body(54);
+            ctx.fillText(report.period, MARGIN, y, inner);
+            y -= 96;
         }
 
-        // Headline on one line under photos; otherwise one word per line, with a leading number as big as fits.
-        const [, count, words] = report.headline.match(/^(\d+) (.+)$/) ?? [];
-        const lines = photos ? [report.headline] : count ? [count, words] : report.headline.split(' ');
-        const top = this.format === 'story' ? 250 : MARGIN;
+        // Headline on one line under photos, otherwise one word per line.
+        const lines = photos ? [report.headline] : report.headline.split(' ');
+        const top = (this.format === 'story' ? 250 : MARGIN) + (report.step && !photos ? 160 : 0); // below the change bars
         ctx.fillStyle = ink;
         [...lines].reverse().forEach((line, i) => {
             const text = line.toUpperCase();
-            const isCount = line === count && !photos;
-            const size = fitText(ctx, text, inner, photos ? 190 : isCount ? Math.min(850, (y - top) / 0.95) : Math.min(400, ((y - top) / (lines.length - i)) * 0.9));
+            const size = fitText(ctx, text, inner, photos ? 190 : Math.min(400, ((y - top) / (lines.length - i)) * 0.9));
             ctx.font = `${size}px Anton`;
             ctx.fillText(text, MARGIN, y);
             y -= size * 1.06;

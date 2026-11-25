@@ -15,7 +15,7 @@
             <div class="flex min-w-0 flex-col justify-center gap-5 p-6 sm:p-8">
                 <div>
                     <p class="font-display text-5xl leading-none text-balance uppercase sm:text-6xl">{{ $highlight['headline'] ?? \App\Models\AiReport::CHANGE_LEVELS[$r['change_level'] ?? ''] ?? '' }}</p>
-                    @if ($highlight['period'] ?? null)<p class="mt-2 text-lg text-gym-orange-light">{{ $highlight['period'] }}</p>@endif
+                    @if ($highlight['period'] ?? null)<p class="mt-3 text-xl font-medium text-gym-orange-light">{{ $highlight['period'] }}</p>@endif
                 </div>
                 @if ($step)
                     <div class="flex max-w-72 gap-1.5" aria-hidden="true">
