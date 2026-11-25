@@ -28,7 +28,7 @@
                         @if ($s['state'] === 'upcoming')
                             <p class="mt-3 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800">Starts on {{ \Illuminate\Support\Carbon::parse($s['start_date'])->format('D, d M') }}.</p>
                         @else
-                            <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-rose-500" style="width: {{ $s['progress_percent'] }}%"></div></div>
+                            <div class="mt-3 h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-indigo-500" style="width: {{ $s['progress_percent'] }}%"></div></div>
                             <p class="mt-1 flex flex-wrap justify-between gap-x-3 text-xs text-gray-500">
                                 <span>Day {{ $s['current_day'] }} of {{ $s['total_days'] }} · week {{ $s['current_week'] }}</span>
                                 @if ($s['adherence']['planned_days'])
@@ -39,10 +39,10 @@
                         @if ($s['notes'])<p class="mt-2 text-sm text-gray-600">{{ $s['notes'] }}</p>@endif
 
                         @if ($t)
-                            <div class="mt-4 rounded-xl {{ $t['is_rest'] ? 'bg-gray-50' : ($t['status'] === 'done' ? 'bg-emerald-50' : 'bg-rose-50') }} p-4">
+                            <div class="mt-4 rounded-xl {{ $t['is_rest'] ? 'bg-gray-50' : ($t['status'] === 'done' ? 'bg-emerald-50' : 'bg-indigo-50') }} p-4">
                                 <p class="text-xs font-semibold tracking-wide text-gray-500 uppercase">Today</p>
                                 <p class="mt-1 flex items-center gap-2 font-semibold text-gray-900">
-                                    <x-ui.icon :name="$t['is_rest'] ? 'moon' : $icon" class="size-5 shrink-0 {{ $t['is_rest'] ? 'text-gray-400' : 'text-rose-500' }}" /> {{ $t['title'] }}
+                                    <x-ui.icon :name="$t['is_rest'] ? 'moon' : $icon" class="size-5 shrink-0 {{ $t['is_rest'] ? 'text-gray-400' : 'text-indigo-500' }}" /> {{ $t['title'] }}
                                 </p>
                                 @if ($t['notes'])<p class="mt-1 text-sm text-gray-600">{{ $t['notes'] }}</p>@endif
                                 @if ($t['is_rest'])
@@ -52,7 +52,7 @@
                                         <ol class="mt-3 space-y-2">
                                             @foreach ($t['plan']['sections'] as $i => $section)
                                                 <li wire:key="today-{{ $type }}-{{ $section['id'] }}" class="flex gap-3 rounded-lg bg-white p-3 text-sm shadow-sm">
-                                                    <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-rose-100 text-xs font-semibold text-rose-700">{{ $i + 1 }}</span>
+                                                    <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">{{ $i + 1 }}</span>
                                                     <span class="min-w-0">
                                                         <span class="block font-medium text-gray-900">{{ $section['title'] }}</span>
                                                         @if ($section['subtitle'])<span class="block text-xs text-gray-500">{{ $section['subtitle'] }}</span>@endif
@@ -61,7 +61,7 @@
                                             @endforeach
                                         </ol>
                                     @endif
-                                    <a href="{{ route('portal.plans.show', $t['plan']['id']) }}" class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-rose-600 hover:underline">
+                                    <a href="{{ route('portal.plans.show', $t['plan']['id']) }}" class="mt-3 inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:underline">
                                         {{ $detailed ? 'Open full plan' : 'See today\'s '.$itemsLabel }} <x-ui.icon name="arrow-right" class="size-4" />
                                     </a>
 
@@ -99,8 +99,8 @@
             <div class="card-header"><h2 class="card-title">My schedule — next 7 days</h2></div>
             <div class="grid min-w-[42rem] grid-cols-7 divide-x divide-gray-100">
                 @foreach ($programs['week'] as $d)
-                    <div wire:key="wk-{{ $d['date'] }}" class="p-3 text-xs {{ $d['is_today'] ? 'bg-rose-50/70' : '' }}">
-                        <p class="font-semibold {{ $d['is_today'] ? 'text-rose-700' : 'text-gray-700' }}">{{ $d['is_today'] ? 'Today' : $d['weekday'] }} {{ \Illuminate\Support\Carbon::parse($d['date'])->format('d') }}</p>
+                    <div wire:key="wk-{{ $d['date'] }}" class="p-3 text-xs {{ $d['is_today'] ? 'bg-indigo-50/70' : '' }}">
+                        <p class="font-semibold {{ $d['is_today'] ? 'text-indigo-700' : 'text-gray-700' }}">{{ $d['is_today'] ? 'Today' : $d['weekday'] }} {{ \Illuminate\Support\Carbon::parse($d['date'])->format('d') }}</p>
                         @php $shown = false; @endphp
                         @foreach (['workout', 'diet'] as $kind)
                             @if (in_array($kind, $types, true) && $d[$kind])

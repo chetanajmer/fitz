@@ -6,6 +6,15 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    @if ($stats['pending_members'] > 0)
+        @can('members.manage')
+            <a href="{{ route('gym.enquiries.index') }}#join-requests" class="mb-4 flex items-center justify-between gap-3 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100">
+                <span><strong>{{ $stats['pending_members'] }} join {{ \Illuminate\Support\Str::plural('request', $stats['pending_members']) }}</strong> waiting for your approval.</span>
+                <span class="font-semibold">Review →</span>
+            </a>
+        @endcan
+    @endif
+
     <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <x-ui.stat label="Total members" :value="number_format($stats['total_members'])" icon="users" :href="route('gym.members.index')" />
         <x-ui.stat label="Active members" :value="number_format($stats['active_members'])" icon="check" color="green" hint="Valid membership today" :href="route('gym.members.index', ['membership' => 'active'])" />
@@ -24,8 +33,8 @@
                 <div class="h-64" wire:ignore x-data x-init="renderChart($refs.canvas, {
                     type: 'bar',
                     data: { labels: @js($growth['labels']), datasets: [
-                        { type: 'line', label: 'Total members', data: @js($growth['total']), borderColor: '#4f46e5', backgroundColor: '#4f46e5', tension: .3 },
-                        { label: 'New members', data: @js($growth['new']), backgroundColor: '#a5b4fc', borderRadius: 6 },
+                        { type: 'line', label: 'Total members', data: @js($growth['total']), borderColor: chartColors.primary, backgroundColor: chartColors.primary, tension: .3 },
+                        { label: 'New members', data: @js($growth['new']), backgroundColor: chartColors.primaryHalf, borderRadius: 6 },
                     ] }
                 })"><canvas x-ref="canvas"></canvas></div>
             </div>
@@ -35,7 +44,7 @@
             <div class="card-body">
                 <div class="h-64" wire:ignore x-data x-init="renderChart($refs.canvas, {
                     type: 'bar',
-                    data: { labels: @js($revenue['labels']), datasets: [{ label: 'Revenue (₹)', data: @js($revenue['values']), backgroundColor: '#34d399', borderRadius: 6 }] }
+                    data: { labels: @js($revenue['labels']), datasets: [{ label: 'Revenue (₹)', data: @js($revenue['values']), backgroundColor: chartColors.primaryLight, borderRadius: 6 }] }
                 })"><canvas x-ref="canvas"></canvas></div>
             </div>
         </div>

@@ -43,7 +43,7 @@
         <template x-for="toast in toasts" :key="toast.id">
             <div x-transition.opacity
                  class="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg"
-                 :class="toast.type === 'error' ? 'bg-red-600' : 'bg-gray-900'">
+                 :class="toast.type === 'error' ? 'bg-red-600' : 'bg-zinc-800 ring-1 ring-white/10'">
                 <span class="mt-0.5 shrink-0"><x-ui.icon name="warning" class="size-4" x-show="toast.type === 'error'" /><x-ui.icon name="check" class="size-4" x-show="toast.type !== 'error'" /></span>
                 <span x-text="toast.message" class="flex-1"></span>
             </div>

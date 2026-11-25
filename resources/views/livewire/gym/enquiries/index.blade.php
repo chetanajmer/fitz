@@ -6,6 +6,32 @@
         </x-slot:actions>
     </x-ui.page-header>
 
+    {{-- Join requests: people who signed up on the website or app and picked this gym. --}}
+    @if ($joinRequests->isNotEmpty())
+        <div id="join-requests" class="card mb-6 ring-1 ring-amber-200">
+            <div class="card-header">
+                <h2 class="card-title">Join requests <x-ui.badge color="amber">{{ $joinRequests->count() }}</x-ui.badge></h2>
+                <span class="text-xs text-gray-500">Signed up on the website or app. Approve to let them log in, then assign a plan.</span>
+            </div>
+            <ul class="divide-y divide-gray-100">
+                @foreach ($joinRequests as $r)
+                    <li wire:key="jr-{{ $r->id }}" class="flex flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center">
+                        <div class="min-w-0 flex-1">
+                            <a href="{{ route('gym.members.show', $r) }}" class="font-medium hover:text-brand-600">{{ $r->name }}</a>
+                            <p class="text-xs text-gray-500">
+                                {{ $r->phone }}@if ($r->email) · {{ $r->email }}@endif @if ($r->fitness_goal) · {{ $r->fitness_goal }}@endif · {{ $r->member_code }} · {{ $r->created_at->diffForHumans() }}
+                            </p>
+                        </div>
+                        <div class="flex shrink-0 gap-2">
+                            <button type="button" wire:click="approveJoinRequest({{ $r->id }})" class="btn-primary btn-sm">Approve</button>
+                            <button type="button" wire:click="declineJoinRequest({{ $r->id }})" wire:confirm="Decline the join request from {{ $r->name }}?" class="btn-secondary btn-sm">Decline</button>
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     {{-- Status pills --}}
     <div class="mb-4 flex flex-wrap gap-2">
         <button wire:click="$set('status', '')" class="rounded-full px-3 py-1 text-xs font-medium {{ $status === '' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 ring-1 ring-gray-200' }}">All · {{ $counts->sum() }}</button>

@@ -37,7 +37,7 @@
 
     {{-- Tabs --}}
     <div class="mb-6 flex gap-6 overflow-x-auto border-b border-gray-200">
-        @foreach (['overview' => 'Overview', 'memberships' => 'Memberships', 'payments' => 'Payments', 'attendance' => 'Attendance', 'progress' => 'Progress', 'plans' => 'Diet & Workout'] as $key => $label)
+        @foreach (['overview' => 'Overview', 'memberships' => 'Memberships', 'payments' => 'Payments', 'attendance' => 'Attendance', 'progress' => 'Progress', 'plans' => 'Diet & Workout'] + (auth()->user()->can('useAi', $m) ? ['ai' => 'AI Progress'] : []) as $key => $label)
             <button wire:click="$set('tab', '{{ $key }}')" class="tab {{ $tab === $key ? 'tab-active' : '' }}">{{ $label }}</button>
         @endforeach
     </div>
@@ -134,7 +134,12 @@
 
                 @if ($canManage)
                     <div class="card card-body space-y-2">
-                        <button wire:click="toggleStatus" class="btn-secondary w-full">Mark as {{ $m->status->value === 'active' ? 'inactive' : 'active' }}</button>
+                        @if ($m->status->value === 'pending')
+                            <p class="text-xs text-gray-500">Signed up from the app. Approve to let them log in; assign a plan as usual.</p>
+                            <button wire:click="toggleStatus" class="btn-primary w-full">Approve registration</button>
+                        @else
+                            <button wire:click="toggleStatus" class="btn-secondary w-full">Mark as {{ $m->status->value === 'active' ? 'inactive' : 'active' }}</button>
+                        @endif
                         <button wire:click="delete" wire:confirm="Delete {{ $m->name }}? Their history is kept but they will no longer appear in lists." class="btn-ghost w-full text-red-600">Delete member</button>
                     </div>
                 @endif
@@ -223,6 +228,10 @@
 
     @if ($tab === 'progress')
         <livewire:gym.members.weight-progress :member="$m" :key="'wp-'.$m->id" />
+    @endif
+
+    @if ($tab === 'ai')
+        <livewire:gym.members.ai-progress :member="$m" :key="'ai-'.$m->id" />
     @endif
 
     @if ($tab === 'plans')

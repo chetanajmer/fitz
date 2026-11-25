@@ -1,58 +1,98 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Gymai
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Multi-tenant gym management SaaS for Indian gyms. One install serves many gyms; every gym sees only its own data. Gyms pay the platform per active member per month (default ₹20).
 
-## About Laravel
+| Area | URL | Who |
+| --- | --- | --- |
+| Platform panel | `/platform` | Super Admin: gyms, pricing, SaaS invoices, leads, shared library |
+| Gym panel | `/app` | Gym admin and trainers: members, enquiries, plans, payments, attendance, diet/workout plans |
+| Member portal | `/me` | Members with a portal login |
+| Member app API | `/api/v1` | Mobile app: OTP login, plans, streaks, check-in (Postman collection in `postman/`) |
+| Public pages | `/{gym-slug}`, `/join/{token}`, `/register/{token}` | Gym profile, enquiry form, desk self-registration |
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+**Stack:** PHP 8.3, Laravel 13, Livewire 4, Tailwind CSS 4 + Vite, MySQL 8.4, spatie/laravel-permission, Sanctum.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3 with the `zip`, `intl`, `gd`, `mbstring`, `fileinfo`, `pdo_mysql` and `pdo_sqlite` extensions. On Laragon, enable `zip` under Menu → PHP → Extensions, or `composer install` fails.
+- Composer 2
+- MySQL 8.4
+- Node 22
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Local setup
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone https://github.com/chetanajmer/fitz.git
+cd fitz
+composer install
+cp .env.example .env
+php artisan key:generate
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Create an empty MySQL database called `gymai` (the defaults in `.env.example` expect user `root` with no password), then pick one way to fill it.
 
-## Contributing
+**Option A: demo data from seeders**
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+php artisan migrate
+php artisan db:seed                      # roles, platform settings, Super Admin
+php artisan db:seed --class=DemoSeeder   # demo gym "Iron Temple Fitness"
+```
 
-## Code of Conduct
+Set `SUPER_ADMIN_PASSWORD` in `.env` before `db:seed`, or the Super Admin is skipped.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+**Option B: a shared database dump**
 
-## Security Vulnerabilities
+```bash
+mysql -u root gymai < path/to/gymai.sql
+php artisan migrate                      # applies any migrations newer than the dump
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Never commit a dump. It contains password hashes, sessions and tokens, and `*.sql` is git-ignored.
 
-## License
+Then, for either option:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+php artisan storage:link
+npm install
+npm run build
+php artisan serve                        # http://127.0.0.1:8000
+```
+
+During frontend work, run `npm run dev` next to `php artisan serve`. `composer run dev` starts the dev processes in one terminal.
+
+### Demo logins (DemoSeeder)
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Gym admin | `owner@demo.gymai.test` | `password` |
+| Trainer | `trainer@demo.gymai.test` | `password` |
+| Member portal | `member@demo.gymai.test` | `password` |
+
+Member app OTPs are written to `storage/logs/laravel.log` while `SMS_DRIVER=log`.
+
+## Scheduled jobs
+
+Production needs a cron entry running `php artisan schedule:run` every minute. Locally, run `php artisan schedule:work`.
+
+| Command | When | What |
+| --- | --- | --- |
+| `gymai:refresh-memberships` | Daily 00:10 | Moves memberships between upcoming, active and expired by date |
+| `gymai:refresh-streaks` | Daily 00:20 | Recalculates attendance streaks |
+| `gymai:generate-invoices` | 1st of month, 02:00 | Creates each gym's SaaS invoice for the previous month |
+
+## Tests and code style
+
+```bash
+php artisan test --compact
+vendor/bin/pint --dirty
+```
+
+Feature tests run on in-memory SQLite and need built assets (`npm run build`). CI (`.github/workflows/tests.yml`) runs Pint and the full suite on every push and on pull requests to `main`.
+
+## Working on the code
+
+- **Branches:** each developer works on their own branch (`dev-ekansh`, `dev-naresh`). Nothing is committed to `main` directly; changes reach `main` through a pull request after CI passes.
+- **Tenancy:** gym-owned models use the `BelongsToGym` trait, which scopes every query to the current gym. Never take `gym_id` from request input.
+- **Business logic** lives in `app/Services`; Livewire components and controllers stay thin.
+- **Migrations:** never edit one that has already run; add a new one. Run `php artisan migrate` after every pull.

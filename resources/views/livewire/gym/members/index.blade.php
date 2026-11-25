@@ -25,6 +25,7 @@
                 <option value="">Any status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
+                <option value="pending">Pending approval</option>
             </select>
             @if ($trainers->isNotEmpty())
                 <select wire:model.live="trainer" class="input lg:w-44">

@@ -14,8 +14,8 @@ use Illuminate\Support\Str;
 class Gym extends Model
 {
     public const DEFAULT_SETTINGS = [
-        'primary_color' => '#4f46e5',
-        'secondary_color' => '#0ea5e9',
+        'primary_color' => '#ff6b00',
+        'secondary_color' => '#111111',
         'tagline' => null,
         'opening_hours' => [
             'monday' => ['open' => '06:00', 'close' => '22:00', 'closed' => false],
@@ -45,8 +45,14 @@ class Gym extends Model
         ],
     ];
 
-    // owner_id, slug, join_token and status are set by services only.
-    protected $fillable = ['name', 'phone', 'email', 'address', 'city', 'logo_path', 'description'];
+    /** Dashboard theme colours (Gymai black + electric orange): primary accent and navigation background. */
+    public const DASHBOARD_THEME_DEFAULTS = ['primary' => '#ff6b00', 'secondary' => '#0d0d0d'];
+
+    /** Dashboards whose colours a gym can change. */
+    public const DASHBOARD_AREAS = ['admin' => 'Admin dashboard', 'member' => 'Member dashboard'];
+
+    // owner_id, slug, join_token, register_token, checkin_token, city_id and status are set by services only.
+    protected $fillable = ['name', 'phone', 'email', 'address', 'map_url', 'city', 'logo_path', 'description'];
 
     protected function casts(): array
     {
@@ -66,6 +72,17 @@ class Gym extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /** The managed city (the `city` text column mirrors its name for display). */
+    public function cityRecord(): BelongsTo
+    {
+        return $this->belongsTo(City::class, 'city_id');
+    }
+
+    public function locality(): BelongsTo
+    {
+        return $this->belongsTo(Locality::class);
     }
 
     public function users(): HasMany
@@ -91,6 +108,32 @@ class Gym extends Model
     public function saasInvoices(): HasMany
     {
         return $this->hasMany(SaasInvoice::class);
+    }
+
+    /**
+     * How complete the public profile is (shown to members choosing a gym), and what is missing.
+     *
+     * @return array{percent: int, missing: list<string>}
+     */
+    public function profileCompleteness(): array
+    {
+        $checks = [
+            'Logo' => (bool) $this->logo_path,
+            'Banner image' => (bool) $this->banner_path,
+            'Description' => filled($this->description),
+            'Phone' => filled($this->phone),
+            'Address' => filled($this->address),
+            'Google Maps link' => filled($this->map_url),
+            'Locality' => (bool) $this->locality_id,
+            'Opening hours' => ! empty($this->settings['opening_hours'] ?? null),
+            'Gym photos' => $this->photos()->exists(),
+            'A public membership plan' => $this->plans()->where('is_active', true)->where('is_public', true)->exists(),
+        ];
+
+        return [
+            'percent' => (int) round(count(array_filter($checks)) / count($checks) * 100),
+            'missing' => array_keys(array_filter($checks, fn (bool $done) => ! $done)),
+        ];
     }
 
     // ---- Settings -------------------------------------------------------
@@ -153,12 +196,32 @@ class Gym extends Model
 
     public function primaryColor(): string
     {
-        return $this->safeColor($this->setting('primary_color'), '#4f46e5');
+        return $this->safeColor($this->setting('primary_color'), '#ff6b00');
     }
 
     public function secondaryColor(): string
     {
-        return $this->safeColor($this->setting('secondary_color'), '#0ea5e9');
+        return $this->safeColor($this->setting('secondary_color'), '#111111');
+    }
+
+    /**
+     * The colours a gym picked for one of its dashboards ('admin' panel or 'member' app), falling back to
+     * the Gymai theme. `custom` is false while the gym uses the default theme.
+     *
+     * @return array{primary: string, secondary: string, custom: bool}
+     */
+    public function dashboardColors(string $area): array
+    {
+        $chosen = $this->settings['dashboard_theme'][$area] ?? [];
+        $primary = $this->safeColor($chosen['primary'] ?? null, self::DASHBOARD_THEME_DEFAULTS['primary']);
+        $secondary = $this->safeColor($chosen['secondary'] ?? null, self::DASHBOARD_THEME_DEFAULTS['secondary']);
+
+        return [
+            'primary' => $primary,
+            'secondary' => $secondary,
+            'custom' => strcasecmp($primary, self::DASHBOARD_THEME_DEFAULTS['primary']) !== 0
+                || strcasecmp($secondary, self::DASHBOARD_THEME_DEFAULTS['secondary']) !== 0,
+        ];
     }
 
     protected function safeColor(?string $value, string $fallback): string
@@ -174,9 +237,22 @@ class Gym extends Model
         return route('gym.public', $this->slug);
     }
 
+    /** The gym's own Google Maps link, or a Google Maps search for its name and address. */
+    public function directionsUrl(): string
+    {
+        return $this->map_url ?: 'https://www.google.com/maps/search/?api=1&query='
+            .rawurlencode(collect([$this->name, $this->address, $this->locality?->name, $this->city])->filter()->unique()->implode(', '));
+    }
+
     public function joinUrl(): string
     {
         return route('gym.join', $this->join_token);
+    }
+
+    /** Self-registration form that creates a member (encoded in the attendance-desk QR). */
+    public function registerUrl(): string
+    {
+        return route('gym.register', $this->register_token);
     }
 
     public function logoUrl(): ?string
@@ -230,6 +306,26 @@ class Gym extends Model
             // 40 chars of URL-safe randomness (~238 bits) — unguessable.
             $token = Str::random(40);
         } while (static::where('join_token', $token)->exists());
+
+        return $token;
+    }
+
+    /** Separate secret for the desk self-registration QR, so the public join link cannot create members. */
+    public static function generateRegisterToken(): string
+    {
+        do {
+            $token = Str::random(40);
+        } while (static::where('register_token', $token)->exists());
+
+        return $token;
+    }
+
+    /** Secret for the check-in QR that members scan at the gym. */
+    public static function generateCheckinToken(): string
+    {
+        do {
+            $token = Str::random(40);
+        } while (static::where('checkin_token', $token)->exists());
 
         return $token;
     }

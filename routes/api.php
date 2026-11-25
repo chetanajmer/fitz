@@ -1,13 +1,17 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AiCoachController;
 use App\Http\Controllers\Api\V1\AppVersionController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\BodyProgressController;
 use App\Http\Controllers\Api\V1\CheckInController;
+use App\Http\Controllers\Api\V1\CityController;
 use App\Http\Controllers\Api\V1\FitnessPlanController;
 use App\Http\Controllers\Api\V1\GymBrandingController;
 use App\Http\Controllers\Api\V1\MemberProfileController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ProgramController;
+use App\Http\Controllers\Api\V1\SignupController;
 use App\Http\Controllers\Api\V1\StreakController;
 use App\Http\Controllers\Api\V1\WeightController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +30,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::prefix('auth')->name('auth.')->group(function () {
         Route::post('send-otp', [AuthController::class, 'sendOtp'])->middleware('throttle:otp-send')->name('send-otp');
         Route::post('verify-otp', [AuthController::class, 'verifyOtp'])->middleware('throttle:otp-verify')->name('verify-otp');
+    });
+
+    // New member sign-up: verify phone, pick a city and a gym in it, send details (member starts pending).
+    Route::get('cities', [CityController::class, 'index'])->middleware('throttle:60,1')->name('cities.index');
+    Route::get('cities/{cityId}/localities', [CityController::class, 'localities'])->whereNumber('cityId')->middleware('throttle:60,1')->name('cities.localities');
+    Route::get('cities/{cityId}/gyms', [CityController::class, 'gyms'])->whereNumber('cityId')->middleware('throttle:60,1')->name('cities.gyms');
+    Route::get('gyms/{gymId}/profile', [CityController::class, 'gymProfile'])->whereNumber('gymId')->middleware('throttle:60,1')->name('gyms.profile');
+    Route::prefix('auth/register')->name('auth.register.')->group(function () {
+        Route::post('send-otp', [SignupController::class, 'sendOtp'])->middleware('throttle:otp-send')->name('send-otp');
+        Route::post('verify-otp', [SignupController::class, 'verifyOtp'])->middleware('throttle:otp-verify')->name('verify-otp');
+        Route::post('/', [SignupController::class, 'register'])->middleware('throttle:10,1')->name('store');
     });
 
     Route::middleware(['auth:member'])->group(function () {
@@ -64,6 +79,19 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::delete('schedule/log', [ProgramController::class, 'clearDay'])->middleware('throttle:30,1')->name('schedule.log.clear');
             Route::get('plans', [FitnessPlanController::class, 'index'])->name('plans.index');
             Route::get('plans/{planId}', [FitnessPlanController::class, 'show'])->whereNumber('planId')->name('plans.show');
+            Route::get('measurements', [BodyProgressController::class, 'measurements'])->name('measurements.index');
+            Route::post('measurements', [BodyProgressController::class, 'storeMeasurement'])->middleware('throttle:20,1')->name('measurements.store');
+            Route::delete('measurements/{measurementId}', [BodyProgressController::class, 'destroyMeasurement'])->whereNumber('measurementId')->name('measurements.destroy');
+            Route::get('progress-photos', [BodyProgressController::class, 'photos'])->name('progress-photos.index');
+            Route::post('progress-photos', [BodyProgressController::class, 'storePhoto'])->middleware('throttle:10,1')->name('progress-photos.store');
+            Route::delete('progress-photos/{photoId}', [BodyProgressController::class, 'destroyPhoto'])->whereNumber('photoId')->name('progress-photos.destroy');
+            Route::get('progress-photos/{photoId}/image', [BodyProgressController::class, 'photoImage'])->whereNumber('photoId')->name('progress-photos.image');
+            Route::get('transformation', [BodyProgressController::class, 'transformation'])->name('transformation');
+            Route::get('ai', [AiCoachController::class, 'status'])->name('ai.status');
+            Route::post('ai/consent', [AiCoachController::class, 'consent'])->middleware('throttle:20,1')->name('ai.consent');
+            Route::get('ai/reports', [AiCoachController::class, 'index'])->name('ai.reports.index');
+            Route::post('ai/reports', [AiCoachController::class, 'store'])->middleware('throttle:10,1')->name('ai.reports.store');
+            Route::get('ai/reports/{reportId}', [AiCoachController::class, 'show'])->whereNumber('reportId')->name('ai.reports.show');
             Route::get('check-in', [CheckInController::class, 'status'])->name('check-in.status');
             Route::post('check-in', [CheckInController::class, 'checkIn'])->middleware('throttle:10,1')->name('check-in');
             Route::post('check-out', [CheckInController::class, 'checkOut'])->middleware('throttle:10,1')->name('check-out');

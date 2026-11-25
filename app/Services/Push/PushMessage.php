@@ -27,6 +27,7 @@ final class PushMessage
         'balance_due' => ['account', 'payments', 'membership'],
         'plan_assigned' => ['account', 'workout', 'general'],
         'goal_achieved' => ['account', 'progress', 'general'],
+        'ai_report_ready' => ['account', 'progress', 'general'],
         'weigh_in_due' => ['reminders', 'progress', 'reminders'],
         'workout_reminder' => ['reminders', 'workout', 'reminders'],
         'streak_at_risk' => ['reminders', 'streak', 'reminders'],

@@ -1,59 +1,839 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 
+/* `dark:` utilities follow the panel theme class, not the OS setting. */
+@custom-variant dark (&:where(.theme-dark, .theme-dark *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../vendor/livewire/livewire/src/Features/SupportPagination/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../views/**/*.blade.php';
+@source not '../views/landing-v1'; /* backup of the old landing page, not rendered */
 @source '../../app/**/*.php';
+
+/* ---- Theme palette: Black + Electric Orange --------------------------------
+ * The single source of truth for every colour in the app. Everything below
+ * (brand, ink, indigo accent, landing tokens, charts in resources/js/app.js)
+ * reads from these variables, so the whole theme is changed here.
+ */
+:root {
+    --gym-black: #111111;        /* main background */
+    --gym-black-deep: #0d0d0d;   /* sidebar */
+    --gym-charcoal: #1c1c1c;     /* inputs, table headers, hovers */
+    --gym-card: #222222;         /* cards and content containers */
+    --gym-orange: #ff6b00;       /* primary actions, active items, highlights */
+    --gym-orange-hover: #e85d00; /* button hover */
+    --gym-orange-light: #ff8c38; /* accent text / secondary highlight on dark */
+    --gym-white: #ffffff;        /* headings, important text */
+    --gym-light: #f5f5f5;        /* body text on dark, light surfaces */
+    --gym-muted: #a3a3a3;        /* secondary text */
+    --gym-border: #333333;       /* borders and dividers */
+}
 
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
-    --color-brand-50: #eef2ff;
-    --color-brand-100: #e0e7ff;
-    --color-brand-500: #6366f1;
-    --color-brand-600: #4f46e5;
-    --color-brand-700: #4338ca;
-    --color-brand-900: #312e81;
+
+    /* Palette as utilities: bg-gym-orange, text-gym-muted, border-gym-border, ... */
+    --color-gym-black: var(--gym-black);
+    --color-gym-black-deep: var(--gym-black-deep);
+    --color-gym-charcoal: var(--gym-charcoal);
+    --color-gym-card: var(--gym-card);
+    --color-gym-orange: var(--gym-orange);
+    --color-gym-orange-hover: var(--gym-orange-hover);
+    --color-gym-orange-light: var(--gym-orange-light);
+    --color-gym-white: var(--gym-white);
+    --color-gym-light: var(--gym-light);
+    --color-gym-muted: var(--gym-muted);
+    --color-gym-border: var(--gym-border);
+
+    --color-brand-50: color-mix(in srgb, var(--gym-orange) 9%, white);
+    --color-brand-100: color-mix(in srgb, var(--gym-orange) 20%, white);
+    --color-brand-400: var(--gym-orange-light);
+    --color-brand-500: var(--gym-orange);
+    --color-brand-600: var(--gym-orange);
+    --color-brand-700: var(--gym-orange-hover);
+    --color-brand-900: color-mix(in srgb, var(--gym-orange) 50%, black);
+
+    /* Existing views use indigo-* as "the accent colour"; it is the orange scale everywhere. */
+    --color-indigo-50: color-mix(in srgb, var(--gym-orange) 9%, white);
+    --color-indigo-100: color-mix(in srgb, var(--gym-orange) 20%, white);
+    --color-indigo-200: color-mix(in srgb, var(--gym-orange) 40%, white);
+    --color-indigo-300: color-mix(in srgb, var(--gym-orange) 60%, white);
+    --color-indigo-400: var(--gym-orange-light);
+    --color-indigo-500: var(--gym-orange);
+    --color-indigo-600: var(--gym-orange);
+    --color-indigo-700: var(--gym-orange-hover);
+
+    /* Card / control surface: white in the light panel theme, #222222 under .theme-dark. */
+    --color-surface: #ffffff;
+
+    /* Panel surfaces (dark theme). */
+    --color-ink-950: var(--gym-black-deep);
+    --color-ink-900: var(--gym-black-deep);
+    --color-ink-850: var(--gym-black);
+    --color-ink-800: var(--gym-card);
+    --color-ink-750: #2a2a2a;
+    --color-ink-700: var(--gym-border);
+
+    /* Public landing page: same structure, re-inked in the black + orange palette. */
+    --color-chalk: var(--gym-light);
+    --color-chalk-dim: #e6e6e6;
+    --color-forest: var(--gym-black);
+    --color-forest-soft: var(--gym-charcoal);
+    --color-volt: var(--gym-orange);
+    --color-clay: var(--gym-orange-light);
+    --font-display: 'Anton', 'Impact', 'Arial Narrow', sans-serif;
+    --font-tight: 'Inter Tight', ui-sans-serif, system-ui, sans-serif;
+    --font-code: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 }
 
 [x-cloak] { display: none !important; }
 
+/* ---- Panel themes ----------------------------------------------------
+ * Panel, portal and auth layouts render dark (`theme-dark` on <body>) by default;
+ * the panel's theme toggle can switch to the light variant. Tailwind v4 utilities
+ * read colours from CSS variables, so remapping the palette here re-skins every
+ * existing view without touching its classes: greys become the black / charcoal
+ * scale, indigo is the orange accent, and light status tints become translucent
+ * tints that read on dark.
+ */
+/* The sidebar is dark in both variants; its zinc text is the palette's muted grey. */
+.panel-theme,
+.theme-dark {
+    --color-zinc-400: var(--gym-muted);
+    --color-zinc-500: #8a8a8a;
+    --color-zinc-600: #6e6e6e;
+    --color-zinc-800: var(--gym-card);
+}
+
+.panel-theme {
+    --color-gray-50: var(--gym-light);
+}
+
+.theme-dark {
+    color-scheme: dark;
+    background-color: var(--gym-black);
+    color: var(--gym-light);
+
+    --color-surface: var(--gym-card);
+    --color-gray-50: var(--gym-charcoal);
+    --color-gray-100: #2a2a2a;
+    --color-gray-200: var(--gym-border);
+    --color-gray-300: #404040;
+    --color-gray-400: #737373;
+    --color-gray-500: var(--gym-muted);
+    --color-gray-600: #b8b8b8;
+    --color-gray-700: #d4d4d4;
+    --color-gray-800: var(--gym-light);
+    --color-gray-900: var(--gym-white);
+
+    --color-indigo-50: color-mix(in srgb, var(--gym-orange) 12%, transparent);
+    --color-indigo-100: color-mix(in srgb, var(--gym-orange) 18%, transparent);
+    --color-indigo-200: color-mix(in srgb, var(--gym-orange) 30%, transparent);
+    --color-indigo-300: color-mix(in srgb, var(--gym-orange) 50%, transparent);
+    --color-indigo-400: var(--gym-orange-light);
+    --color-indigo-500: var(--gym-orange);
+    --color-indigo-600: var(--gym-orange);
+    --color-indigo-700: var(--gym-orange-light);
+
+    --color-emerald-50: rgb(16 185 129 / 0.12);
+    --color-emerald-100: rgb(16 185 129 / 0.18);
+    --color-emerald-200: rgb(16 185 129 / 0.3);
+    --color-emerald-600: #34d399;
+    --color-emerald-700: #34d399;
+    --color-emerald-800: #6ee7b7;
+
+    --color-red-50: rgb(239 68 68 / 0.12);
+    --color-red-100: rgb(239 68 68 / 0.18);
+    --color-red-200: rgb(239 68 68 / 0.3);
+    --color-red-500: #f05252;
+    --color-red-600: #ee4444;
+    --color-red-700: #f87171;
+    --color-red-800: #fca5a5;
+
+    --color-amber-50: rgb(245 158 11 / 0.12);
+    --color-amber-100: rgb(245 158 11 / 0.18);
+    --color-amber-200: rgb(245 158 11 / 0.3);
+    --color-amber-600: #fbbf24;
+    --color-amber-700: #fbbf24;
+    --color-amber-800: #fcd34d;
+    --color-amber-900: #fde68a;
+
+    --color-sky-50: rgb(14 165 233 / 0.12);
+    --color-sky-200: rgb(14 165 233 / 0.3);
+    --color-sky-600: #38bdf8;
+    --color-sky-700: #7dd3fc;
+
+    --color-purple-50: rgb(168 85 247 / 0.12);
+    --color-purple-200: rgb(168 85 247 / 0.3);
+    --color-purple-700: #c084fc;
+
+    --color-rose-50: rgb(244 63 94 / 0.12);
+    --color-rose-200: rgb(244 63 94 / 0.3);
+    --color-rose-600: #fb7185;
+}
+
+/* Literal white surfaces and dark overlays that the variable remap can't express. */
+.theme-dark .bg-white { background-color: var(--color-surface); }
+.theme-dark .bg-white\/90 { background-color: rgb(17 17 17 / 0.85); }
+.theme-dark .bg-gray-900\/50,
+.theme-dark .bg-gray-900\/60 { background-color: rgb(0 0 0 / 0.7); }
+.theme-dark .bg-gray-50\/50 { background-color: rgb(255 255 255 / 0.02); }
+/* "Selected" segmented buttons and pills (bg-gray-900 text-white) become the accent. */
+.theme-dark .bg-gray-900 { background-color: var(--color-brand-600); }
+.theme-dark .from-indigo-50 { --tw-gradient-from: color-mix(in srgb, var(--gym-orange) 16%, transparent); }
+.theme-dark .to-sky-50 { --tw-gradient-to: rgb(255 255 255 / 0.03); }
+
+.theme-dark :is(.input, select, textarea, input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'])) {
+    background-color: var(--gym-charcoal);
+    border-color: var(--gym-border);
+    color: var(--gym-white);
+}
+.theme-dark :is(.input, select, textarea, input):focus { border-color: var(--gym-orange); }
+.theme-dark :is(.input, select, textarea, input)::placeholder { color: #6e6e6e; }
+.theme-dark select option { background-color: var(--gym-charcoal); color: var(--gym-white); }
+.theme-dark :is(input[type='checkbox'], input[type='radio']) {
+    background-color: var(--gym-charcoal);
+    border-color: #4d4d4d;
+}
+.theme-dark :is(input[type='checkbox'], input[type='radio']):checked { background-color: var(--gym-orange); border-color: var(--gym-orange); }
+:is(.panel-theme, .theme-dark) input[type='range'] { accent-color: var(--gym-orange); }
+.theme-dark ::-webkit-scrollbar { width: 10px; height: 10px; }
+.theme-dark ::-webkit-scrollbar-thumb { background: var(--gym-border); border-radius: 9999px; border: 2px solid var(--gym-black); }
+.theme-dark ::-webkit-scrollbar-thumb:hover { background: #4d4d4d; }
+.theme-dark ::-webkit-scrollbar-track { background: transparent; }
+.theme-dark ::selection { background: color-mix(in srgb, var(--gym-orange) 35%, transparent); color: var(--gym-white); }
+
 /* ---- Reusable UI utilities ------------------------------------------- */
-@utility card { @apply rounded-xl border border-gray-200 bg-white shadow-sm; }
+@utility card { @apply rounded-2xl border border-gray-200 bg-surface shadow-sm; }
 @utility card-body { @apply p-5; }
 @utility card-header { @apply flex items-center justify-between gap-3 border-b border-gray-100 px-5 py-4; }
 @utility card-title { @apply text-sm font-semibold text-gray-900; }
 
-@utility btn { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition focus:ring-2 focus:ring-offset-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60; }
-@utility btn-primary { @apply btn bg-brand-600 text-white hover:bg-brand-700 focus:ring-brand-500; }
-@utility btn-secondary { @apply btn border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-300; }
+@utility btn { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition duration-200 focus:ring-2 focus:ring-offset-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60; }
+@utility btn-primary { @apply btn bg-brand-600 font-semibold text-white shadow-[0_6px_20px_-6px_color-mix(in_srgb,var(--gym-orange)_55%,transparent)] hover:bg-brand-700 hover:shadow-[0_8px_24px_-6px_color-mix(in_srgb,var(--gym-orange)_70%,transparent)] focus:ring-brand-500 focus:ring-offset-transparent; }
+@utility btn-secondary { @apply btn border border-gray-300 bg-surface text-gray-700 hover:border-brand-600/60 hover:bg-gray-50 hover:text-gray-900 focus:ring-brand-500/40 focus:ring-offset-transparent; }
 @utility btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500; }
 @utility btn-success { @apply btn bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500; }
-@utility btn-ghost { @apply btn text-gray-600 hover:bg-gray-100 focus:ring-gray-200; }
+@utility btn-ghost { @apply btn text-gray-600 hover:bg-brand-600/10 hover:text-brand-600 focus:ring-brand-500/30; }
 @utility btn-sm { @apply px-2.5 py-1.5 text-xs; }
 
 @utility label { @apply mb-1 block text-sm font-medium text-gray-700; }
-@utility input { @apply block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500; }
+@utility input { @apply block w-full rounded-lg border-gray-300 text-sm shadow-sm transition focus:border-brand-500 focus:ring-brand-500; }
 @utility input-error { @apply mt-1 text-xs text-red-600; }
 @utility hint { @apply mt-1 text-xs text-gray-500; }
 
-@utility nav-link { @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-gray-300 transition hover:bg-white/10 hover:text-white; }
-@utility nav-link-active { @apply bg-white/10 text-white; }
+@utility nav-link { @apply relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition not-[.nav-link-active]:text-gym-muted duration-200 hover:bg-brand-600/10 hover:text-white [&>svg]:transition-colors hover:[&>svg]:text-brand-500; }
+@utility nav-link-active { @apply bg-brand-600/15 text-white before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-r-full before:bg-brand-600 [&>svg]:text-brand-500; }
 
-@utility tab { @apply border-b-2 border-transparent px-1 pb-3 text-sm font-medium whitespace-nowrap text-gray-500 hover:border-gray-300 hover:text-gray-700; }
-@utility tab-active { @apply border-brand-600 text-brand-700; }
+@utility tab { @apply border-b-2 border-transparent px-1 pb-3 text-sm font-medium whitespace-nowrap text-gray-500 transition hover:border-brand-600/40 hover:text-gray-700; }
+@utility tab-active { @apply border-brand-600 text-brand-700 dark:text-brand-500; }
 
 @layer components {
     .table { @apply min-w-full divide-y divide-gray-200 text-sm; }
-    .table thead th { @apply bg-gray-50 px-4 py-2.5 text-left text-xs font-semibold tracking-wide text-gray-500 uppercase; }
+    .table thead th { @apply bg-gray-50 px-4 py-3 text-left text-[11px] font-semibold tracking-wider text-gray-500 uppercase; }
     .table tbody { @apply divide-y divide-gray-100; }
     .table tbody td { @apply px-4 py-3 whitespace-nowrap text-gray-700; }
-    .table tbody tr:hover { @apply bg-gray-50; }
+    .table tbody tr { @apply transition-colors; }
+    .table tbody tr:hover { @apply bg-brand-600/5; }
+}
+
+/* ---- Public landing page (welcome.blade.php + views/landing) ------------------------
+ * Dark-first: black page, white type, Electric Orange accents. Anton for display type,
+ * Inter Tight for copy, JetBrains Mono for labels. resources/js/landing.js adds the motion;
+ * every section reads fine without JS, and prefers-reduced-motion turns all motion off.
+ *
+ * The section markup speaks in two roles: `chalk` = the paper a section sits on and
+ * `forest` = the ink drawn on it, with `bg-forest` panels swapping the two. On this dark
+ * page the paper is black and the ink is light; a `bg-forest` panel restores the original
+ * pairing (charcoal panel, light text, dark ink on light chips) for everything inside it.
+ */
+/* Display type stays unlayered so its tight line-height beats Tailwind's text-* sizes. */
+.lp-display { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; line-height: 0.88; letter-spacing: 0; }
+
+/* Unlayered so it beats the layout's font-sans / text-gray-900 utilities on <body>. */
+.landing {
+    /* Paper drawn as a card (bg-chalk) is the card grey; the page itself is black. */
+    --color-chalk: var(--gym-card);
+    --color-chalk-dim: var(--gym-charcoal);
+    --color-forest: var(--gym-light);
+    --color-forest-soft: var(--gym-charcoal);
+    color-scheme: dark;
+    background-color: var(--gym-black);
+    /* Fine film grain: an inline SVG noise tile, rendered once. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .035 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    color: var(--gym-light);
+    font-family: var(--font-tight);
+}
+/* Dark panels: charcoal surface, light text; chips and cards inside keep dark ink. */
+.landing .bg-forest {
+    --color-forest: var(--gym-charcoal);
+    --color-forest-soft: #2a2a2a;
+    --color-chalk: var(--gym-light);
+    --color-chalk-dim: #e6e6e6;
+}
+/* Ink outlines on the black page become the quiet divider grey (inside panels they keep the panel ink). */
+.landing .border-forest:not(.bg-forest .border-forest) { border-color: var(--gym-border); }
+
+/* Components sit in a layer so Tailwind utilities on the same element can override them. */
+@layer components {
+html:has(body.landing) { scroll-padding-top: 5rem; }
+html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
+
+.landing ::selection { background: var(--gym-orange); color: var(--gym-black); }
+.landing :focus-visible { outline: 3px solid var(--gym-orange-light); outline-offset: 3px; }
+
+.lp-mono { font-family: var(--font-code); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; }
+.lp-hl {
+    background: linear-gradient(var(--color-volt), var(--color-volt)) no-repeat left / 100% 100%;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    padding: 0 0.08em;
+    color: var(--gym-black);
+}
+.lp-outline { color: transparent; -webkit-text-stroke: 2px var(--lp-stroke, var(--color-forest)); }
+
+/* Buttons: solid orange primary, outlined secondary, soft orange glow on hover. */
+.lp-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+    border: 2px solid var(--gym-orange); border-radius: 0.375rem; padding: 0.85rem 1.35rem;
+    font-weight: 700; font-size: 0.95rem; line-height: 1.2;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.lp-btn svg { transition: transform 0.2s ease; }
+.lp-btn:hover svg { transform: translateX(3px); }
+.lp-btn:active { transform: translateY(1px); }
+.lp-btn-solid,
+.lp-btn-volt { background: var(--gym-orange); border-color: var(--gym-orange); color: var(--gym-white); box-shadow: 0 10px 28px -12px rgb(255 107 0 / 0.75); }
+.lp-btn-solid:hover,
+.lp-btn-volt:hover { background: var(--gym-orange-hover); border-color: var(--gym-orange-hover); transform: translateY(-2px); box-shadow: 0 16px 34px -12px rgb(255 107 0 / 0.9); }
+.lp-btn-ghost { background: transparent; color: inherit; border-color: currentColor; }
+.lp-btn-ghost:hover { border-color: var(--gym-orange); color: var(--gym-orange); transform: translateY(-2px); }
+
+/* Page loader: a roller shutter (horizontal slats) with a CSS-3D dumbbell. Only shown with JS; a failsafe
+ * hides it after 4 s in case landing.js never runs. */
+.lp-loader {
+    display: none;
+    background-image: repeating-linear-gradient(to bottom, transparent 0 46px, rgb(0 0 0 / 0.25) 46px 48px, rgb(245 245 245 / 0.06) 48px 50px);
+}
+.js .lp-loader { display: flex; animation: lp-loader-failsafe 0.4s ease 4s forwards; }
+@keyframes lp-loader-failsafe { to { opacity: 0; visibility: hidden; } }
+.lp-db-scene { position: relative; width: 16rem; height: 10rem; perspective: 900px; }
+.lp-db-lift { position: absolute; inset: 0; transform-style: preserve-3d; scale: 1.15; animation: lp-db-lift 1.1s ease-in-out infinite; }
+@media (width >= 40rem) {
+    .lp-db-scene { height: 13rem; }
+    .lp-db-lift { scale: 1.6; }
+}
+.lp-db { position: absolute; left: 50%; top: 50%; transform-style: preserve-3d; animation: lp-db-spin 3.2s linear infinite; }
+.lp-db > span { position: absolute; left: 0; top: 0; }
+@keyframes lp-db-spin { from { transform: rotateZ(-10deg) rotateX(-20deg) rotateY(0deg); } to { transform: rotateZ(-10deg) rotateX(-20deg) rotateY(360deg); } }
+@keyframes lp-db-lift { 0%, 100% { transform: translateY(16px); } 50% { transform: translateY(-16px); } }
+.lp-db-bar {
+    width: 220px; height: 9px; margin: -4.5px 0 0 -110px;
+    background: linear-gradient(90deg, #bdbdbd, var(--color-chalk) 30% 70%, #bdbdbd);
+    transform: rotateX(calc(var(--i) * 45deg)) translateZ(4.5px);
+}
+.lp-db-bar:nth-child(odd) { filter: brightness(0.82); }
+.lp-db-plate { border: 2px solid var(--color-forest); border-radius: 9999px; transform: translateX(var(--x)) rotateY(90deg); }
+.lp-db-plate.is-big { width: 104px; height: 104px; margin: -52px 0 0 -52px; }
+.lp-db-plate.is-small { width: 76px; height: 76px; margin: -38px 0 0 -38px; }
+.lp-db-plate.is-collar { width: 30px; height: 30px; margin: -15px 0 0 -15px; }
+.lp-db-plate.is-clay { background: radial-gradient(circle, var(--color-forest) 0 13%, var(--color-clay) 14% 100%); }
+.lp-db-plate.is-volt { background: radial-gradient(circle, var(--color-forest) 0 17%, var(--color-volt) 18% 100%); }
+.lp-db-plate.is-chalk { background: var(--color-chalk); }
+.lp-db-shadow {
+    position: absolute; left: 50%; bottom: -0.5rem; width: 9rem; height: 14px; margin-left: -4.5rem;
+    border-radius: 50%; background: rgb(0 0 0 / 0.5); filter: blur(6px);
+    animation: lp-db-shadow 1.1s ease-in-out infinite;
+}
+@keyframes lp-db-shadow { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(0.7); opacity: 0.3; } }
+.lp-loader-bar { transform: scaleX(0); }
+
+/* Top progress bar + navigation. */
+.lp-progress { transform: scaleX(0); transform-origin: left; }
+.lp-nav { transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.35s ease; border-bottom: 1px solid rgb(255 255 255 / 0.06); }
+.lp-nav.is-scrolled { background: rgb(13 13 13 / 0.88); border-color: var(--gym-border); backdrop-filter: blur(12px); }
+.lp-navlink { position: relative; transition: color 0.2s ease; }
+.lp-navlink:hover, .lp-navlink.is-active { color: var(--gym-orange); }
+.lp-navlink::after { content: ''; position: absolute; left: 0.75rem; right: 0.75rem; bottom: 0.3rem; height: 2px; background: var(--gym-orange); transform: scaleX(0); transform-origin: left; transition: transform 0.25s ease; }
+.lp-navlink:hover::after, .lp-navlink.is-active::after { transform: scaleX(1); }
+.lp-burger span { transition: transform 0.25s ease, opacity 0.2s ease; }
+.lp-burger.is-open span:nth-child(2) { transform: translateY(7px) rotate(45deg); }
+.lp-burger.is-open span:nth-child(3) { opacity: 0; }
+.lp-burger.is-open span:nth-child(4) { transform: translateY(-7px) rotate(-45deg); }
+
+/* Hero */
+.lp-hero-title { position: relative; isolation: isolate; font-size: clamp(4.25rem, 21vw, 7rem); color: var(--gym-white); }
+@media (width >= 40rem) { .lp-hero-title { font-size: clamp(5rem, 11vw, 10.5rem); } }
+.js .lp-hero-title { visibility: hidden; animation: lp-unhide 0s 2.5s forwards; } /* landing.js reveals it; failsafe after 2.5s */
+@keyframes lp-unhide { to { visibility: visible; } }
+.lp-hero-title .lp-hl { transition: background-size 0.6s cubic-bezier(0.7, 0, 0.2, 1); }
+.js .lp-hero-title:not(.is-lit) .lp-hl { background-size: 0% 100%; }
+/* "GYM." sits on a slanted orange plate that wipes in from the left once the letters land. */
+.lp-hl-slant { position: relative; display: inline-block; padding: 0.06em 0.1em 0 0.02em; color: var(--gym-black); }
+.lp-hl-slant::before {
+    content: ''; position: absolute; z-index: -1; inset: 0 -0.08em -0.04em -0.3em;
+    background: var(--gym-orange); transform: skewX(-14deg); transform-origin: left;
+    transition: transform 0.6s cubic-bezier(0.7, 0, 0.2, 1);
+}
+.js .lp-hero-title:not(.is-lit) .lp-hl-slant::before { transform: skewX(-14deg) scaleX(0); }
+.lp-badge { animation: lp-spin 22s linear infinite; }
+.lp-tile { box-shadow: 6px 6px 0 0 var(--gym-orange); }
+
+/* Hero photo. Phones: a full-bleed backdrop fading out at the bottom. From tablet up the sharp figure blends
+ * into a darkened gym-floor photo at the sides and bottom; that backdrop fades into the black page on the left
+ * (behind the headline) and at the bottom (behind the feature strip). */
+.lp-hero-backdrop {
+    filter: brightness(0.5) contrast(1.15);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 30%), linear-gradient(to top, transparent 0%, #000 25%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent 0%, #000 30%), linear-gradient(to top, transparent 0%, #000 25%);
+    mask-composite: intersect;
+}
+.lp-hero-photo {
+    -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 35%);
+    mask-image: linear-gradient(to top, transparent 0%, #000 35%);
+}
+@media (width >= 48rem) {
+    .lp-hero-photo {
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%), linear-gradient(to top, transparent 0%, #000 18%);
+        -webkit-mask-composite: source-in;
+        mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%), linear-gradient(to top, transparent 0%, #000 18%);
+        mask-composite: intersect;
+    }
+}
+/* Floating product cards: glassy charcoal with an orange edge, like the panel's highlight. */
+.lp-hero-card {
+    border: 1px solid var(--gym-border); border-radius: 0.875rem;
+    background: rgb(28 28 28 / 0.88); backdrop-filter: blur(10px);
+    box-shadow: 4px 4px 0 0 var(--gym-orange), 0 20px 44px -16px rgb(255 107 0 / 0.45);
+}
+.lp-play { transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease, transform 0.2s ease; }
+.group:hover .lp-play { border-color: var(--gym-orange); background: var(--gym-orange); color: var(--gym-white); transform: scale(1.06); }
+
+/* Heartbeat lines: paths use pathLength="1" so the dash maths never needs measuring. */
+.lp-ecg path { stroke-dasharray: 1; }
+.js .lp-ecg path { stroke-dashoffset: 1; }
+.lp-ecg-pen { box-shadow: 0 0 0 5px rgb(255 107 0 / 0.35), 0 0 26px 8px rgb(255 107 0 / 0.85); }
+.lp-spine { pointer-events: none; }
+.lp-spine path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+
+/* "A day at your gym": a timeline the scroll position plays through. Cards are absolutely placed along the
+ * line on desktop (each shifted by its own --x so the card edge never leaves the line; the width keeps
+ * neighbours in a row from overlapping) and stacked on phones. */
+/* Anton has no tabular digits, so every clock character gets a fixed-width cell. */
+.lp-clock-ch { display: inline-block; width: 0.5em; text-align: center; }
+.lp-clock-ch.is-narrow { width: 0.22em; }
+.lp-event-card { transition: opacity 0.4s ease, filter 0.4s ease, box-shadow 0.3s ease, transform 0.4s cubic-bezier(0.3, 1.5, 0.5, 1); }
+.js .lp-dayline.is-scrubbing .lp-event:not(.is-on) .lp-event-card { opacity: 0.2; filter: grayscale(1); transform: scale(0.96); }
+.lp-event.is-on .lp-event-card { box-shadow: 5px 5px 0 0 var(--color-volt), 5px 5px 0 2px var(--color-forest); }
+.lp-event-dot { transition: background-color 0.3s ease, transform 0.3s ease; }
+.lp-event-dot.is-on { background: var(--color-volt); transform: translate(-50%, -50%) scale(1.35); }
+@media (width >= 64rem) {
+    .lp-event { position: absolute; left: var(--x); width: min(12rem, 15.5vw); transform: translateX(calc(var(--x) * -1)); }
+    .lp-event.is-up { bottom: calc(50% + 2.25rem); }
+    .lp-event.is-down { top: calc(50% + 2.25rem); }
+    .lp-event::after { content: ''; position: absolute; left: var(--x); width: 2px; height: 2.25rem; background: var(--color-forest); }
+    .lp-event.is-up::after { top: 100%; }
+    .lp-event.is-down::after { bottom: 100%; }
+}
+
+/* Reveal on scroll */
+.js .lp-reveal { opacity: 0; transform: translateY(32px); transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--d, 0ms); }
+.js .lp-reveal.is-in { opacity: 1; transform: none; }
+
+/* Pause looping mini-animations while their section is off screen. */
+.js [data-lp-live]:not(.is-live) * { animation-play-state: paused !important; }
+
+/* ---- Feature tour (horizontal on desktop, swipe row on phones) ---- */
+.lp-tour-viewport { overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.lp-tour-viewport::-webkit-scrollbar { display: none; }
+.lp-tour-viewport > .lp-track > * { scroll-snap-align: start; }
+.lp-tour.is-pinned .lp-tour-viewport { overflow: visible; scroll-snap-type: none; }
+.lp-card { box-shadow: 8px 8px 0 0 rgb(0 0 0 / 0.35); }
+.lp-vis { position: relative; overflow: hidden; border: 2px solid currentColor; }
+
+@keyframes lp-spin { to { transform: rotate(360deg); } }
+@keyframes lp-scan { 0%, 100% { top: 0; } 50% { top: calc(100% - 4px); } }
+@keyframes lp-print { 0% { transform: translateY(-100%); } 55%, 85% { transform: translateY(0); } 100% { transform: translateY(0); opacity: 0; } }
+@keyframes lp-rows { 0%, 20% { transform: translateY(0); } 33%, 53% { transform: translateY(-2.25rem); } 66%, 86% { transform: translateY(-4.5rem); } 100% { transform: translateY(-6.75rem); } }
+@keyframes lp-fill { from { width: 8%; } to { width: 86%; } }
+@keyframes lp-day { 0%, 8% { background: transparent; color: inherit; } 12%, 100% { background: var(--color-forest); color: var(--color-volt); } }
+@keyframes lp-flame { from { transform: scale(1) rotate(-3deg); } to { transform: scale(1.08, 1.14) rotate(3deg); } }
+@keyframes lp-draw-loop { 0% { stroke-dashoffset: 1; } 60%, 100% { stroke-dashoffset: 0; } }
+@keyframes lp-tick { 0%, 15% { transform: scale(0); } 25%, 100% { transform: scale(1); } }
+@keyframes lp-lane { 0%, 18% { left: 6%; } 33%, 51% { left: 40%; } 66%, 100% { left: 74%; } }
+@keyframes lp-drop { 0%, 10% { transform: translateY(-140%); opacity: 0; } 22%, 80% { transform: translateY(0); opacity: 1; } 92%, 100% { transform: translateY(0) scale(0.92); opacity: 0; } }
+@keyframes lp-bar { from { transform: scaleY(0.25); } to { transform: scaleY(1); } }
+@keyframes lp-lock { 0%, 45% { opacity: 1; } 50%, 95% { opacity: 0.25; } }
+@keyframes lp-pulse { 0% { transform: scale(0.8); opacity: 0.7; } 100% { transform: scale(1.9); opacity: 0; } }
+@keyframes lp-blink { 50% { opacity: 0; } }
+
+.lp-qr { background: repeating-conic-gradient(currentColor 0 25%, transparent 0 50%) 0 0 / 1.25rem 1.25rem; }
+.lp-scanline { position: absolute; left: 0; right: 0; height: 4px; background: var(--color-clay); box-shadow: 0 0 14px 2px var(--color-clay); animation: lp-scan 2.4s ease-in-out infinite; }
+.lp-receipt { animation: lp-print 3.6s cubic-bezier(0.5, 0, 0.3, 1) infinite; }
+.lp-rows { animation: lp-rows 6s cubic-bezier(0.7, 0, 0.2, 1) infinite; }
+.lp-fill { animation: lp-fill 3s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate; }
+.lp-day { animation: lp-day 5s steps(1) infinite; animation-delay: calc(var(--i) * 0.45s); }
+.lp-flame { transform-origin: 50% 90%; animation: lp-flame 0.45s ease-in-out infinite alternate; }
+.lp-draw-loop { stroke-dasharray: 1; animation: lp-draw-loop 3.2s ease-in-out infinite; }
+.lp-tick { animation: lp-tick 4s ease-out infinite; animation-delay: calc(var(--i) * 0.6s); }
+.lp-lane { animation: lp-lane 4.5s cubic-bezier(0.7, 0, 0.2, 1) infinite; }
+.lp-drop { animation: lp-drop 3.8s cubic-bezier(0.3, 1.4, 0.5, 1) infinite; animation-delay: calc(var(--i) * 0.9s); }
+.lp-bars > * { transform-origin: bottom; animation: lp-bar 1.6s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -0.3s); }
+.lp-lock { animation: lp-lock 3s steps(1) infinite; animation-delay: calc(var(--i) * 0.5s); }
+.lp-caret { animation: lp-blink 1s steps(1) infinite; }
+
+/* ---- Split-flap scoreboard ---- */
+.lp-flap {
+    position: relative; display: inline-flex; align-items: center; justify-content: center;
+    min-width: 0.78em; padding: 0.06em 0.08em 0; border-radius: 0.08em;
+    background: linear-gradient(var(--gym-black-deep) 0 50%, var(--gym-charcoal) 50% 100%); color: var(--color-volt);
+    box-shadow: inset 0 -2px 0 rgb(0 0 0 / 0.4);
+}
+.lp-flap::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--color-chalk); opacity: 0.85; }
+.lp-flap.is-flip { animation: lp-flip 0.09s linear; }
+@keyframes lp-flip { 50% { transform: scaleY(0.6); } }
+
+/* ---- Member app phone ---- */
+.lp-phone { box-shadow: 14px 14px 0 0 var(--color-volt), 14px 14px 0 2px var(--color-forest); }
+.lp-screen { position: absolute; inset: 0; clip-path: inset(100% 0 0 0); transition: clip-path 0.7s cubic-bezier(0.7, 0, 0.2, 1); }
+.lp-screen.is-active { clip-path: inset(0 0 0 0); z-index: 1; }
+.lp-step { transition: background-color 0.3s ease, color 0.3s ease, padding 0.3s ease; }
+.lp-step[aria-pressed='true'] { background: var(--gym-card); color: var(--gym-white); box-shadow: inset 4px 0 0 var(--gym-orange); }
+.lp-step[aria-pressed='true'] .lp-step-no { color: var(--color-volt); }
+.lp-ring-pulse::before { content: ''; position: absolute; inset: 0; border-radius: 9999px; border: 3px solid var(--color-volt); animation: lp-pulse 1.8s ease-out infinite; }
+.lp-otp { animation: lp-tick 3.5s ease-out infinite; animation-delay: calc(var(--i) * 0.25s); }
+
+/* ---- AI Coach photo comparison ---- */
+.lp-compare { --pos: 50%; }
+.lp-compare-after { clip-path: inset(0 0 0 var(--pos)); }
+.lp-compare-handle { left: var(--pos); }
+.lp-compare input[type='range'] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: ew-resize; margin: 0; }
+.lp-compare:has(input:focus-visible) .lp-compare-handle span { outline: 3px solid var(--color-clay); outline-offset: 3px; }
+.lp-typeline { display: block; }
+.js .lp-report:not(.is-in) .lp-typeline { opacity: 0; transform: translateY(6px); }
+.lp-report .lp-typeline { transition: opacity 0.5s ease, transform 0.5s ease; transition-delay: calc(var(--i) * 180ms + 300ms); }
+
+/* ---- How it works: steps fill in as you scroll past ---- */
+.lp-set-no { -webkit-text-stroke: 2px var(--color-forest); color: transparent; background: linear-gradient(var(--color-forest), var(--color-forest)) no-repeat bottom / 100% 100%; -webkit-background-clip: text; background-clip: text; transition: background-size 0.9s cubic-bezier(0.7, 0, 0.2, 1); transition-delay: var(--d, 0ms); }
+.js .lp-reveal:not(.is-in) .lp-set-no { background-size: 100% 0%; }
+
+/* ---- Gym discovery: tilted 3D street map ----
+ * The plane is spun (--spin) then tilted (--tilt); landing.js animates those variables and nudges --spin-o /
+ * --tilt-o with the pointer. Pins apply the inverse rotation so they always stand upright facing the viewer. */
+.lp-map-fit {
+    perspective: 1500px;
+    -webkit-mask-image: radial-gradient(ellipse 62% 60% at 50% 52%, #000 45%, transparent 100%);
+    mask-image: radial-gradient(ellipse 62% 60% at 50% 52%, #000 45%, transparent 100%);
+}
+.lp-map-plane {
+    --tilt: 56; --spin: -24; --tilt-o: 0; --spin-o: 0; --zoom: 0.5; --h: 64px;
+    position: absolute; left: 50%; top: 50%; width: 900px; height: 700px; margin: -350px 0 0 -450px;
+    transform-style: preserve-3d;
+    transform: scale(var(--zoom)) rotateX(calc((var(--tilt) + var(--tilt-o)) * 1deg)) rotateZ(calc((var(--spin) + var(--spin-o)) * 1deg));
+}
+@media (width >= 40rem) { .lp-map-plane { --zoom: 0.75; } }
+@media (width >= 64rem) { .lp-map-plane { --zoom: 0.95; } }
+.lp-map-building { position: absolute; width: 150px; height: 50px; transform-style: preserve-3d; cursor: pointer; }
+.lp-face { position: absolute; display: block; border: 2px solid var(--gym-black-deep); transition: background-color 0.3s ease; }
+.lp-face.is-top { inset: 0; transform: translateZ(var(--h)); background: repeating-linear-gradient(90deg, var(--color-chalk) 0 18px, var(--color-chalk-dim) 18px 20px); }
+.lp-face.is-front, .lp-face.is-back { left: 0; width: 150px; height: var(--h); transform-origin: top; transform: rotateX(90deg); }
+.lp-face.is-front { top: 100%; background: var(--gym-orange); }
+.lp-face.is-back { top: 0; background: var(--gym-orange-hover); }
+.lp-face.is-left, .lp-face.is-right { top: 0; width: var(--h); height: 50px; transform-origin: left; transform: rotateY(-90deg); }
+.lp-face.is-left { left: 0; background: #b34b00; }
+.lp-face.is-right { left: 100%; background: var(--gym-orange-hover); }
+.lp-map-building.is-active .lp-face.is-top { background: var(--gym-orange-light); }
+.lp-map-pin {
+    position: absolute; width: 0; height: 0; transform-style: preserve-3d;
+    transform: translateZ(var(--lift, 0px)) rotateZ(calc((var(--spin) + var(--spin-o)) * -1deg)) rotateX(calc((var(--tilt) + var(--tilt-o)) * -1deg));
+}
+.lp-map-pin-body {
+    position: absolute; left: 0; bottom: 0; display: flex; flex-direction: column; align-items: center;
+    transform: translateX(-50%); transform-origin: bottom center; cursor: pointer;
+    transition: transform 0.35s cubic-bezier(0.3, 1.5, 0.5, 1), opacity 0.3s ease;
+}
+.lp-map-label { padding: 0.4rem 0.6rem; white-space: nowrap; text-align: center; background: var(--gym-card); color: var(--gym-white); border: 1px solid var(--gym-border); border-radius: 0.375rem; box-shadow: 4px 4px 0 0 var(--gym-orange); transition: background-color 0.25s ease, color 0.25s ease; }
+.lp-map-detail { max-height: 0; overflow: hidden; opacity: 0; transition: max-height 0.3s ease, opacity 0.3s ease, margin 0.3s ease; }
+.lp-map-stem { width: 2px; height: 1.75rem; background: var(--gym-light); }
+.lp-map-dot { width: 0.85rem; height: 0.85rem; margin-bottom: -0.425rem; border-radius: 9999px; background: var(--gym-orange); border: 2px solid var(--gym-white); }
+.lp-map-pin-body.is-yours .lp-map-label { background: var(--gym-orange); color: var(--gym-black); border-color: var(--gym-orange); box-shadow: 4px 4px 0 0 var(--gym-white); }
+.lp-map-pin-body.is-active { transform: translateX(-50%) translateY(-8px) scale(1.15); }
+.lp-map-pin-body.is-active .lp-map-label { background: var(--gym-orange-light); color: var(--gym-black); border-color: var(--gym-orange-light); }
+.lp-map-pin-body.is-active .lp-map-detail { max-height: 2em; margin-top: 0.2rem; opacity: 1; }
+.has-active .lp-map-pin-body:not(.is-active) { opacity: 0.35; }
+.lp-map-item { transition: background-color 0.25s ease, color 0.25s ease, opacity 0.25s ease, padding 0.25s ease; }
+.lp-map-item.is-active { background: var(--gym-orange); color: var(--gym-black); padding-left: 1rem; }
+.has-active .lp-map-item:not(.is-active) { opacity: 0.45; }
+
+/* ---- Pricing calculator sliders ---- */
+.lp-range { -webkit-appearance: none; appearance: none; height: 0.75rem; background: linear-gradient(var(--color-volt), var(--color-volt)) no-repeat left / var(--fill, 15%) 100%, rgb(245 245 245 / 0.15); border-radius: 0; }
+.lp-range::-webkit-slider-thumb { -webkit-appearance: none; width: 1.75rem; height: 2.5rem; background: var(--color-chalk); border: 3px solid var(--color-forest); box-shadow: 4px 4px 0 var(--color-volt); cursor: grab; }
+.lp-range::-moz-range-thumb { width: 1.75rem; height: 2.5rem; border-radius: 0; background: var(--color-chalk); border: 3px solid var(--color-forest); box-shadow: 4px 4px 0 var(--color-volt); cursor: grab; }
+
+/* ---- About: rows that fill with volt on hover ---- */
+.lp-row { position: relative; isolation: isolate; }
+.lp-row::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--color-volt); transform: scaleX(0); transform-origin: left; transition: transform 0.45s cubic-bezier(0.7, 0, 0.2, 1); }
+.lp-row:hover::before { transform: scaleX(1); }
+.lp-row:hover { color: var(--gym-black); }
+
+/* ---- FAQ ---- */
+.landing details > summary { list-style: none; }
+.landing details > summary::-webkit-details-marker { display: none; }
+.landing details .lp-faq-icon { transition: transform 0.3s ease; }
+.landing details[open] .lp-faq-icon { transform: rotate(45deg); }
+.landing details[open] .lp-faq-body { animation: lp-faq-in 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
+@keyframes lp-faq-in { from { opacity: 0; transform: translateY(-6px); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .landing *, .landing *::before, .landing *::after { animation: none !important; transition: none !important; }
+    .js .lp-hero-title { visibility: visible; }
+    .js .lp-reveal { opacity: 1; transform: none; }
+    .js .lp-ecg path, .lp-draw-loop { stroke-dashoffset: 0; }
+    .lp-spine { display: none; }
+    .js .lp-loader { display: none; }
+    .js .lp-reveal:not(.is-in) .lp-set-no { background-size: 100% 100%; }
+    .js .lp-report:not(.is-in) .lp-typeline { opacity: 1; transform: none; }
+}
+} /* end landing @layer components */
+
+/* ==========================================================================
+ * Public gym page (public/gym-profile.blade.php, motion in js/gym-page.js).
+ * Dark by design; motion is transform/opacity only and switched off for prefers-reduced-motion.
+ * ========================================================================== */
+@layer components {
+.gym-page { color-scheme: dark; background-color: var(--gym-black-deep); color: var(--gym-light); }
+html:has(body.gym-page) { scroll-behavior: smooth; scroll-padding-top: 5.5rem; }
+.gym-page ::selection { background: var(--gym-orange); color: var(--gym-black); }
+.gym-page :focus-visible { outline: 3px solid var(--gym-orange-light); outline-offset: 3px; }
+.gym-page details > summary { list-style: none; }
+.gym-page details > summary::-webkit-details-marker { display: none; }
+
+.gp-display { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; line-height: 0.92; letter-spacing: 0.01em; }
+.gp-eyebrow { font-family: var(--font-code); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gym-orange); }
+.gp-section { padding-block: clamp(4rem, 9vw, 7rem); }
+.gp-surface { background-color: #181818; }
+.gp-glass { background: rgb(34 34 34 / 0.72); border: 1px solid rgb(255 255 255 / 0.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.gp-card { background: var(--gym-card); border: 1px solid var(--gym-border); border-radius: 1.25rem; transition: transform 0.3s ease, border-color 0.3s ease, background-color 0.3s ease; }
+.gp-card:hover { transform: translateY(-4px); border-color: rgb(255 107 0 / 0.55); }
+.gp-grid-bg { background-image: linear-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.03) 1px, transparent 1px); background-size: 56px 56px; }
+
+.gp-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; min-height: 3rem;
+    border-radius: 9999px; padding: 0.75rem 1.5rem; font-weight: 700; font-size: 0.95rem;
+    transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+.gp-btn svg { transition: transform 0.2s ease; }
+.gp-btn:hover svg { transform: translateX(3px); }
+.gp-btn:active { transform: translateY(1px); }
+.gp-btn-solid { background: var(--gym-orange); color: var(--gym-white); box-shadow: 0 12px 30px -12px rgb(255 107 0 / 0.8); }
+.gp-btn-solid:hover { background: var(--gym-orange-hover); transform: translateY(-2px); box-shadow: 0 18px 36px -12px rgb(255 107 0 / 0.95); }
+.gp-btn-ghost { border: 1px solid rgb(255 255 255 / 0.25); color: var(--gym-white); background: rgb(255 255 255 / 0.04); }
+.gp-btn-ghost:hover { border-color: var(--gym-orange); color: var(--gym-orange-light); transform: translateY(-2px); }
+.gp-btn-dark { background: var(--gym-black); color: var(--gym-white); }
+.gp-btn-dark:hover { background: #000; transform: translateY(-2px); }
+
+.gp-nav-link { position: relative; padding: 0.5rem 0.25rem; font-size: 0.9rem; font-weight: 500; color: var(--gym-muted); transition: color 0.2s ease; }
+.gp-nav-link::after { content: ''; position: absolute; inset-inline: 0.25rem; bottom: 0.15rem; height: 2px; border-radius: 2px; background: var(--gym-orange); transform: scaleX(0); transition: transform 0.25s ease; }
+.gp-nav-link:hover, .gp-nav-link.is-active { color: var(--gym-white); }
+.gp-nav-link.is-active::after { transform: scaleX(1); }
+.gp-nav.is-scrolled { background: rgb(13 13 13 / 0.86); border-color: var(--gym-border); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+/* Floating hero cards and the live "open" dot. */
+.gp-float { animation: gp-float 6s ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes gp-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+.gp-ping { animation: gp-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+@keyframes gp-ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+.gp-pop { animation: gp-pop 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes gp-pop { from { transform: scale(0.4); opacity: 0; } }
+
+/* Scroll reveals (only once JS runs, so the page reads fine without it). */
+.js .gp-reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--d, 0ms); }
+.js .gp-reveal.is-in { opacity: 1; transform: none; }
+/* The clip sits on the child: a fully clipped element never reports as visible to IntersectionObserver. */
+.js .gp-img-reveal > img { clip-path: inset(0 0 100% 0); transition: clip-path 1s cubic-bezier(0.7, 0, 0.2, 1), transform 0.7s ease; transition-delay: var(--d, 0ms), 0ms; }
+.js .gp-img-reveal.is-in > img { clip-path: inset(0 0 0 0); }
+.js .gp-hero-in > * { opacity: 0; transform: translateY(24px); animation: gp-hero-in 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+.js .gp-hero-in > h1 { opacity: 1; } /* the largest paint: it slides in but is never hidden */
+.js .gp-hero-in > *:nth-child(2) { animation-delay: 0.08s; }
+.js .gp-hero-in > *:nth-child(3) { animation-delay: 0.16s; }
+.js .gp-hero-in > *:nth-child(4) { animation-delay: 0.24s; }
+.js .gp-hero-in > *:nth-child(5) { animation-delay: 0.32s; }
+.js .gp-hero-in > *:nth-child(n + 6) { animation-delay: 0.4s; }
+@keyframes gp-hero-in { to { opacity: 1; transform: none; } }
+
+.gp-progress { transform: scaleX(0); transform-origin: left; }
+.gp-faq-icon { transition: transform 0.3s ease, background-color 0.3s ease; }
+.gym-page details[open] .gp-faq-icon { transform: rotate(45deg); background: var(--gym-orange); color: var(--gym-white); border-color: var(--gym-orange); }
+.gym-page details[open] .gp-faq-body { animation: lp-faq-in 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.gp-snap { scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.gp-snap::-webkit-scrollbar { display: none; }
+.gp-snap > * { scroll-snap-align: start; }
+
+@media (max-width: 767px) {
+    .gp-float { animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .gym-page *, .gym-page *::before, .gym-page *::after { animation: none !important; transition: none !important; }
+    .js .gp-reveal, .js .gp-hero-in > * { opacity: 1; transform: none; }
+    .js .gp-img-reveal > img { clip-path: none; }
+    html:has(body.gym-page) { scroll-behavior: auto; }
+}
+} /* end gym page @layer components */
+
+/* ==========================================================================
+ * Member portal (components/layouts/portal.blade.php and livewire/portal/*).
+ * Motion is CSS only: entrance animations run once when an element is created, and scroll reveals use
+ * scroll-driven animations where the browser supports them. Nothing is hidden waiting for JavaScript,
+ * so Livewire re-renders can never leave content invisible. Transform/opacity only; off for reduced motion.
+ * ========================================================================== */
+@layer components {
+.pm-rise { animation: pm-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--d, 0ms); }
+@keyframes pm-rise { from { opacity: 0; transform: translateY(14px); } }
+/* Below-the-fold cards rise as they scroll into view (Chrome/Edge); elsewhere they simply show. */
+@supports (animation-timeline: view()) {
+    .pm-reveal { animation: pm-rise linear both; animation-timeline: view(); animation-range: entry 0% entry 60%; }
+}
+.pm-page { animation: pm-page 0.35s ease-out both; }
+@keyframes pm-page { from { opacity: 0; transform: translateY(6px); } }
+
+/* Glass card with a soft orange rim, for heroes and highlights. */
+.pm-glass { background: color-mix(in srgb, var(--color-surface) 82%, transparent); border: 1px solid color-mix(in srgb, var(--gym-orange) 22%, var(--color-gray-200)); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.pm-tile { transition: transform 0.25s ease, border-color 0.25s ease, background-color 0.25s ease; }
+.pm-tile:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--gym-orange) 45%, transparent); }
+.theme-dark .pm-tile:hover { background-color: #292929; }
+.pm-tile:hover .pm-icon { transform: scale(1.08) rotate(-4deg); }
+.pm-icon { transition: transform 0.25s ease; }
+
+/* Sidebar link with an orange active bar. */
+.pm-nav { position: relative; display: flex; align-items: center; gap: 0.75rem; border-radius: 0.75rem; padding: 0.625rem 0.75rem; font-size: 0.875rem; font-weight: 500; color: var(--gym-muted); transition: color 0.2s ease, background-color 0.2s ease; }
+.pm-nav:hover { color: var(--gym-white); background: rgb(255 255 255 / 0.05); }
+.pm-nav:hover svg { transform: translateX(2px); }
+.pm-nav svg { transition: transform 0.2s ease; flex-shrink: 0; }
+.pm-nav.is-active { color: var(--gym-white); background: color-mix(in srgb, var(--gym-orange) 16%, transparent); }
+.pm-nav.is-active::before { content: ''; position: absolute; left: -0.75rem; top: 20%; bottom: 20%; width: 3px; border-radius: 0 3px 3px 0; background: var(--gym-orange); box-shadow: 0 0 12px var(--gym-orange); }
+.pm-nav.is-active svg { color: var(--gym-orange); }
+
+/* Thin progress bar while the next portal page loads (shown by js/motion.js on link clicks). */
+.pm-loadbar { position: fixed; inset: 0 0 auto; z-index: 80; height: 3px; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, var(--gym-orange), var(--gym-orange-light)); opacity: 0; pointer-events: none; }
+.pm-loadbar.is-loading { opacity: 1; animation: pm-load 2.5s cubic-bezier(0.1, 0.7, 0.2, 1) forwards; }
+@keyframes pm-load { from { transform: scaleX(0.05); } to { transform: scaleX(0.9); } }
+
+/* QR card: a scan line sweeps over the code while hovered (and once on load). */
+.pm-qr { position: relative; overflow: hidden; }
+.pm-qr::after { content: ''; position: absolute; inset-inline: 6%; top: 0; height: 3px; border-radius: 3px; background: var(--gym-orange); box-shadow: 0 0 14px 2px color-mix(in srgb, var(--gym-orange) 70%, transparent); opacity: 0; }
+.pm-qr:hover::after, .pm-qr.is-scanning::after { animation: pm-scan 1.6s ease-in-out 2; }
+@keyframes pm-scan { 0% { top: 6%; opacity: 0; } 10%, 90% { opacity: 1; } 100% { top: 92%; opacity: 0; } }
+.pm-corner { position: absolute; width: 1.5rem; height: 1.5rem; border-color: var(--gym-orange); }
+
+/* Ring progress (membership days, goals): set --p from 0 to 100. */
+.pm-ring { --p: 0; background: conic-gradient(var(--gym-orange) calc(var(--p) * 1%), color-mix(in srgb, var(--gym-orange) 14%, transparent) 0); border-radius: 9999px; }
+.pm-bar-grow { transform-origin: left; animation: pm-bar 1s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: 0.2s; }
+@keyframes pm-bar { from { transform: scaleX(0); } }
+.pm-col-grow { transform-origin: bottom; animation: pm-col 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--d, 0ms); }
+@keyframes pm-col { from { transform: scaleY(0); } }
+
+@media (max-width: 767px) {
+    .pm-tile:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .pm-rise, .pm-reveal, .pm-page, .pm-bar-grow, .pm-col-grow { animation: none !important; }
+    .pm-qr::after, .pm-loadbar { display: none; }
+    .pm-tile, .pm-nav, .pm-icon, .pm-nav svg { transition: none; }
+}
+} /* end member portal @layer components */
+
+/* ==========================================================================
+ * Member progress page (livewire/portal/progress.blade.php): the landing page's display type, highlighter,
+ * stamp, step numbers and hard offset edge. Scoped, so the gym panel keeps its own look for the shared parts.
+ * ========================================================================== */
+/* Unlayered: these re-style shared markup, so they must beat its utilities. */
+.progress-page { counter-reset: pp-step; }
+.progress-page .card-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.1; text-transform: uppercase; letter-spacing: 0.01em; }
+.progress-page .pp-step { counter-increment: pp-step; }
+.progress-page .pp-step .card-title::before { content: counter(pp-step); display: inline-block; margin-right: 0.6rem; color: var(--gym-orange); }
+.progress-page .card-header { flex-wrap: wrap; border-left: 4px solid var(--gym-orange); border-top-left-radius: 1rem; }
+.progress-page details:not([open]) > .card-header { border-bottom-color: transparent; border-bottom-left-radius: 1rem; }
+.progress-page .progress-poster { margin-right: 6px; box-shadow: 0 0 0 1px var(--gym-border), 6px 6px 0 1px var(--gym-orange); }
+
+.pp-hl { display: inline-block; background: var(--gym-orange); color: var(--pp-ink); padding: 0.08em 0.1em; line-height: 1; }
+.pp-hero-photo { opacity: 0.85; mask-image: linear-gradient(to right, transparent 0%, #000 35%, #000 65%, transparent 100%); -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 35%, #000 65%, transparent 100%); }
+.pp-stamp {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 11.5rem; aspect-ratio: 1; border-radius: 9999px; text-align: center; color: var(--gym-white);
+    background: rgb(13 13 13 / 0.85); border: 3px solid var(--gym-orange); outline: 1px solid var(--gym-orange); outline-offset: -12px;
+}
+.pp-pick { flex: none; width: 6.5rem; cursor: pointer; overflow: hidden; border: 2px solid var(--color-gray-200); border-radius: 0.75rem; font-size: 0.75rem; line-height: 1.3; transition: border-color 0.2s ease; }
+.pp-pick img { aspect-ratio: 3 / 4; width: 100%; object-fit: cover; }
+.pp-pick span { display: block; padding: 0.4rem 0.5rem; }
+.pp-pick:hover { border-color: var(--gym-orange); }
+.pp-pick:has(:checked) { border-color: var(--gym-orange); background: var(--gym-orange); color: var(--pp-ink); }
+.pp-pick:has(:focus-visible) { outline: 3px solid var(--gym-orange-light); outline-offset: 2px; }
+@media (max-width: 639px) {
+    .pp-hero-photo { opacity: 0.3; mask-image: linear-gradient(to bottom, #000, transparent); -webkit-mask-image: linear-gradient(to bottom, #000, transparent); }
+}
+
+/* ==========================================================================
+ * Streak card on the member dashboard (js/streak.js). Transform and opacity only, apart from the milestone bar.
+ * ========================================================================== */
+@layer components {
+.streak-flame {
+    position: relative; display: flex; flex-shrink: 0; align-items: center; justify-content: center;
+    width: 3.5rem; height: 3.5rem; border-radius: 1rem; background: var(--gym-orange); color: var(--gym-white);
+    box-shadow: 0 10px 30px -10px color-mix(in srgb, var(--gym-orange) 80%, transparent);
+    transition: background-color 0.6s ease, filter 0.6s ease, box-shadow 0.6s ease;
+}
+.streak-flame.none { background: var(--color-gray-200); color: var(--color-gray-400); box-shadow: none; }
+.streak-flame.risk { filter: saturate(0.55) brightness(0.85); }
+.streak-flame-outer, .streak-flame-inner { transform-box: fill-box; transform-origin: 50% 100%; }
+.streak-flame-inner { color: var(--gym-orange); }
+.streak-flame.none .streak-flame-inner { color: var(--color-gray-200); }
+.streak-flame.alive .streak-flame-outer { animation: streak-flicker 2.4s ease-in-out infinite; }
+.streak-flame.alive .streak-flame-inner { animation: streak-flicker 1.6s ease-in-out -0.5s infinite reverse; }
+.streak-flame.risk svg { animation: streak-pulse 2.2s ease-in-out infinite; }
+.streak-flame.flare svg { animation: streak-flare 0.9s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.streak-ember {
+    position: absolute; left: 50%; top: 45%; width: var(--s); height: var(--s); margin: calc(var(--s) / -2); border-radius: 9999px; pointer-events: none;
+    background: var(--gym-orange-light); opacity: 0; animation: streak-ember 1.3s ease-out var(--d) forwards;
+}
+.streak-count { display: inline-block; font-variant-numeric: tabular-nums; transform-origin: 0 70%; }
+.streak-count.flare { animation: streak-flare 0.9s cubic-bezier(0.2, 1.4, 0.4, 1); }
+.streak-card .streak-tick { animation: streak-pop 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) calc(150ms + var(--i) * 90ms) backwards; }
+.streak-card .streak-today { animation: streak-pulse 2.2s ease-in-out infinite; }
+.streak-bar { transition: width 0.9s cubic-bezier(0.2, 0.7, 0.2, 1); animation: streak-fill 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s backwards; }
+@keyframes streak-flicker { 0%, 100% { transform: scale(1) skewX(0); } 25% { transform: scale(0.97, 1.05) skewX(-2deg); } 50% { transform: scale(1.02, 0.96) skewX(1.5deg); } 75% { transform: scale(0.98, 1.04) skewX(2deg); } }
+@keyframes streak-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes streak-flare { 0% { transform: scale(1); } 35% { transform: scale(1.4); } 100% { transform: scale(1); } }
+@keyframes streak-ember { 0% { opacity: 1; transform: translate(0, 0) scale(1); } 100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(0.2); } }
+@keyframes streak-pop { from { opacity: 0; transform: scale(0.3); } }
+@keyframes streak-fill { from { width: 0; } }
+@media (prefers-reduced-motion: reduce) {
+    .streak-card *, .streak-card *::before { animation: none !important; transition: none !important; }
+}
+} /* end streak card @layer components */
+
+/* Check-in scanner (components/attendance/scanner): corner marks and a moving line. */
+@layer components {
+.scan-frame {
+    position: absolute; inset: 14%; pointer-events: none;
+    background:
+        linear-gradient(var(--gym-orange) 0 0) 0 0 / 2.2rem 4px, linear-gradient(var(--gym-orange) 0 0) 0 0 / 4px 2.2rem,
+        linear-gradient(var(--gym-orange) 0 0) 100% 0 / 2.2rem 4px, linear-gradient(var(--gym-orange) 0 0) 100% 0 / 4px 2.2rem,
+        linear-gradient(var(--gym-orange) 0 0) 0 100% / 2.2rem 4px, linear-gradient(var(--gym-orange) 0 0) 0 100% / 4px 2.2rem,
+        linear-gradient(var(--gym-orange) 0 0) 100% 100% / 2.2rem 4px, linear-gradient(var(--gym-orange) 0 0) 100% 100% / 4px 2.2rem;
+    background-repeat: no-repeat;
+}
+.scan-frame span { position: absolute; inset-inline: 6%; top: 0; height: 100%; border-top: 2px solid var(--gym-orange); opacity: 0.8; animation: scan-line 2.2s ease-in-out infinite alternate; }
+@keyframes scan-line { from { transform: translateY(6%); } to { transform: translateY(94%); } }
+@media (prefers-reduced-motion: reduce) { .scan-frame span { display: none; } }
 }
 
 @media print {
     .no-print { display: none !important; }
-    body { background: white !important; }
+    body { background: white !important; color: #111 !important; }
+    .theme-dark .bg-white, .theme-dark .card { background: white !important; border-color: #e5e7eb !important; }
+    .theme-dark .lg\:pl-64 { padding-left: 0 !important; }
+    .theme-dark .text-gray-900, .theme-dark .card-title { color: #111 !important; }
 }

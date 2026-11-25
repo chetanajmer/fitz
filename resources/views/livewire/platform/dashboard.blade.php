@@ -12,13 +12,13 @@
         <div class="card lg:col-span-2">
             <div class="card-header"><h2 class="card-title">Platform revenue</h2><span class="text-xs text-gray-500">Billed vs collected</span></div>
             <div class="card-body"><div class="h-64" wire:ignore x-data x-init="renderChart($refs.c, { type: 'bar', data: { labels: @js($revenue['labels']), datasets: [
-                { label: 'Billed', data: @js($revenue['billed']), backgroundColor: '#c7d2fe', borderRadius: 6 },
-                { label: 'Collected', data: @js($revenue['collected']), backgroundColor: '#4f46e5', borderRadius: 6 },
+                { label: 'Billed', data: @js($revenue['billed']), backgroundColor: chartColors.primaryHalf, borderRadius: 6 },
+                { label: 'Collected', data: @js($revenue['collected']), backgroundColor: chartColors.primary, borderRadius: 6 },
             ] } })"><canvas x-ref="c"></canvas></div></div>
         </div>
         <div class="card">
             <div class="card-header"><h2 class="card-title">New gyms</h2></div>
-            <div class="card-body"><div class="h-64" wire:ignore x-data x-init="renderChart($refs.c, { type: 'line', data: { labels: @js($signups['labels']), datasets: [{ label: 'Signups', data: @js($signups['values']), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.12)', fill: true, tension: .3 }] } })"><canvas x-ref="c"></canvas></div></div>
+            <div class="card-body"><div class="h-64" wire:ignore x-data x-init="renderChart($refs.c, { type: 'line', data: { labels: @js($signups['labels']), datasets: [{ label: 'Signups', data: @js($signups['values']), borderColor: chartColors.primaryLight, backgroundColor: chartColors.primaryLightSoft, fill: true, tension: .3 }] } })"><canvas x-ref="c"></canvas></div></div>
         </div>
     </div>
 
