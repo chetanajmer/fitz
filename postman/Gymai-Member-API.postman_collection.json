@@ -2268,7 +2268,7 @@
                     "response": []
                 },
                 {
-                    "name": "Accept / withdraw AI consent (withdrawing deletes all AI reports)",
+                    "name": "Accept / withdraw AI consent (withdrawing deletes all AI reports and progress photos)",
                     "request": {
                         "method": "POST",
                         "header": [

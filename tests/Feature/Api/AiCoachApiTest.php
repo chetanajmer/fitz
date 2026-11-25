@@ -12,6 +12,7 @@ use App\Models\PlatformSetting;
 use App\Models\ProgressPhoto;
 use App\Services\AiAccessService;
 use App\Services\AiReportService;
+use App\Services\BodyProgressService;
 use App\Services\MembershipService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Factory as HttpFactory;
@@ -266,7 +267,7 @@ class AiCoachApiTest extends TestCase
             ->assertJsonPath('data.report.status', 'failed')->assertJsonPath('data.credits.used', 0);
     }
 
-    public function test_withdrawing_consent_deletes_the_report_history_but_not_the_credits_used(): void
+    public function test_withdrawing_consent_deletes_the_report_history_and_photos_but_not_the_credits_used(): void
     {
         $this->consent();
         $before = $this->uploadPhoto('2026-01-01');
@@ -276,6 +277,9 @@ class AiCoachApiTest extends TestCase
         $this->api()->getJson("/api/v1/me/ai/reports/{$id}")->assertOk();
         $otherReport = (new AiReport)->forceFill(['gym_id' => $this->gym->id, 'member_id' => $this->memberWithMembership($this->gym)->id, 'type' => 'progress', 'status' => 'completed', 'credits' => 1, 'requested_by' => 'member', 'content' => 'Keep me']);
         $otherReport->saveQuietly();
+        $otherPhoto = $this->inGym($this->gym, fn () => app(BodyProgressService::class)->addPhoto($otherReport->member, UploadedFile::fake()->image('other.jpg'), 'front'));
+        $paths = ProgressPhoto::withoutGlobalScopes()->whereIn('id', [$before, $after])->pluck('path');
+        Storage::disk('local')->assertExists($paths->all());
 
         $this->api()->postJson('/api/v1/me/ai/consent', ['accepted' => false])->assertOk();
 
@@ -285,7 +289,9 @@ class AiCoachApiTest extends TestCase
         $row = AiReport::withoutGlobalScopes()->findOrFail($id);
         $this->assertSame([AiReport::ERASED, null, null, null, null], [$row->status, $row->content, $row->result, $row->before_photo_id, $row->after_photo_id]);
         $this->assertSame('Keep me', $otherReport->fresh()->content);
-        $this->assertSame(2, $this->member->progressPhotos()->withoutGlobalScopes()->count());
+        $this->assertSame([$otherPhoto->id], ProgressPhoto::withoutGlobalScopes()->pluck('id')->all());
+        Storage::disk('local')->assertMissing($paths->all());
+        Storage::disk('local')->assertExists($otherPhoto->path);
 
         // Agreeing again does not give the used credits back, and the old reports stay gone.
         $this->consent();

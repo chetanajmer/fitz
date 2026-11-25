@@ -8,6 +8,7 @@ use App\Models\ProgressPhoto;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -80,6 +81,16 @@ class BodyProgressService
         $photo->save();
 
         return $photo;
+    }
+
+    /** All of the member's photos: the records now, the files once the transaction is committed. */
+    public function deleteAllPhotos(Member $member): void
+    {
+        $photos = ProgressPhoto::forGym($member->gym_id)->where('member_id', $member->id);
+        $paths = $photos->pluck('path')->all();
+        $photos->delete();
+
+        DB::afterCommit(fn () => Storage::disk(self::DISK)->delete($paths));
     }
 
     public function deletePhoto(Member $member, int $id): void

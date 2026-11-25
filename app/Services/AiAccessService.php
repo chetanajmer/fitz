@@ -23,7 +23,9 @@ class AiAccessService
 {
     public const CONSENT_TEXT = 'Your progress data (weight, measurements, attendance, workout/diet adherence and, for photo comparisons, the photos you choose) '
         .'is sent to an AI provider to write your report. Providers that store or train on it are not used. '
-        .'Your reports are also visible to your gym admin and your trainer. Your medical notes are never sent. You can withdraw consent at any time; your AI reports are then deleted.';
+        .'Your reports are also visible to your gym admin and your trainer. Your medical notes are never sent. You can withdraw consent at any time; your AI reports and progress photos are then deleted.';
+
+    public function __construct(protected BodyProgressService $body) {}
 
     /** The gym's settings, or the defaults for a gym the Super Admin has not configured yet (unsaved). */
     public function settingsFor(Gym $gym): GymAiSetting
@@ -155,6 +157,7 @@ class AiAccessService
 
             if (! $accepted) {
                 $this->eraseReports($member);
+                $this->body->deleteAllPhotos($member);
             }
         });
     }

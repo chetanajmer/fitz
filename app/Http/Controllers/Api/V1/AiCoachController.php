@@ -31,7 +31,7 @@ class AiCoachController extends ApiController
         $member = $this->member($request);
         $this->access->setConsent($member, (bool) $data['accepted']);
 
-        return $this->success($this->access->status($member), $data['accepted'] ? 'Thanks! AI coach is ready.' : 'Consent withdrawn. Your AI reports were deleted.');
+        return $this->success($this->access->status($member), $data['accepted'] ? 'Thanks! AI coach is ready.' : 'Consent withdrawn. Your AI reports and progress photos were deleted.');
     }
 
     /** GET /api/v1/me/ai/reports — latest 50, newest first. */
