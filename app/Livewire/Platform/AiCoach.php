@@ -46,7 +46,7 @@ class AiCoach extends Component
             'settings.ai_credits_photo_comparison' => 'required|integer|min:1|max:20',
             'settings.ai_default_gym_credits' => 'required|integer|min:0|max:100000',
             'settings.ai_default_member_ceiling' => 'required|integer|min:1|max:100',
-        ], ['settings.ai_model.regex' => 'Use an OpenRouter model id like anthropic/claude-haiku-5.5.'])['settings'];
+        ], ['settings.ai_model.regex' => 'Use an OpenRouter model id like openai/gpt-6-luna.'])['settings'];
 
         PlatformSetting::put($data);
         $this->dispatch('notify', message: 'AI settings saved.');
