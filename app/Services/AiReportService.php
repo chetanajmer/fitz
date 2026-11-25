@@ -32,8 +32,10 @@ class AiReportService
         - Base every statement on the data. If data is missing or too little, say what to log next instead of guessing.
         - wins: what is working. focus_areas: 2 to 4 specific, practical suggestions about training consistency, weigh-ins, measurements and general healthy habits.
         - confidence: "low" when there is little data.
+        - Coach training and habits only; never comment on account details such as the joining date.
         - Never diagnose, never mention diseases or medication, never prescribe calorie numbers or supplements.
         - Be body-positive. No shaming language.
+        - Never call the member overweight, obese, fat or similar, and do not mention BMI.
         - Plain text in every field, no Markdown. Keep it under 300 words in total.
         TXT;
 
@@ -42,13 +44,18 @@ class AiReportService
         You compare two progress photos of the same gym member (first = before, second = after) together with their data (JSON).
         Rules:
         - Speak to the member as "you". Simple English, short sentences.
-        - Describe only visible, fitness-related changes (posture, muscle definition, waist/shape). If the photos differ in pose, light or angle, or are unclear, say so and keep conclusions modest.
+        - Describe only visible, fitness-related changes (posture, muscle definition, waist/shape). If the photos differ in pose, light or angle, say so briefly.
         - Never comment on attractiveness, skin, identity or anything not related to fitness. Never diagnose.
         - Be body-positive. No shaming language.
+        - Never call the member overweight, obese, fat or similar, and do not mention BMI.
         - changes: each visible change with the body area. Leave it empty when nothing clear is visible.
-        - change_level: "unclear" when the photos cannot be compared fairly. Never guess weight or body fat from a photo.
+        - change_level: judge the body shape you can see (waist, arms, chest, legs, muscle definition). "none" when the two photos look the same, "slight", "moderate" or "strong" for real differences.
+          Use "unclear" only when a person's body is missing, hidden or cut off in a photo, or the poses are so different that shape cannot be judged. Different light, muscle pump, background or framing lower photo_quality and confidence, not change_level.
+        - Progress photos in shorts, sportswear or without a shirt are normal. If a photo shows nudity or is not of a person, use "unclear" and photo_quality "poor".
+        - Both photos are of this member, months apart; a large change is possible. Ignore the face and never judge whether it is the same person.
+        - Never guess weight or body fat from a photo.
+        - numbers: what the readings in the data say. If there are no readings, say that none were logged around these photos.
         - photo_quality and photo_tips: how comparable the photos are and how to take the next ones.
-        - If a photo does not show a clothed or sportswear-clothed person's physique, set change_level to "unclear" and photo_quality to "poor".
         - Plain text in every field, no Markdown. Keep it under 250 words in total.
         TXT;
 
@@ -111,7 +118,7 @@ class AiReportService
         try {
             $result = $report->type === AiReport::PHOTO_COMPARISON
                 ? $this->client->complete(self::PHOTO_PROMPT, [
-                    ['type' => 'text', 'text' => json_encode($this->progressData($member) + ['before_photo_taken_on' => $report->beforePhoto->taken_on->toDateString(), 'after_photo_taken_on' => $report->afterPhoto->taken_on->toDateString()], JSON_UNESCAPED_UNICODE)],
+                    ['type' => 'text', 'text' => json_encode($this->comparisonData($member, $report->beforePhoto, $report->afterPhoto), JSON_UNESCAPED_UNICODE)],
                     ['type' => 'image_url', 'image_url' => ['url' => $this->body->photoDataUrl($report->beforePhoto)]],
                     ['type' => 'image_url', 'image_url' => ['url' => $this->body->photoDataUrl($report->afterPhoto)]],
                 ], 'photo_comparison', self::schema($report->type))
@@ -168,7 +175,6 @@ class AiReportService
             'weight' => [
                 'current_kg' => $weight['current_weight_kg'],
                 'change_since_start_kg' => $weight['change_since_start_kg'],
-                'bmi' => $weight['bmi'],
                 'goal' => $weight['goal'] ? array_intersect_key($weight['goal'], array_flip(['direction', 'start_weight_kg', 'target_weight_kg', 'target_date', 'progress_percent', 'remaining_kg', 'status'])) : null,
                 'readings' => collect($weight['history'])->map(fn ($h) => [$h['measured_on'], $h['weight_kg']])->all(),
             ],
@@ -232,6 +238,27 @@ class AiReportService
     {
         return AiReport::query()->where('status', AiReport::PENDING)->where('created_at', '<', now()->subHours(2))
             ->update(['status' => AiReport::FAILED, 'error' => 'The report was not processed in time.', 'updated_at' => now()]);
+    }
+
+    /**
+     * The data sent with a photo comparison: only readings from around the two photos, so the AI
+     * cannot mix in progress made at other times.
+     *
+     * @return array<string, mixed>
+     */
+    public function comparisonData(Member $member, ProgressPhoto $before, ProgressPhoto $after): array
+    {
+        $data = $this->progressData($member);
+        $from = $before->taken_on->copy()->subWeeks(2)->toDateString();
+        $to = $after->taken_on->copy()->addWeeks(2)->toDateString();
+
+        return [
+            'before_photo_taken_on' => $before->taken_on->toDateString(),
+            'after_photo_taken_on' => $after->taken_on->toDateString(),
+            'member' => $data['member'],
+            'weight_readings_kg' => array_values(array_filter($data['weight']['readings'], fn ($r) => $r[0] >= $from && $r[0] <= $to)),
+            'measurements' => array_values(array_filter($data['measurements'], fn ($r) => $r['date'] >= $from && $r['date'] <= $to)),
+        ];
     }
 
     /** @return array{0: ProgressPhoto, 1: ProgressPhoto} */

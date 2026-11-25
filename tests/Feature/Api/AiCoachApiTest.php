@@ -303,6 +303,23 @@ class AiCoachApiTest extends TestCase
         $this->assertSame([800, 1600], [$size[0], $size[1]]);
     }
 
+    public function test_a_photo_comparison_sends_only_readings_from_around_the_photos(): void
+    {
+        $this->consent();
+        $before = $this->uploadPhoto('2026-01-01');
+        $after = $this->uploadPhoto('2026-03-01');
+        foreach (['2025-11-01' => 111, '2026-01-05' => 92, '2026-03-10' => 88, '2026-06-01' => 77] as $day => $waist) {
+            $this->api()->postJson('/api/v1/me/measurements', ['measured_on' => $day, 'waist_cm' => $waist])->assertCreated();
+        }
+        $this->api()->postJson('/api/v1/me/ai/reports', ['type' => 'photo_comparison', 'before_photo_id' => $before, 'after_photo_id' => $after])->assertStatus(202);
+
+        Http::assertSent(function (Request $request) {
+            $data = json_decode($request['messages'][1]['content'][0]['text'], true);
+
+            return array_column($data['measurements'], 'date') === ['2026-01-05', '2026-03-10'] && ! str_contains(json_encode($request->data()), 'bmi');
+        });
+    }
+
     public function test_transformation_compares_first_and_latest_of_the_same_pose(): void
     {
         $before = $this->uploadPhoto('2026-01-01');
