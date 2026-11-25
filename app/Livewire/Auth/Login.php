@@ -21,7 +21,7 @@ use Livewire\Component;
  * Sign in with a password (email, or a staff member's verified mobile), or with a one-time code
  * sent to an email address or a mobile number (members and gym staff).
  */
-#[Layout('components.layouts.guest')]
+#[Layout('components.layouts.guest', ['split' => true])]
 #[Title('Sign in')]
 class Login extends Component
 {

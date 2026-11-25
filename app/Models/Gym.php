@@ -45,6 +45,12 @@ class Gym extends Model
         ],
     ];
 
+    /** Dashboard theme colours (Gymai black + electric orange): primary accent and navigation background. */
+    public const DASHBOARD_THEME_DEFAULTS = ['primary' => '#ff6b00', 'secondary' => '#0d0d0d'];
+
+    /** Dashboards whose colours a gym can change. */
+    public const DASHBOARD_AREAS = ['admin' => 'Admin dashboard', 'member' => 'Member dashboard'];
+
     // owner_id, slug, join_token, register_token, city_id and status are set by services only.
     protected $fillable = ['name', 'phone', 'email', 'address', 'map_url', 'city', 'logo_path', 'description'];
 
@@ -196,6 +202,26 @@ class Gym extends Model
     public function secondaryColor(): string
     {
         return $this->safeColor($this->setting('secondary_color'), '#111111');
+    }
+
+    /**
+     * The colours a gym picked for one of its dashboards ('admin' panel or 'member' app), falling back to
+     * the Gymai theme. `custom` is false while the gym uses the default theme.
+     *
+     * @return array{primary: string, secondary: string, custom: bool}
+     */
+    public function dashboardColors(string $area): array
+    {
+        $chosen = $this->settings['dashboard_theme'][$area] ?? [];
+        $primary = $this->safeColor($chosen['primary'] ?? null, self::DASHBOARD_THEME_DEFAULTS['primary']);
+        $secondary = $this->safeColor($chosen['secondary'] ?? null, self::DASHBOARD_THEME_DEFAULTS['secondary']);
+
+        return [
+            'primary' => $primary,
+            'secondary' => $secondary,
+            'custom' => strcasecmp($primary, self::DASHBOARD_THEME_DEFAULTS['primary']) !== 0
+                || strcasecmp($secondary, self::DASHBOARD_THEME_DEFAULTS['secondary']) !== 0,
+        ];
     }
 
     protected function safeColor(?string $value, string $fallback): string

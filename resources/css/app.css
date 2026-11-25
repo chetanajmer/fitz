@@ -47,19 +47,19 @@
     --color-gym-muted: var(--gym-muted);
     --color-gym-border: var(--gym-border);
 
-    --color-brand-50: #fff3e9;
-    --color-brand-100: #ffe3cc;
+    --color-brand-50: color-mix(in srgb, var(--gym-orange) 9%, white);
+    --color-brand-100: color-mix(in srgb, var(--gym-orange) 20%, white);
     --color-brand-400: var(--gym-orange-light);
     --color-brand-500: var(--gym-orange);
     --color-brand-600: var(--gym-orange);
     --color-brand-700: var(--gym-orange-hover);
-    --color-brand-900: #7a3300;
+    --color-brand-900: color-mix(in srgb, var(--gym-orange) 50%, black);
 
     /* Existing views use indigo-* as "the accent colour"; it is the orange scale everywhere. */
-    --color-indigo-50: #fff3e9;
-    --color-indigo-100: #ffe3cc;
-    --color-indigo-200: #ffc999;
-    --color-indigo-300: #ffa766;
+    --color-indigo-50: color-mix(in srgb, var(--gym-orange) 9%, white);
+    --color-indigo-100: color-mix(in srgb, var(--gym-orange) 20%, white);
+    --color-indigo-200: color-mix(in srgb, var(--gym-orange) 40%, white);
+    --color-indigo-300: color-mix(in srgb, var(--gym-orange) 60%, white);
     --color-indigo-400: var(--gym-orange-light);
     --color-indigo-500: var(--gym-orange);
     --color-indigo-600: var(--gym-orange);
@@ -128,10 +128,10 @@
     --color-gray-800: var(--gym-light);
     --color-gray-900: var(--gym-white);
 
-    --color-indigo-50: rgb(255 107 0 / 0.12);
-    --color-indigo-100: rgb(255 107 0 / 0.18);
-    --color-indigo-200: rgb(255 107 0 / 0.3);
-    --color-indigo-300: rgb(255 107 0 / 0.5);
+    --color-indigo-50: color-mix(in srgb, var(--gym-orange) 12%, transparent);
+    --color-indigo-100: color-mix(in srgb, var(--gym-orange) 18%, transparent);
+    --color-indigo-200: color-mix(in srgb, var(--gym-orange) 30%, transparent);
+    --color-indigo-300: color-mix(in srgb, var(--gym-orange) 50%, transparent);
     --color-indigo-400: var(--gym-orange-light);
     --color-indigo-500: var(--gym-orange);
     --color-indigo-600: var(--gym-orange);
@@ -182,7 +182,7 @@
 .theme-dark .bg-gray-50\/50 { background-color: rgb(255 255 255 / 0.02); }
 /* "Selected" segmented buttons and pills (bg-gray-900 text-white) become the accent. */
 .theme-dark .bg-gray-900 { background-color: var(--color-brand-600); }
-.theme-dark .from-indigo-50 { --tw-gradient-from: rgb(255 107 0 / 0.16); }
+.theme-dark .from-indigo-50 { --tw-gradient-from: color-mix(in srgb, var(--gym-orange) 16%, transparent); }
 .theme-dark .to-sky-50 { --tw-gradient-to: rgb(255 255 255 / 0.03); }
 
 .theme-dark :is(.input, select, textarea, input:not([type='checkbox'], [type='radio'], [type='range'], [type='file'])) {
@@ -203,7 +203,7 @@
 .theme-dark ::-webkit-scrollbar-thumb { background: var(--gym-border); border-radius: 9999px; border: 2px solid var(--gym-black); }
 .theme-dark ::-webkit-scrollbar-thumb:hover { background: #4d4d4d; }
 .theme-dark ::-webkit-scrollbar-track { background: transparent; }
-.theme-dark ::selection { background: rgb(255 107 0 / 0.35); color: var(--gym-white); }
+.theme-dark ::selection { background: color-mix(in srgb, var(--gym-orange) 35%, transparent); color: var(--gym-white); }
 
 /* ---- Reusable UI utilities ------------------------------------------- */
 @utility card { @apply rounded-2xl border border-gray-200 bg-surface shadow-sm; }
@@ -212,7 +212,7 @@
 @utility card-title { @apply text-sm font-semibold text-gray-900; }
 
 @utility btn { @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition duration-200 focus:ring-2 focus:ring-offset-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60; }
-@utility btn-primary { @apply btn bg-brand-600 font-semibold text-white shadow-[0_6px_20px_-6px_rgb(255_107_0/0.55)] hover:bg-brand-700 hover:shadow-[0_8px_24px_-6px_rgb(255_107_0/0.7)] focus:ring-brand-500 focus:ring-offset-transparent; }
+@utility btn-primary { @apply btn bg-brand-600 font-semibold text-white shadow-[0_6px_20px_-6px_color-mix(in_srgb,var(--gym-orange)_55%,transparent)] hover:bg-brand-700 hover:shadow-[0_8px_24px_-6px_color-mix(in_srgb,var(--gym-orange)_70%,transparent)] focus:ring-brand-500 focus:ring-offset-transparent; }
 @utility btn-secondary { @apply btn border border-gray-300 bg-surface text-gray-700 hover:border-brand-600/60 hover:bg-gray-50 hover:text-gray-900 focus:ring-brand-500/40 focus:ring-offset-transparent; }
 @utility btn-danger { @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500; }
 @utility btn-success { @apply btn bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500; }
@@ -382,18 +382,18 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
 .lp-tile { box-shadow: 6px 6px 0 0 var(--gym-orange); }
 
 /* Hero photo. Phones: a full-bleed backdrop fading out at the bottom. From tablet up the sharp figure blends
- * into its blurred backdrop at the sides and bottom, and the backdrop fades into the black page on the left. */
+ * into a darkened gym-floor photo at the sides and bottom; that backdrop fades into the black page on the left
+ * (behind the headline) and at the bottom (behind the feature strip). */
+.lp-hero-backdrop {
+    filter: brightness(0.5) contrast(1.15);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 30%), linear-gradient(to top, transparent 0%, #000 25%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to right, transparent 0%, #000 30%), linear-gradient(to top, transparent 0%, #000 25%);
+    mask-composite: intersect;
+}
 .lp-hero-photo {
     -webkit-mask-image: linear-gradient(to top, transparent 0%, #000 35%);
     mask-image: linear-gradient(to top, transparent 0%, #000 35%);
-}
-.lp-hero-ambient {
-    opacity: 0.55;
-    filter: blur(24px) brightness(0.7);
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 40%), linear-gradient(to top, transparent 0%, #000 30%);
-    -webkit-mask-composite: source-in;
-    mask-image: linear-gradient(to right, transparent 0%, #000 40%), linear-gradient(to top, transparent 0%, #000 30%);
-    mask-composite: intersect;
 }
 @media (width >= 48rem) {
     .lp-hero-photo {
@@ -598,6 +598,90 @@ html:has(body.landing):not(.lenis) { scroll-behavior: smooth; }
     .js .lp-report:not(.is-in) .lp-typeline { opacity: 1; transform: none; }
 }
 } /* end landing @layer components */
+
+/* ==========================================================================
+ * Public gym page (public/gym-profile.blade.php, motion in js/gym-page.js).
+ * Dark by design; motion is transform/opacity only and switched off for prefers-reduced-motion.
+ * ========================================================================== */
+@layer components {
+.gym-page { color-scheme: dark; background-color: var(--gym-black-deep); color: var(--gym-light); }
+html:has(body.gym-page) { scroll-behavior: smooth; scroll-padding-top: 5.5rem; }
+.gym-page ::selection { background: var(--gym-orange); color: var(--gym-black); }
+.gym-page :focus-visible { outline: 3px solid var(--gym-orange-light); outline-offset: 3px; }
+.gym-page details > summary { list-style: none; }
+.gym-page details > summary::-webkit-details-marker { display: none; }
+
+.gp-display { font-family: var(--font-display); font-weight: 400; text-transform: uppercase; line-height: 0.92; letter-spacing: 0.01em; }
+.gp-eyebrow { font-family: var(--font-code); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gym-orange); }
+.gp-section { padding-block: clamp(4rem, 9vw, 7rem); }
+.gp-surface { background-color: #181818; }
+.gp-glass { background: rgb(34 34 34 / 0.72); border: 1px solid rgb(255 255 255 / 0.08); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.gp-card { background: var(--gym-card); border: 1px solid var(--gym-border); border-radius: 1.25rem; transition: transform 0.3s ease, border-color 0.3s ease, background-color 0.3s ease; }
+.gp-card:hover { transform: translateY(-4px); border-color: rgb(255 107 0 / 0.55); }
+.gp-grid-bg { background-image: linear-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.03) 1px, transparent 1px); background-size: 56px 56px; }
+
+.gp-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; min-height: 3rem;
+    border-radius: 9999px; padding: 0.75rem 1.5rem; font-weight: 700; font-size: 0.95rem;
+    transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+.gp-btn svg { transition: transform 0.2s ease; }
+.gp-btn:hover svg { transform: translateX(3px); }
+.gp-btn:active { transform: translateY(1px); }
+.gp-btn-solid { background: var(--gym-orange); color: var(--gym-white); box-shadow: 0 12px 30px -12px rgb(255 107 0 / 0.8); }
+.gp-btn-solid:hover { background: var(--gym-orange-hover); transform: translateY(-2px); box-shadow: 0 18px 36px -12px rgb(255 107 0 / 0.95); }
+.gp-btn-ghost { border: 1px solid rgb(255 255 255 / 0.25); color: var(--gym-white); background: rgb(255 255 255 / 0.04); }
+.gp-btn-ghost:hover { border-color: var(--gym-orange); color: var(--gym-orange-light); transform: translateY(-2px); }
+.gp-btn-dark { background: var(--gym-black); color: var(--gym-white); }
+.gp-btn-dark:hover { background: #000; transform: translateY(-2px); }
+
+.gp-nav-link { position: relative; padding: 0.5rem 0.25rem; font-size: 0.9rem; font-weight: 500; color: var(--gym-muted); transition: color 0.2s ease; }
+.gp-nav-link::after { content: ''; position: absolute; inset-inline: 0.25rem; bottom: 0.15rem; height: 2px; border-radius: 2px; background: var(--gym-orange); transform: scaleX(0); transition: transform 0.25s ease; }
+.gp-nav-link:hover, .gp-nav-link.is-active { color: var(--gym-white); }
+.gp-nav-link.is-active::after { transform: scaleX(1); }
+.gp-nav.is-scrolled { background: rgb(13 13 13 / 0.86); border-color: var(--gym-border); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+
+/* Floating hero cards and the live "open" dot. */
+.gp-float { animation: gp-float 6s ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes gp-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+.gp-ping { animation: gp-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+@keyframes gp-ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+.gp-pop { animation: gp-pop 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+@keyframes gp-pop { from { transform: scale(0.4); opacity: 0; } }
+
+/* Scroll reveals (only once JS runs, so the page reads fine without it). */
+.js .gp-reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--d, 0ms); }
+.js .gp-reveal.is-in { opacity: 1; transform: none; }
+/* The clip sits on the child: a fully clipped element never reports as visible to IntersectionObserver. */
+.js .gp-img-reveal > img { clip-path: inset(0 0 100% 0); transition: clip-path 1s cubic-bezier(0.7, 0, 0.2, 1), transform 0.7s ease; transition-delay: var(--d, 0ms), 0ms; }
+.js .gp-img-reveal.is-in > img { clip-path: inset(0 0 0 0); }
+.js .gp-hero-in > * { opacity: 0; transform: translateY(24px); animation: gp-hero-in 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+.js .gp-hero-in > h1 { opacity: 1; } /* the largest paint: it slides in but is never hidden */
+.js .gp-hero-in > *:nth-child(2) { animation-delay: 0.08s; }
+.js .gp-hero-in > *:nth-child(3) { animation-delay: 0.16s; }
+.js .gp-hero-in > *:nth-child(4) { animation-delay: 0.24s; }
+.js .gp-hero-in > *:nth-child(5) { animation-delay: 0.32s; }
+.js .gp-hero-in > *:nth-child(n + 6) { animation-delay: 0.4s; }
+@keyframes gp-hero-in { to { opacity: 1; transform: none; } }
+
+.gp-progress { transform: scaleX(0); transform-origin: left; }
+.gp-faq-icon { transition: transform 0.3s ease, background-color 0.3s ease; }
+.gym-page details[open] .gp-faq-icon { transform: rotate(45deg); background: var(--gym-orange); color: var(--gym-white); border-color: var(--gym-orange); }
+.gym-page details[open] .gp-faq-body { animation: lp-faq-in 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.gp-snap { scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.gp-snap::-webkit-scrollbar { display: none; }
+.gp-snap > * { scroll-snap-align: start; }
+
+@media (max-width: 767px) {
+    .gp-float { animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .gym-page *, .gym-page *::before, .gym-page *::after { animation: none !important; transition: none !important; }
+    .js .gp-reveal, .js .gp-hero-in > * { opacity: 1; transform: none; }
+    .js .gp-img-reveal > img { clip-path: none; }
+    html:has(body.gym-page) { scroll-behavior: auto; }
+}
+} /* end gym page @layer components */
 
 @media print {
     .no-print { display: none !important; }

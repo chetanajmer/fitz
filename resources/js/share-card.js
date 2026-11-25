@@ -5,22 +5,36 @@
 const WIDTH = 1080;
 const HEIGHTS = { post: 1350, story: 1920 };
 const BLACK = '#111111';
-const ORANGE = '#ff6b00';
+const WHITE = '#ffffff';
+
+/** The gym's accent colour, which its dashboard theme may have changed. */
+const accentColor = () => {
+    const value = getComputedStyle(document.documentElement).getPropertyValue('--gym-orange').trim();
+    return /^#[0-9a-f]{6}$/i.test(value) ? value : '#ff6b00';
+};
+
+/** WCAG luminance of a #rrggbb colour. Above 0.18, black text reads better on it than white. */
+const luminance = (hex) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
 const MARGIN = 72;
 
 /** The three slanted change bars, as on the report. */
-const drawBars = (ctx, step, y) => {
+const drawBars = (ctx, step, y, color) => {
     const gap = 24;
     const bar = (WIDTH - MARGIN * 2 - gap * 2) / 3;
     [0, 1, 2].forEach((i) => {
         const x = MARGIN + i * (bar + gap);
-        ctx.fillStyle = i < step ? BLACK : 'rgba(17,17,17,0.2)';
+        ctx.fillStyle = color;
+        ctx.globalAlpha = i < step ? 1 : 0.2;
         ctx.beginPath();
         ctx.moveTo(x + 24, y);
         ctx.lineTo(x + bar, y);
         ctx.lineTo(x + bar - 24, y + 110);
         ctx.lineTo(x, y + 110);
         ctx.fill();
+        ctx.globalAlpha = 1;
     });
 };
 
@@ -44,7 +58,7 @@ const drawCover = (ctx, image, x, y, w, h) => {
     ctx.drawImage(image, x + (w - image.width * scale) / 2, y + Math.min(0, (h - image.height * scale) * 0.25), image.width * scale, image.height * scale);
 };
 
-const drawPhotos = (ctx, photos, height) => {
+const drawPhotos = (ctx, photos, height, seam) => {
     const middle = WIDTH / 2;
     const lean = 46;
     photos.forEach((photo, i) => {
@@ -64,7 +78,7 @@ const drawPhotos = (ctx, photos, height) => {
     fade.addColorStop(1, BLACK);
     ctx.fillStyle = fade;
     ctx.fillRect(0, height * 0.7, WIDTH, height * 0.3 + 1);
-    ctx.strokeStyle = ORANGE;
+    ctx.strokeStyle = seam;
     ctx.lineWidth = 10;
     ctx.beginPath();
     ctx.moveTo(middle + lean, 0);
@@ -114,16 +128,19 @@ window.shareCard = (report) => ({
         canvas.height = height;
         const ctx = canvas.getContext('2d');
         const inner = WIDTH - MARGIN * 2;
-        const ink = photos ? '#ffffff' : BLACK;
+        const accent = accentColor();
+        const ink = photos || luminance(accent) < 0.18 ? WHITE : BLACK;
+        // Figures on the black photo poster: the accent, unless it is too dark to read there.
+        const figures = !photos ? ink : luminance(accent) < 0.12 ? WHITE : accent;
         const body = (size) => `600 ${size}px "Instrument Sans", sans-serif`;
         const stats = this.numbers ? report.stats.slice(0, 3) : [];
 
-        ctx.fillStyle = photos ? BLACK : ORANGE;
+        ctx.fillStyle = photos ? BLACK : accent;
         ctx.fillRect(0, 0, WIDTH, height);
         // Stories are covered by the app's own controls at the top and bottom.
         const foot = height - (this.format === 'story' ? 230 : MARGIN);
-        if (photos) drawPhotos(ctx, photos, height * 0.62);
-        else if (report.step) drawBars(ctx, report.step, this.format === 'story' ? 260 : MARGIN);
+        if (photos) drawPhotos(ctx, photos, height * 0.62, figures);
+        else if (report.step) drawBars(ctx, report.step, this.format === 'story' ? 260 : MARGIN, ink);
 
         // Footer: gym, and the member's first name when they chose to show it.
         ctx.fillStyle = ink;
@@ -144,7 +161,7 @@ window.shareCard = (report) => ({
                 ctx.fillStyle = ink;
                 ctx.font = body(32);
                 ctx.fillText(stat.label, MARGIN + column * i, y, column - 24);
-                ctx.fillStyle = photos ? ORANGE : BLACK;
+                ctx.fillStyle = figures;
                 ctx.font = `${fitText(ctx, stat.value, column - 60, 100)}px Anton`;
                 ctx.fillText(stat.value, MARGIN + column * i, y - 50);
             });

@@ -5,7 +5,9 @@
         </x-slot:actions>
     </x-ui.page-header>
 
-    <form wire:submit="save" class="grid gap-6 lg:grid-cols-3">
+    {{-- On a failed save, bring the first error into view: the button sits far from most fields. --}}
+    <form wire:submit="save" class="grid gap-6 lg:grid-cols-3"
+          x-on:member-form-invalid.window="$nextTick(() => setTimeout(() => $el.querySelector('.input-error')?.parentElement?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50))">
         <div class="space-y-6 lg:col-span-2">
             <div class="card">
                 <div class="card-header"><h2 class="card-title">Personal details</h2></div>
@@ -91,14 +93,29 @@
                 @endif
             </div>
 
-            <div class="card card-body">
-                <x-ui.field :label="$member?->user_id ? 'Reset portal password' : 'Member portal password'" name="portal_password"
-                            :hint="$member?->user_id ? 'Leave blank to keep the current password.' : 'Optional. Lets the member log in with their email to see membership, payments and attendance.'">
-                    <input wire:model="portal_password" type="password" class="input" autocomplete="new-password">
-                </x-ui.field>
+            <div class="card card-body space-y-3">
+                <label class="flex items-start gap-3 text-sm">
+                    <input wire:model.live="portal_login" type="checkbox" class="mt-0.5 size-4 rounded border-gray-300 text-brand-600">
+                    <span>
+                        <span class="font-medium text-gray-900">{{ $member?->user_id ? 'Reset member app password' : 'Create member app login' }}</span>
+                        <span class="block text-xs text-gray-500">{{ $member?->user_id ? 'The member keeps their current password unless you tick this.' : 'Optional. The member signs in with their email to see membership, payments and attendance.' }}</span>
+                    </span>
+                </label>
+                {{-- Only rendered when ticked, so the browser cannot autofill a saved password into it. --}}
+                @if ($portal_login)
+                    <x-ui.field label="App password" name="portal_password" required hint="At least 8 characters. Needs the email above.">
+                        <input wire:model="portal_password" type="password" class="input" autocomplete="new-password">
+                    </x-ui.field>
+                @endif
             </div>
 
-            <button type="submit" class="btn-primary w-full" wire:loading.attr="disabled">{{ $member ? 'Save changes' : 'Create member' }}</button>
+            <button type="submit" class="btn-primary w-full" wire:loading.attr="disabled" wire:target="save">
+                <span wire:loading.remove wire:target="save">{{ $member ? 'Save changes' : 'Create member' }}</span>
+                <span wire:loading wire:target="save">Saving…</span>
+            </button>
+            @if ($errors->any())
+                <p class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">Couldn't save — please fix the {{ $errors->count() === 1 ? 'highlighted field' : $errors->count().' highlighted fields' }}.</p>
+            @endif
         </div>
     </form>
 </div>

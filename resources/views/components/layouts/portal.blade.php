@@ -10,13 +10,14 @@
     ];
 @endphp
 <x-layouts.base :title="$title" :body-class="'panel-theme bg-gray-50'.(panel_theme() === 'dark' ? ' theme-dark' : '')">
-    <header class="sticky top-0 z-30 border-b border-gray-200 bg-white/85 backdrop-blur dark:border-ink-700 dark:bg-ink-850/85 no-print">
+    <x-ui.dashboard-theme area="member" :gym="$gym" />
+    <header class="sticky top-0 z-30 border-b border-gray-200 bg-white/85 backdrop-blur dark:border-ink-700 dark:bg-ink-900/90 no-print">
         <div class="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-4">
             <a href="{{ route('portal.dashboard') }}" class="flex min-w-0 items-center gap-3">
                 @if ($gym?->logoUrl())
                     <img src="{{ $gym->logoUrl() }}" alt="" class="size-9 rounded-lg bg-white object-contain p-0.5">
                 @else
-                    <div class="flex size-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white shadow-[0_0_18px_-2px_rgb(255_107_0/0.6)]">{{ $gym?->initials() }}</div>
+                    <div class="flex size-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white shadow-[0_0_18px_-2px_color-mix(in_srgb,var(--gym-orange)_60%,transparent)]">{{ $gym?->initials() }}</div>
                 @endif
                 <span class="truncate font-semibold text-gray-900 dark:text-white">{{ $gym?->name }}</span>
             </a>

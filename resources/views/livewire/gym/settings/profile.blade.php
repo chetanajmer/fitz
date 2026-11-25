@@ -15,7 +15,7 @@
     @endif
 
     <div class="mb-6 flex gap-6 overflow-x-auto border-b border-gray-200">
-        @foreach (['profile' => 'Profile & branding', 'hours' => 'Hours & facilities', 'photos' => 'Photos', 'qr' => 'QR registration'] as $key => $label)
+        @foreach (['profile' => 'Profile & branding', 'hours' => 'Hours & facilities', 'photos' => 'Photos', 'qr' => 'QR registration', 'theme' => 'Dashboard colours'] as $key => $label)
             <button wire:key="tab-{{ $key }}" wire:click="$set('tab', '{{ $key }}')" class="tab {{ $tab === $key ? 'tab-active' : '' }}">{{ $label }}</button>
         @endforeach
     </div>
@@ -187,5 +187,101 @@
                 </div>
             </div>
         </div>
+    @endif
+
+    @if ($tab === 'theme')
+        @php
+            $presets = \App\Livewire\Gym\Settings\Profile::THEME_PRESETS;
+            $hex = fn ($value, $fallback) => \App\Support\Color::isHex($value) ? $value : $fallback;
+            $areaHints = [
+                'admin' => 'Your gym panel: sidebar, buttons, active menu items, links and charts.',
+                'member' => 'The member dashboard: top and bottom bars, buttons, links and highlights.',
+            ];
+        @endphp
+        <div class="grid gap-6 xl:grid-cols-2">
+            @foreach (\App\Models\Gym::DASHBOARD_AREAS as $area => $areaLabel)
+                @php
+                    $primary = $hex($theme[$area]['primary'] ?? null, \App\Models\Gym::DASHBOARD_THEME_DEFAULTS['primary']);
+                    $secondary = $hex($theme[$area]['secondary'] ?? null, \App\Models\Gym::DASHBOARD_THEME_DEFAULTS['secondary']);
+                    $saved = $gym->dashboardColors($area);
+                @endphp
+                <div wire:key="theme-{{ $area }}" class="card">
+                    <div class="card-header flex items-center justify-between gap-3">
+                        <div>
+                            <h2 class="card-title">{{ $areaLabel }}</h2>
+                            <p class="mt-0.5 text-xs text-gray-500">{{ $areaHints[$area] }}</p>
+                        </div>
+                        <x-ui.badge :color="$saved['custom'] ? 'indigo' : 'gray'" class="shrink-0 whitespace-nowrap">{{ $saved['custom'] ? 'Custom' : 'Gymai default' }}</x-ui.badge>
+                    </div>
+                    <div class="card-body space-y-5">
+                        {{-- Live preview --}}
+                        <div class="overflow-hidden rounded-xl border border-gray-200 dark:border-ink-700" aria-hidden="true">
+                            @if ($area === 'admin')
+                                <div class="flex h-40">
+                                    <div class="flex w-28 shrink-0 flex-col gap-1.5 p-3" style="background: {{ $secondary }}">
+                                        <div class="mb-1 flex items-center gap-1.5"><span class="size-4 rounded" style="background: {{ $primary }}"></span><span class="h-1.5 w-12 rounded-full bg-white/70"></span></div>
+                                        <span class="h-5 rounded-md" style="background: color-mix(in srgb, {{ $primary }} 18%, transparent); box-shadow: inset 2px 0 0 {{ $primary }}"></span>
+                                        @foreach (range(1, 4) as $i)<span class="h-2 w-16 rounded-full bg-white/20"></span>@endforeach
+                                    </div>
+                                    <div class="flex flex-1 flex-col gap-2 bg-gray-50 p-3 dark:bg-ink-850">
+                                        <div class="flex items-center justify-between"><span class="h-2 w-20 rounded-full bg-gray-300 dark:bg-white/20"></span><span class="rounded-md px-2 py-1 text-[10px] font-semibold text-white" style="background: {{ $primary }}">+ Add member</span></div>
+                                        <div class="flex flex-1 items-end gap-1.5 rounded-lg bg-white p-2 dark:bg-ink-800">
+                                            @foreach ([40, 65, 50, 85, 60, 95, 70] as $h)<span class="flex-1 rounded-sm" style="height: {{ $h }}%; background: {{ $loop->last ? $primary : 'color-mix(in srgb, '.$primary.' 45%, transparent)' }}"></span>@endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="mx-auto flex h-40 max-w-[15rem] flex-col">
+                                    <div class="flex items-center gap-1.5 px-3 py-2" style="background: {{ $secondary }}"><span class="size-4 rounded" style="background: {{ $primary }}"></span><span class="h-1.5 w-16 rounded-full bg-white/70"></span></div>
+                                    <div class="flex flex-1 flex-col gap-2 bg-gray-50 p-3 dark:bg-ink-850">
+                                        <div class="rounded-lg p-2 text-[10px] font-semibold text-white" style="background: {{ $primary }}">Check in with QR</div>
+                                        <div class="flex gap-1.5"><span class="h-8 flex-1 rounded-md bg-white dark:bg-ink-800"></span><span class="h-8 flex-1 rounded-md bg-white dark:bg-ink-800"></span></div>
+                                        <span class="h-1.5 w-20 rounded-full" style="background: {{ $primary }}"></span>
+                                    </div>
+                                    <div class="grid grid-cols-4 gap-1 px-3 py-2" style="background: {{ $secondary }}">
+                                        @foreach (range(0, 3) as $i)<span class="mx-auto size-3 rounded-full" style="background: {{ $i === 0 ? $primary : 'rgb(255 255 255 / 0.25)' }}"></span>@endforeach
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- Presets --}}
+                        <div>
+                            <p class="label">Quick themes</p>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach ($presets as $i => [$label, $presetPrimary, $presetSecondary])
+                                    @php
+                                        $active = strcasecmp($presetPrimary, $primary) === 0 && strcasecmp($presetSecondary, $secondary) === 0;
+                                    @endphp
+                                    <button type="button" wire:click="applyThemePreset('{{ $area }}', {{ $i }})" title="{{ $label }}"
+                                            class="flex items-center gap-2 rounded-full border py-1 pr-3 pl-1 text-xs font-medium transition {{ $active ? 'border-brand-600 text-gray-900 dark:text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400 dark:border-ink-700 dark:text-zinc-400' }}">
+                                        <span class="flex size-6 overflow-hidden rounded-full ring-1 ring-black/10"><span class="w-1/2" style="background: {{ $presetPrimary }}"></span><span class="w-1/2" style="background: {{ $presetSecondary }}"></span></span>
+                                        {{ $label }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Pickers --}}
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            @foreach (['primary' => ['Primary colour', 'Buttons, active items, links, charts'], 'secondary' => ['Secondary colour', 'Navigation background (keep it dark)']] as $key => [$label, $hint])
+                                <x-ui.field :label="$label" :name="'theme.'.$area.'.'.$key" :hint="$hint">
+                                    <div class="flex items-center gap-2">
+                                        <input wire:model.live="theme.{{ $area }}.{{ $key }}" type="color" aria-label="{{ $label }}" class="h-10 w-14 shrink-0 cursor-pointer rounded border border-gray-300 p-1 dark:border-ink-700">
+                                        <input wire:model.live.debounce.400ms="theme.{{ $area }}.{{ $key }}" class="input font-mono uppercase" maxlength="7">
+                                    </div>
+                                </x-ui.field>
+                            @endforeach
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4 dark:border-ink-700">
+                            <button type="button" wire:click="resetTheme('{{ $area }}')" wire:confirm="Reset the {{ strtolower($areaLabel) }} to the Gymai colours?" class="text-sm font-medium text-gray-500 hover:text-brand-600 disabled:opacity-40" @disabled(! $saved['custom'])>Reset to default</button>
+                            <button type="button" wire:click="saveTheme('{{ $area }}')" class="btn-primary" wire:loading.attr="disabled" wire:target="saveTheme('{{ $area }}')">Save {{ strtolower($areaLabel) }} colours</button>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+        <p class="mt-4 text-sm text-gray-500">These colours apply only to your gym's dashboards. Your public page, receipts and brand colours are set under <button type="button" wire:click="$set('tab', 'profile')" class="font-medium text-brand-600 hover:underline">Profile &amp; branding</button>.</p>
     @endif
 </div>

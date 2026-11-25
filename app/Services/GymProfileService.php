@@ -59,6 +59,30 @@ class GymProfileService
         return $gym;
     }
 
+    /**
+     * Save (or, with null, reset to the Gymai theme) the colours of one dashboard: 'admin' or 'member'.
+     *
+     * @param  array{primary: string, secondary: string}|null  $colors
+     */
+    public function updateDashboardTheme(Gym $gym, string $area, ?array $colors): Gym
+    {
+        abort_unless(array_key_exists($area, Gym::DASHBOARD_AREAS), 404);
+
+        $settings = $gym->settings ?? [];
+        if ($colors === null) {
+            unset($settings['dashboard_theme'][$area]);
+        } else {
+            $settings['dashboard_theme'][$area] = [
+                'primary' => strtolower($colors['primary']),
+                'secondary' => strtolower($colors['secondary']),
+            ];
+        }
+        $gym->settings = $settings;
+        $gym->save();
+
+        return $gym;
+    }
+
     public function removeLogo(Gym $gym): void
     {
         if ($gym->logo_path) {

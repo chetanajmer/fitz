@@ -27,10 +27,10 @@
                     @endif
                     <div class="min-w-0 flex-1">
                         <div class="flex items-baseline gap-2">
-                            <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-rose-600 text-xs font-bold text-white">{{ $i + 1 }}</span>
+                            <span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">{{ $i + 1 }}</span>
                             <h3 class="font-semibold text-gray-900">{{ $section->title }}</h3>
                         </div>
-                        @if ($section->subtitle)<p class="mt-1 text-sm font-medium text-rose-600">{{ $section->subtitle }}</p>@endif
+                        @if ($section->subtitle)<p class="mt-1 text-sm font-medium text-indigo-600">{{ $section->subtitle }}</p>@endif
                         @if ($section->body)<p class="mt-2 text-sm leading-relaxed whitespace-pre-line text-gray-700">{{ $section->body }}</p>@endif
                     </div>
                 </li>
