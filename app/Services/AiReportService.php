@@ -30,11 +30,11 @@ class AiReportService
         Rules:
         - Speak to the member as "you". Simple English, short sentences. Use kg, cm and Indian context.
         - Base every statement on the data. If data is missing or too little, say what to log next instead of guessing.
-        - Structure in Markdown with these headings: "Summary", "What's working", "What to focus on next", "Motivation".
-        - Give 2 to 4 specific, practical suggestions about training consistency, weigh-ins, measurements and general healthy habits.
+        - wins: what is working. focus_areas: 2 to 4 specific, practical suggestions about training consistency, weigh-ins, measurements and general healthy habits.
+        - confidence: "low" when there is little data.
         - Never diagnose, never mention diseases or medication, never prescribe calorie numbers or supplements.
         - Be body-positive. No shaming language.
-        - Keep it under 300 words.
+        - Plain text in every field, no Markdown. Keep it under 300 words in total.
         TXT;
 
     protected const PHOTO_PROMPT = <<<'TXT'
@@ -45,8 +45,11 @@ class AiReportService
         - Describe only visible, fitness-related changes (posture, muscle definition, waist/shape). If the photos differ in pose, light or angle, or are unclear, say so and keep conclusions modest.
         - Never comment on attractiveness, skin, identity or anything not related to fitness. Never diagnose.
         - Be body-positive. No shaming language.
-        - Structure in Markdown with these headings: "Visible changes", "What the numbers say", "Tips for your next photo", "Motivation".
-        - Keep it under 250 words.
+        - changes: each visible change with the body area. Leave it empty when nothing clear is visible.
+        - change_level: "unclear" when the photos cannot be compared fairly. Never guess weight or body fat from a photo.
+        - photo_quality and photo_tips: how comparable the photos are and how to take the next ones.
+        - If a photo does not show a clothed or sportswear-clothed person's physique, set change_level to "unclear" and photo_quality to "poor".
+        - Plain text in every field, no Markdown. Keep it under 250 words in total.
         TXT;
 
     public function __construct(
@@ -98,14 +101,21 @@ class AiReportService
 
         $member = $report->member;
 
+        // Re-check right before any data leaves: consent or access may have changed while the job waited.
+        if (! $this->access->maySend($member, $report->type)) {
+            $report->forceFill(['status' => AiReport::FAILED, 'error' => 'AI coach is no longer available for this member.'])->save();
+
+            return;
+        }
+
         try {
             $result = $report->type === AiReport::PHOTO_COMPARISON
                 ? $this->client->complete(self::PHOTO_PROMPT, [
                     ['type' => 'text', 'text' => json_encode($this->progressData($member) + ['before_photo_taken_on' => $report->beforePhoto->taken_on->toDateString(), 'after_photo_taken_on' => $report->afterPhoto->taken_on->toDateString()], JSON_UNESCAPED_UNICODE)],
                     ['type' => 'image_url', 'image_url' => ['url' => $this->body->photoDataUrl($report->beforePhoto)]],
                     ['type' => 'image_url', 'image_url' => ['url' => $this->body->photoDataUrl($report->afterPhoto)]],
-                ])
-                : $this->client->complete(self::SYSTEM_PROMPT, json_encode($this->progressData($member), JSON_UNESCAPED_UNICODE));
+                ], 'photo_comparison', self::schema($report->type))
+                : $this->client->complete(self::SYSTEM_PROMPT, json_encode($this->progressData($member), JSON_UNESCAPED_UNICODE), 'progress_report', self::schema($report->type));
         } catch (Throwable $e) {
             Log::warning('AI report failed', ['report' => $report->id, 'error' => $e->getMessage()]);
             $report->forceFill(['status' => AiReport::FAILED, 'error' => mb_substr($e->getMessage(), 0, 255)])->save();
@@ -115,7 +125,8 @@ class AiReportService
 
         $report->forceFill([
             'status' => AiReport::COMPLETED,
-            'content' => $result['content'],
+            'result' => $result['data'],
+            'content' => self::markdown($report->type, $result['data']),
             'model' => $result['model'],
             'input_tokens' => $result['input_tokens'],
             'output_tokens' => $result['output_tokens'],
@@ -179,6 +190,50 @@ class AiReportService
         ];
     }
 
+    /** @return array<string, mixed> the JSON schema of the AI answer */
+    protected static function schema(string $type): array
+    {
+        $text = ['type' => 'string'];
+        $level = ['type' => 'string', 'enum' => ['low', 'medium', 'high']];
+        $object = fn (array $properties) => ['type' => 'object', 'properties' => $properties, 'required' => array_keys($properties), 'additionalProperties' => false];
+        $list = fn (array $items) => ['type' => 'array', 'items' => $items];
+
+        return $object(['summary' => $text] + ($type === AiReport::PHOTO_COMPARISON ? [
+            'change_level' => ['type' => 'string', 'enum' => array_keys(AiReport::CHANGE_LEVELS)],
+            'changes' => $list($object(['area' => $text, 'observation' => $text])),
+            'numbers' => $text,
+            'photo_quality' => ['type' => 'string', 'enum' => ['good', 'fair', 'poor']],
+            'photo_tips' => $list($text),
+        ] : [
+            'wins' => $list($text),
+            'focus_areas' => $list($object(['title' => $text, 'tip' => $text])),
+        ]) + ['motivation' => $text, 'confidence' => $level]);
+    }
+
+    /** The same answer as Markdown (the "content" older app versions show). @param  array<string, mixed>  $r */
+    protected static function markdown(string $type, array $r): string
+    {
+        $bullets = fn (array $lines) => implode("\n", array_map(fn ($line) => '- '.$line, $lines));
+        $sections = $type === AiReport::PHOTO_COMPARISON ? [
+            'Visible changes' => trim($r['summary']."\n\n".$bullets(array_map(fn ($c) => "**{$c['area']}:** {$c['observation']}", $r['changes']))),
+            'What the numbers say' => $r['numbers'],
+            'Tips for your next photo' => $bullets($r['photo_tips']),
+        ] : [
+            'Summary' => $r['summary'],
+            "What's working" => $bullets($r['wins']),
+            'What to focus on next' => $bullets(array_map(fn ($f) => "**{$f['title']}:** {$f['tip']}", $r['focus_areas'])),
+        ];
+
+        return collect($sections + ['Motivation' => $r['motivation']])->filter()->map(fn ($body, $heading) => "## {$heading}\n\n{$body}")->implode("\n\n");
+    }
+
+    /** Reports whose job never finished must not keep credits reserved. Returns how many were released. */
+    public function releaseStuck(): int
+    {
+        return AiReport::query()->where('status', AiReport::PENDING)->where('created_at', '<', now()->subHours(2))
+            ->update(['status' => AiReport::FAILED, 'error' => 'The report was not processed in time.', 'updated_at' => now()]);
+    }
+
     /** @return array{0: ProgressPhoto, 1: ProgressPhoto} */
     protected function comparisonPhotos(Member $member, ?int $beforeId, ?int $afterId): array
     {
@@ -204,6 +259,7 @@ class AiReportService
             'status' => $report->status,
             'credits' => $report->credits,
             'content' => $report->content,
+            'result' => $report->result,
             'before_photo_id' => $report->before_photo_id,
             'after_photo_id' => $report->after_photo_id,
             'requested_by' => $report->requested_by,

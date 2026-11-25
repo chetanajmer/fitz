@@ -22,6 +22,9 @@ class AiReport extends Model
 
     public const TYPES = [self::PROGRESS => 'Progress report', self::PHOTO_COMPARISON => 'Photo comparison'];
 
+    /** How much visibly changed between two photos. */
+    public const CHANGE_LEVELS = ['none' => 'No visible change', 'slight' => 'Slight change', 'moderate' => 'Clear change', 'strong' => 'Strong change', 'unclear' => 'Not comparable'];
+
     public const PENDING = 'pending';
 
     public const COMPLETED = 'completed';
@@ -36,6 +39,7 @@ class AiReport extends Model
     {
         return [
             'credits' => 'integer',
+            'result' => 'array',
             'cost_usd' => 'float',
             'completed_at' => 'datetime',
         ];

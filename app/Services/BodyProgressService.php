@@ -22,6 +22,8 @@ class BodyProgressService
 {
     public const DISK = 'local';
 
+    protected const MAX_PIXELS = 50_000_000;
+
     /** Validation rules shared by the API and the gym panel. @return array<string, list<string>> */
     public static function measurementRules(): array
     {
@@ -65,7 +67,9 @@ class BodyProgressService
 
     public function addPhoto(Member $member, UploadedFile $file, string $pose, ?string $takenOn = null, string $source = 'app', ?User $uploadedBy = null): ProgressPhoto
     {
-        $path = $file->storeAs("progress-photos/{$member->gym_id}/{$member->id}", Str::random(40).'.'.$file->extension(), self::DISK);
+        // Re-encoded: smaller, upright and without EXIF data (phone photos carry the GPS location).
+        $path = "progress-photos/{$member->gym_id}/{$member->id}/".Str::random(40).'.jpg';
+        Storage::disk(self::DISK)->put($path, $this->jpeg($file->get(), 1600));
 
         $photo = new ProgressPhoto;
         $photo->member_id = $member->id;
@@ -95,9 +99,46 @@ class BodyProgressService
     /** The photo as a data URL, for sending to the AI model. */
     public function photoDataUrl(ProgressPhoto $photo): string
     {
-        $disk = Storage::disk(self::DISK);
+        return 'data:image/jpeg;base64,'.base64_encode($this->jpeg(Storage::disk(self::DISK)->get($photo->path), 1024));
+    }
 
-        return 'data:'.$disk->mimeType($photo->path).';base64,'.base64_encode($disk->get($photo->path));
+    /** An upright JPEG at most $max pixels on its longest side, with no metadata. */
+    protected function jpeg(string $bytes, int $max): string
+    {
+        $size = @getimagesizefromstring($bytes);
+
+        if (! $size || $size[0] * $size[1] > self::MAX_PIXELS) {
+            throw ValidationException::withMessages(['photo' => 'This photo cannot be used. Please upload a JPG, PNG or WebP photo of up to 50 megapixels.']);
+        }
+
+        $limit = ini_get('memory_limit');
+        if ($limit !== '-1' && ini_parse_quantity($limit) < 512 * 1024 * 1024) {
+            ini_set('memory_limit', '512M'); // decoding a large phone photo needs about 5 bytes per pixel
+        }
+
+        $source = @imagecreatefromstring($bytes);
+        if (! $source) {
+            throw ValidationException::withMessages(['photo' => 'This photo could not be read. Please try another one.']);
+        }
+
+        $scale = min(1, $max / max($size[0], $size[1]));
+        [$width, $height] = [max(1, (int) round($size[0] * $scale)), max(1, (int) round($size[1] * $scale))];
+        $image = imagecreatetruecolor($width, $height);
+        imagefill($image, 0, 0, imagecolorallocate($image, 255, 255, 255)); // transparent PNG / WebP
+        imagecopyresampled($image, $source, 0, 0, 0, 0, $width, $height, $size[0], $size[1]);
+        unset($source);
+
+        $orientation = $size['mime'] === 'image/jpeg' && function_exists('exif_read_data')
+            ? (@exif_read_data('data://image/jpeg;base64,'.base64_encode($bytes))['Orientation'] ?? 1) : 1;
+        $angle = [3 => 180, 6 => -90, 8 => 90][$orientation] ?? 0;
+        if ($angle) {
+            $image = imagerotate($image, $angle, 0);
+        }
+
+        ob_start();
+        imagejpeg($image, null, 85);
+
+        return (string) ob_get_clean();
     }
 
     /** @return array<string, mixed> */

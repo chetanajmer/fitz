@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Models\Member;
 use App\Models\MemberMeasurement;
 use App\Models\ProgressPhoto;
+use App\Services\AiReportService;
 use App\Services\BodyProgressService;
+use App\Services\TransformationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -74,6 +76,17 @@ class BodyProgressController extends ApiController
     public function photoImage(Request $request, int $photoId): StreamedResponse
     {
         return $this->body->photoResponse($this->member($request)->progressPhotos()->findOrFail($photoId));
+    }
+
+    /** GET /api/v1/me/transformation — first versus latest weight, measurements and photos. */
+    public function transformation(Request $request, TransformationService $transformation, AiReportService $reports): JsonResponse
+    {
+        $data = $transformation->summary($this->member($request));
+        $photo = fn (ProgressPhoto $p) => $this->body->photoArray($p) + ['image_url' => route('api.v1.me.progress-photos.image', $p->id)];
+        $data['photos'] = array_map(fn ($pair) => ['before' => $photo($pair['before']), 'after' => $photo($pair['after'])] + $pair, $data['photos']);
+        $data['latest_comparison'] = $data['latest_comparison'] ? $reports->toArray($data['latest_comparison']) : null;
+
+        return $this->success($data, 'Transformation.');
     }
 
     /** @return array{fields: array<string, string>, measurements: list<array<string, mixed>>} */

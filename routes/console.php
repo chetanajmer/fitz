@@ -150,6 +150,11 @@ Artisan::command('gymai:ai-monthly-reports', function (AiAccessService $access, 
 Schedule::command('gymai:refresh-memberships')->dailyAt('00:10');
 Schedule::command('gymai:refresh-streaks')->dailyAt('00:20');
 Schedule::command('gymai:generate-invoices')->monthlyOn(1, '02:00');
+Artisan::command('gymai:ai-release-stuck', function (AiReportService $reports) {
+    $this->info('AI reports released: '.$reports->releaseStuck().'.');
+})->purpose('Fail AI reports that were never processed, so their credits are free again');
+
+Schedule::command('gymai:ai-release-stuck')->hourly();
 Schedule::command('gymai:ai-monthly-reports')->monthlyOn(1, '07:00');
 // Member notifications: each gym's own times (Notifications page), checked every 5 minutes.
 Schedule::command('push:run')->everyFiveMinutes()->withoutOverlapping();

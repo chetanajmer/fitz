@@ -33,7 +33,7 @@ class PlatformSetting extends Model
 
         // AI progress module (OpenRouter). Gyms get their own limits on the AI page.
         'ai_enabled' => '0',
-        'ai_model' => 'openai/gpt-4o-mini',
+        'ai_model' => 'anthropic/claude-haiku-5.5',
         'ai_credits_progress' => '1',
         'ai_credits_photo_comparison' => '2',
         'ai_default_gym_credits' => '100',

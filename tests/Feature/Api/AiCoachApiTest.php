@@ -2,17 +2,21 @@
 
 namespace Tests\Feature\Api;
 
+use App\Jobs\GenerateAiReport;
 use App\Models\AiReport;
 use App\Models\Gym;
 use App\Models\GymAiSetting;
 use App\Models\Member;
 use App\Models\MemberNotification;
 use App\Models\PlatformSetting;
+use App\Models\ProgressPhoto;
+use App\Services\AiReportService;
 use App\Services\MembershipService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -47,14 +51,16 @@ class AiCoachApiTest extends TestCase
         return $this->withToken($token ?? $this->token);
     }
 
+    /** Replaces the AI answer when set. */
+    protected ?string $openRouterAnswer = null;
+
     /** OpenRouter answers with this HTTP status (tests switch it to simulate an outage). */
     protected int $openRouterStatus = 200;
 
     protected function fakeOpenRouter(): void
     {
         Http::fake(['openrouter.ai/*' => fn () => $this->openRouterStatus === 200
-            ? Http::response(['model' => 'openai/gpt-4o-mini', 'choices' => [['message' => ['content' => '## Summary
-Great consistency.']]],
+            ? Http::response(['model' => 'anthropic/claude-haiku-5.5', 'choices' => [['message' => ['content' => $this->openRouterAnswer ?? json_encode(['summary' => 'Great consistency.', 'change_level' => 'slight', 'changes' => [['area' => 'Waist', 'observation' => 'Looks leaner']], 'numbers' => 'Waist down 3 cm.', 'photo_quality' => 'good', 'photo_tips' => ['Same light'], 'wins' => ['Four visits a week'], 'focus_areas' => [['title' => 'Weigh in', 'tip' => 'Every Monday']], 'motivation' => 'Keep going!', 'confidence' => 'medium'])]]],
                 'usage' => ['prompt_tokens' => 900, 'completion_tokens' => 300, 'cost' => 0.0004]])
             : Http::response(['error' => ['message' => 'Provider down']], $this->openRouterStatus)]);
     }
@@ -98,7 +104,7 @@ Great consistency.']]],
         $this->consent();
         $this->api()->postJson('/api/v1/me/ai/reports', ['type' => 'progress'])->assertStatus(202)
             ->assertJsonPath('data.report.status', 'completed')
-            ->assertJsonPath('data.report.content', "## Summary\nGreat consistency.")
+            ->assertJsonPath('data.report.content', "## Summary\n\nGreat consistency.\n\n## What's working\n\n- Four visits a week\n\n## What to focus on next\n\n- **Weigh in:** Every Monday\n\n## Motivation\n\nKeep going!")
             ->assertJsonPath('data.credits.used', 1)
             ->assertJsonPath('data.credits.remaining', 3);
 
@@ -111,7 +117,7 @@ Great consistency.']]],
         Http::assertSent(function (Request $request) {
             $body = json_encode($request->data());
 
-            return $request['provider'] === ['data_collection' => 'deny']
+            return $request['provider']['zdr'] === true
                 && ! str_contains($body, 'Ravi') && ! str_contains($body, '9876543210') && ! str_contains($body, 'Asthma');
         });
 
@@ -237,5 +243,83 @@ Great consistency.']]],
             'pose' => 'front',
             'taken_on' => $takenOn,
         ]), ['Accept' => 'application/json'])->assertCreated()->json('data.photos.'.($takenOn === '2026-03-01' ? '1' : '0').'.id');
+    }
+
+    public function test_reports_have_fields_and_ask_only_for_zero_retention_providers(): void
+    {
+        $this->consent();
+        $this->api()->postJson('/api/v1/me/ai/reports', ['type' => 'progress'])->assertStatus(202)
+            ->assertJsonPath('data.report.result.wins.0', 'Four visits a week')
+            ->assertJsonPath('data.report.result.confidence', 'medium');
+
+        Http::assertSent(fn (Request $request) => $request['provider'] === ['data_collection' => 'deny', 'zdr' => true, 'require_parameters' => true]
+            && $request['response_format']['json_schema']['name'] === 'progress_report');
+    }
+
+    public function test_an_incomplete_ai_answer_fails_and_costs_nothing(): void
+    {
+        $this->consent();
+        $this->openRouterAnswer = '{"summary": "cut o';
+        $this->api()->postJson('/api/v1/me/ai/reports', ['type' => 'progress'])
+            ->assertJsonPath('data.report.status', 'failed')->assertJsonPath('data.credits.used', 0);
+    }
+
+    public function test_nothing_is_sent_after_consent_is_withdrawn_and_stuck_reports_free_their_credits(): void
+    {
+        Queue::fake();
+        $this->consent();
+        $this->api()->postJson('/api/v1/me/ai/reports', ['type' => 'progress'])->assertStatus(202)->assertJsonPath('data.credits.used', 1);
+        $this->api()->postJson('/api/v1/me/ai/consent', ['accepted' => false])->assertOk()->assertJsonPath('data.credits.used', 0);
+
+        // A report that is still pending is also re-checked when its job runs.
+        $report = AiReport::withoutGlobalScopes()->sole();
+        $report->forceFill(['status' => AiReport::PENDING])->saveQuietly();
+        app()->call([new GenerateAiReport($report->id, $this->gym->id), 'handle']);
+        $this->assertSame(AiReport::FAILED, AiReport::withoutGlobalScopes()->sole()->status);
+        Http::assertNothingSent();
+
+        AiReport::withoutGlobalScopes()->update(['status' => AiReport::PENDING, 'created_at' => now()->subHours(3)]);
+        $this->assertSame(1, $this->inGym($this->gym, fn () => app(AiReportService::class)->releaseStuck()));
+        $this->assertSame(AiReport::FAILED, AiReport::withoutGlobalScopes()->sole()->status);
+    }
+
+    public function test_photos_are_resized_turned_upright_and_lose_their_metadata(): void
+    {
+        $image = imagecreatetruecolor(2400, 1200);
+        ob_start();
+        imagejpeg($image, null, 60);
+        $jpeg = (string) ob_get_clean();
+        // A minimal EXIF block: orientation 6 (rotate 90 degrees), as phones write it.
+        $tiff = "MM\x00\x2a\x00\x00\x00\x08\x00\x01\x01\x12\x00\x03\x00\x00\x00\x01\x00\x06\x00\x00\x00\x00\x00\x00";
+        $exif = "Exif\x00\x00".$tiff;
+        $jpeg = substr($jpeg, 0, 2)."\xFF\xE1".pack('n', strlen($exif) + 2).$exif.substr($jpeg, 2);
+        $file = UploadedFile::fake()->createWithContent('phone.jpg', $jpeg);
+
+        $this->api()->post('/api/v1/me/progress-photos', ['photo' => $file, 'pose' => 'front'], ['Accept' => 'application/json'])->assertCreated();
+
+        $stored = Storage::disk('local')->get(ProgressPhoto::withoutGlobalScopes()->sole()->path);
+        $this->assertStringNotContainsString('Exif', $stored);
+        $size = getimagesizefromstring($stored);
+        $this->assertSame([800, 1600], [$size[0], $size[1]]);
+    }
+
+    public function test_transformation_compares_first_and_latest_of_the_same_pose(): void
+    {
+        $before = $this->uploadPhoto('2026-01-01');
+        $this->uploadPhoto('2026-02-01');
+        $this->uploadPhoto('2026-03-01');
+        $after = (int) ProgressPhoto::withoutGlobalScopes()->max('id');
+        foreach ([['2026-01-01', 92], ['2026-03-01', 88.5]] as [$day, $waist]) {
+            $this->api()->postJson('/api/v1/me/measurements', ['measured_on' => $day, 'waist_cm' => $waist])->assertCreated();
+        }
+
+        $this->api()->getJson('/api/v1/me/transformation')->assertOk()
+            ->assertJsonPath('data.photos.0.before.id', $before)
+            ->assertJsonPath('data.photos.0.after.id', $after)
+            ->assertJsonMissingPath('data.photos.0.before.path')
+            ->assertJsonPath('data.measurements.0.field', 'waist_cm')
+            ->assertJsonPath('data.measurements.0.change', -3.5)
+            ->assertJsonPath('data.weight.latest_kg', null)
+            ->assertJsonPath('data.latest_comparison', null);
     }
 }

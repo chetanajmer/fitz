@@ -105,6 +105,18 @@ class AiAccessService
         }
     }
 
+    /** Whether a queued report may still send the member's data: things can change after it was requested. */
+    public function maySend(Member $member, string $type): bool
+    {
+        $settings = $this->settingsFor($member->gym);
+
+        return ! $member->trashed()
+            && $this->platformEnabled() && $settings->allowed && $settings->enabled
+            && ($type !== AiReport::PHOTO_COMPARISON || $settings->photos_allowed)
+            && $member->ai_consent_at !== null
+            && $this->isEligible($member, $settings);
+    }
+
     /** @return array{limit: int, used: int, remaining: int, resets_on: string} */
     public function credits(Member $member, ?GymAiSetting $settings = null): array
     {
@@ -138,5 +150,10 @@ class AiAccessService
     public function setConsent(Member $member, bool $accepted): void
     {
         $member->forceFill(['ai_consent_at' => $accepted ? now() : null])->save();
+
+        if (! $accepted) {
+            AiReport::forGym($member->gym_id)->where('member_id', $member->id)->where('status', AiReport::PENDING)
+                ->update(['status' => AiReport::FAILED, 'error' => 'Consent withdrawn.', 'updated_at' => now()]);
+        }
     }
 }

@@ -129,6 +129,8 @@ Route::prefix('me')->name('portal.')
         Route::get('/qr', [QrCodeController::class, 'self'])->name('qr');
         Route::livewire('/plans/view/{plan}', Livewire\Portal\PlanShow::class)->whereNumber('plan')->name('plans.show');
         Route::livewire('/plans/{type}', Livewire\Portal\Plans::class)->whereIn('type', ['diet', 'workout'])->name('plans');
+        Route::livewire('/progress', Livewire\Portal\Progress::class)->name('progress');
+        Route::get('/progress/photos/{photoId}', [ProgressPhotoController::class, 'own'])->whereNumber('photoId')->name('progress-photo');
         Route::get('/receipts/{payment}', [DocumentController::class, 'memberReceipt'])->name('receipt');
         Route::livewire('/account', Livewire\Account::class)->name('account');
     });
