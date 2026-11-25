@@ -48,22 +48,26 @@
                 <span wire:loading wire:target="login">Signing in…</span>
             </button>
         </form>
+    @elseif (count($accounts) > 1)
+        {{-- The code was correct and the email or number has several accounts. --}}
+        <form wire:submit="chooseAccount" class="mt-6 space-y-4">
+            <x-ui.field label="Sign in to" name="account">
+                <div class="space-y-2">
+                    @foreach ($accounts as $a)
+                        <label wire:key="acc-{{ $a['key'] }}" class="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                            <input wire:model="account" type="radio" value="{{ $a['key'] }}" class="border-gray-300 text-indigo-600"> {{ $a['label'] }}
+                        </label>
+                    @endforeach
+                </div>
+            </x-ui.field>
+            <button type="submit" class="btn-primary w-full" wire:loading.attr="disabled">Continue</button>
+            <button type="button" wire:click="changeIdentifier" class="w-full text-center text-sm text-gray-500 hover:underline">Use another number or email</button>
+        </form>
     @elseif (! $codeSent)
         <form wire:submit="sendCode" class="mt-6 space-y-4">
             <x-ui.field label="Email or mobile number" name="identifier" hint="We send a one-time code to your email or by SMS to your mobile.">
                 <input wire:model="identifier" id="identifier" type="text" autocomplete="username" autofocus class="input">
             </x-ui.field>
-            @if (count($accounts) > 1)
-                <x-ui.field label="Sign in to" name="account">
-                    <div class="space-y-2">
-                        @foreach ($accounts as $a)
-                            <label wire:key="acc-{{ $a['key'] }}" class="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm">
-                                <input wire:model="account" type="radio" value="{{ $a['key'] }}" class="border-gray-300 text-indigo-600"> {{ $a['label'] }}
-                            </label>
-                        @endforeach
-                    </div>
-                </x-ui.field>
-            @endif
             <button type="submit" class="btn-primary w-full" wire:loading.attr="disabled">
                 <span wire:loading.remove wire:target="sendCode">Send code</span>
                 <span wire:loading wire:target="sendCode">Sending…</span>
@@ -71,7 +75,7 @@
         </form>
     @else
         <form wire:submit="verifyCode" class="mt-6 space-y-4">
-            <p class="text-sm text-gray-600">We sent a code to <strong>{{ $this->sentTo() }}</strong>.@if ($account === \App\Services\OtpLoginService::STATUS) Enter it to see your registration status.@endif
+            <p class="text-sm text-gray-600">If an account or registration uses <strong>{{ $this->sentTo() }}</strong>, we sent it a code. Gym staff: verify your mobile under My account before using it here.
                 <button type="button" wire:click="changeIdentifier" class="font-medium text-indigo-600 hover:underline">Change</button></p>
             <x-ui.field label="Code" name="code">
                 <input wire:model="code" id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="{{ config('gymai.otp.length', 6) }}" autofocus class="input tracking-widest">
