@@ -60,7 +60,7 @@ class AiCoachApiTest extends TestCase
     protected function fakeOpenRouter(): void
     {
         Http::fake(['openrouter.ai/*' => fn () => $this->openRouterStatus === 200
-            ? Http::response(['model' => 'anthropic/claude-haiku-5.5', 'choices' => [['message' => ['content' => $this->openRouterAnswer ?? json_encode(['summary' => 'Great consistency.', 'change_level' => 'slight', 'changes' => [['area' => 'Waist', 'observation' => 'Looks leaner']], 'numbers' => 'Waist down 3 cm.', 'photo_quality' => 'good', 'photo_tips' => ['Same light'], 'wins' => ['Four visits a week'], 'focus_areas' => [['title' => 'Weigh in', 'why' => 'Last one was in May.', 'tip' => 'Every Monday']], 'missing' => ['A weight goal'], 'motivation' => 'Keep going!', 'confidence' => 'medium'])]]],
+            ? Http::response(['model' => 'anthropic/claude-haiku-5.5', 'choices' => [['message' => ['content' => $this->openRouterAnswer ?? json_encode(['summary' => 'Great consistency.', 'direction' => 'improved', 'change_level' => 'slight', 'changes' => [['area' => 'Waist', 'observation' => 'Looks leaner']], 'numbers' => 'Waist down 3 cm.', 'photo_quality' => 'good', 'photo_tips' => ['Same light'], 'wins' => ['Four visits a week'], 'focus_areas' => [['title' => 'Weigh in', 'why' => 'Last one was in May.', 'tip' => 'Every Monday']], 'missing' => ['A weight goal'], 'motivation' => 'Keep going!', 'confidence' => 'medium'])]]],
                 'usage' => ['prompt_tokens' => 900, 'completion_tokens' => 300, 'cost' => 0.0004]])
             : Http::response(['error' => ['message' => 'Provider down']], $this->openRouterStatus)]);
     }

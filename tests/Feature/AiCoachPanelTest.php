@@ -36,7 +36,7 @@ class AiCoachPanelTest extends TestCase
         parent::setUp();
         Storage::fake('local');
         config(['services.openrouter.key' => 'test-key']);
-        Http::fake(['openrouter.ai/*' => Http::response(['model' => 'anthropic/claude-haiku-5.5', 'choices' => [['message' => ['content' => json_encode(['summary' => 'Great consistency.', 'change_level' => 'slight', 'changes' => [['area' => 'Waist', 'observation' => 'Looks leaner']], 'numbers' => 'Waist down 3 cm.', 'photo_quality' => 'good', 'photo_tips' => ['Same light'], 'wins' => ['Four visits a week'], 'focus_areas' => [['title' => 'Weigh in', 'why' => 'Last one was in May.', 'tip' => 'Every Monday']], 'missing' => ['A weight goal'], 'motivation' => 'Keep going!', 'confidence' => 'medium'])]]], 'usage' => ['cost' => 0.001]])]);
+        Http::fake(['openrouter.ai/*' => Http::response(['model' => 'anthropic/claude-haiku-5.5', 'choices' => [['message' => ['content' => json_encode(['summary' => 'Great consistency.', 'direction' => 'improved', 'change_level' => 'slight', 'changes' => [['area' => 'Waist', 'observation' => 'Looks leaner']], 'numbers' => 'Waist down 3 cm.', 'photo_quality' => 'good', 'photo_tips' => ['Same light'], 'wins' => ['Four visits a week'], 'focus_areas' => [['title' => 'Weigh in', 'why' => 'Last one was in May.', 'tip' => 'Every Monday']], 'missing' => ['A weight goal'], 'motivation' => 'Keep going!', 'confidence' => 'medium'])]]], 'usage' => ['cost' => 0.001]])]);
         PlatformSetting::put(['ai_enabled' => '1']);
 
         $this->owner = $this->createGymOwner('Panel Gym');

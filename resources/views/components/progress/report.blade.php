@@ -3,7 +3,9 @@
 @php
     $r = $report->result;
     $hasPhotos = $report->type === \App\Models\AiReport::PHOTO_COMPARISON && $report->before_photo_id && $report->after_photo_id;
-    $step = ['none' => 0, 'slight' => 1, 'moderate' => 2, 'strong' => 3][$r['change_level'] ?? ''] ?? null;
+    $declined = ($r['direction'] ?? null) === 'declined';
+    $step = $declined ? null : ['none' => 0, 'slight' => 1, 'moderate' => 2, 'strong' => 3][$r['change_level'] ?? ''] ?? null;
+    $marks = ['better' => ['check', 'text-emerald-600', 'Better'], 'worse' => ['arrow-down', 'text-amber-600', 'Worse'], 'neutral' => ['arrow-right', 'text-gray-400', 'Different']];
 @endphp
 <div class="space-y-6 text-sm">
     @if ($highlight || $hasPhotos)
@@ -52,7 +54,8 @@
                     <h3 class="mb-2 font-semibold text-gray-900">What changed</h3>
                     <ul class="space-y-3">
                         @foreach ($r['changes'] as $c)
-                            <li class="flex gap-3"><x-ui.icon name="check" class="mt-0.5 size-4 shrink-0 text-emerald-600" /><p class="max-w-prose"><span class="block font-medium text-gray-900">{{ $c['area'] }}</span><span class="text-gray-500">{{ $c['observation'] }}</span></p></li>
+                            @php([$icon, $color, $label] = $marks[$c['direction'] ?? 'neutral'] ?? $marks['neutral'])
+                            <li class="flex gap-3"><x-ui.icon :name="$icon" class="mt-0.5 size-4 shrink-0 {{ $color }}" /><p class="max-w-prose"><span class="block font-medium text-gray-900">{{ $c['area'] }} <span class="text-xs font-normal {{ $color }}">{{ isset($c['direction']) ? $label : '' }}</span></span><span class="text-gray-500">{{ $c['observation'] }}</span></p></li>
                         @endforeach
                     </ul>
                 </div>
@@ -92,7 +95,7 @@
                 </div>
             @endif
 
-            <p class="max-w-prose rounded-lg bg-emerald-50 px-4 py-3 text-emerald-800">{{ $r['motivation'] }}</p>
+            <p @class(['max-w-prose rounded-lg px-4 py-3', 'bg-gray-100 text-gray-700' => $declined, 'bg-emerald-50 text-emerald-800' => ! $declined])>{{ $r['motivation'] }}</p>
 
             <div class="space-y-2 text-gray-500">
                 @if (! empty($r['photo_tips']))

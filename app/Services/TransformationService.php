@@ -24,6 +24,11 @@ class TransformationService
         'unclear' => ["Let's reshoot"],
     ];
 
+    /** Never celebrate a change that is not an improvement. */
+    protected const MIXED_HEADLINES = ['Mixed results', 'Wins and work'];
+
+    protected const DECLINED_HEADLINES = ['Time to reset', 'Back to basics'];
+
     /** Streak length => headlines, highest first. */
     protected const STREAK_HEADLINES = [
         100 => ['Living legend', 'Triple digits'],
@@ -98,22 +103,29 @@ class TransformationService
     protected function comparisonHighlight(AiReport $report, array $summary): array
     {
         $level = $report->result['change_level'] ?? 'unclear';
+        $direction = $report->result['direction'] ?? null;
+        $changed = in_array($level, ['slight', 'moderate', 'strong'], true);
         $days = $report->beforePhoto && $report->afterPhoto ? (int) $report->beforePhoto->taken_on->diffInDays($report->afterPhoto->taken_on) : 0;
 
         return [
-            'headline' => $this->pick(self::COMPARISON_HEADLINES[$level], $report),
+            'headline' => match (true) {
+                ! $changed, $direction === 'improved' => $this->pick(self::COMPARISON_HEADLINES[$level], $report),
+                $direction === 'mixed' => $this->pick(self::MIXED_HEADLINES, $report),
+                $direction === 'declined' => $this->pick(self::DECLINED_HEADLINES, $report),
+                default => 'Before and after', // the direction is not known
+            },
             'period' => AiReport::CHANGE_LEVELS[$level].match (true) {
                 $days < 1 || $level === 'unclear' => '',
                 $days < 14 => " in {$days} ".Str::plural('day', $days),
                 $days < 60 => ' in '.intdiv($days, 7).' weeks',
                 default => ' in '.(int) round($days / 30.4).' months',
-            },
+            }.($changed && $direction === 'declined' ? ', moving the wrong way' : ''),
             // Biggest change first.
             'stats' => collect($this->readingsFor($report, $summary))->where('change', '!=', 0)
                 ->sortByDesc(fn (array $r) => abs($r['change'] / max($r['before'], 1)))->take(6)
                 ->map(fn (array $r) => ['label' => $r['label'], 'value' => $this->signed($r['change']).' '.($r['unit'] === '%' ? 'points' : $r['unit']), 'detail' => "{$r['before']} to {$r['after']}".($r['unit'] === '%' ? '%' : '')])
                 ->values()->all(),
-            'shareable' => in_array($level, ['slight', 'moderate', 'strong'], true),
+            'shareable' => $changed && $direction !== 'declined',
         ];
     }
 
@@ -123,13 +135,15 @@ class TransformationService
         $streak = $this->streaks->calculate($member, $report->created_at);
         $visits = $streak['total_visit_days'];
         $showStreak = $streak['current'] >= 3;
+        $declined = ($report->result['direction'] ?? null) === 'declined';
         [$headlines, $reached] = $showStreak ? [self::STREAK_HEADLINES, $streak['current']] : [self::VISIT_HEADLINES, $visits];
         $weights = collect($summary['weight']['history'])->where('date', '<=', $report->created_at->toDateString())->sortBy('date')->values();
         $change = $weights->count() > 1 ? round($weights->last()['value'] - $weights->first()['value'], 1) : 0.0;
 
         return [
-            'headline' => $this->pick(collect($headlines)->first(fn (array $lines, int $from) => $reached >= $from, ['Day one']), $report),
+            'headline' => $this->pick($declined ? self::DECLINED_HEADLINES : collect($headlines)->first(fn (array $lines, int $from) => $reached >= $from, ['Day one']), $report),
             'period' => match (true) {
+                $declined => 'Moving the wrong way',
                 $showStreak => "{$streak['current']} day streak",
                 $visits > 0 => $visits.' gym '.Str::plural('visit', $visits),
                 default => null,
@@ -139,7 +153,7 @@ class TransformationService
                 $streak['longest'] > 1 && $streak['longest'] > $streak['current'] ? ['label' => 'best streak', 'value' => "{$streak['longest']} days", 'detail' => null] : null,
                 $change != 0 ? ['label' => 'Weight', 'value' => $this->signed($change).' kg', 'detail' => "{$weights->first()['value']} to {$weights->last()['value']}"] : null,
             ])),
-            'shareable' => $visits > 0,
+            'shareable' => $visits > 0 && ! $declined,
         ];
     }
 

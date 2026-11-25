@@ -25,6 +25,9 @@ class AiReport extends Model
     /** How much visibly changed between two photos. */
     public const CHANGE_LEVELS = ['none' => 'No visible change', 'slight' => 'Slight change', 'moderate' => 'Clear change', 'strong' => 'Strong change', 'unclear' => 'Not comparable'];
 
+    /** Whether the change is good for the member. Reports made before this was asked have none. */
+    public const DIRECTIONS = ['improved', 'mixed', 'declined', 'unknown'];
+
     public const PENDING = 'pending';
 
     public const COMPLETED = 'completed';

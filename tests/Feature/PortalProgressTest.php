@@ -39,7 +39,7 @@ class PortalProgressTest extends TestCase
         config(['services.openrouter.key' => 'test-key']);
         PlatformSetting::put(['ai_enabled' => '1']);
         Http::fake(['openrouter.ai/*' => Http::response(['model' => 'm', 'choices' => [['message' => ['content' => json_encode(
-            ['summary' => 'Steady <b>progress</b>.', 'wins' => ['Regular visits'], 'focus_areas' => [['title' => 'Sleep', 'why' => 'Short nights', 'tip' => 'Eight hours']], 'missing' => ['Weekly weigh-ins'], 'motivation' => 'Go on!', 'confidence' => 'low'])]]], 'usage' => []])]);
+            ['summary' => 'Steady <b>progress</b>.', 'direction' => 'improved', 'wins' => ['Regular visits'], 'focus_areas' => [['title' => 'Sleep', 'why' => 'Short nights', 'tip' => 'Eight hours']], 'missing' => ['Weekly weigh-ins'], 'motivation' => 'Go on!', 'confidence' => 'low'])]]], 'usage' => []])]);
 
         $this->gym = $this->gymOf($this->createGymOwner('Portal Gym'));
         $this->member = $this->portalMember('one@example.test');
@@ -83,7 +83,7 @@ class PortalProgressTest extends TestCase
     {
         Http::swap(new HttpFactory);
         Http::fake(['openrouter.ai/*' => Http::response(['model' => 'm', 'choices' => [['message' => ['content' => json_encode(
-            ['summary' => 'Leaner waist.', 'change_level' => 'moderate', 'changes' => [], 'numbers' => 'None logged.', 'photo_quality' => 'good', 'photo_tips' => [], 'focus_areas' => [['title' => 'Legs', 'why' => 'They changed least.', 'tip' => 'Add squats twice a week.'], ['title' => 'Back', 'why' => 'Hard to see.', 'tip' => 'Add rows.']], 'missing' => ['A side photo'], 'motivation' => 'Go on!', 'confidence' => 'medium'])]]], 'usage' => []])]);
+            ['summary' => 'Leaner waist.', 'direction' => 'improved', 'change_level' => 'moderate', 'changes' => [], 'numbers' => 'None logged.', 'photo_quality' => 'good', 'photo_tips' => [], 'focus_areas' => [['title' => 'Legs', 'why' => 'They changed least.', 'tip' => 'Add squats twice a week.'], ['title' => 'Back', 'why' => 'Hard to see.', 'tip' => 'Add rows.']], 'missing' => ['A side photo'], 'motivation' => 'Go on!', 'confidence' => 'medium'])]]], 'usage' => []])]);
         $this->actingAs($this->member->user);
 
         $page = Livewire::test(Progress::class)->call('setConsent', true)
@@ -172,6 +172,15 @@ class PortalProgressTest extends TestCase
                 $this->assertNotEmpty($highlight['headline']);
                 $this->assertSame(AiReport::CHANGE_LEVELS[$level], $highlight['period']);
             }
+
+            // A change is celebrated only when the AI says it is an improvement; a setback is said and cannot be shared.
+            $comparison = fn (?string $direction) => $headline(5, 0, 'photo_comparison', ['change_level' => 'strong', 'direction' => $direction]);
+            $this->assertSame(['Level unlocked', 'Wins and work', 'Back to basics', 'Before and after', 'Before and after'],
+                array_map(fn (?string $d) => $comparison($d)['headline'], ['improved', 'mixed', 'declined', 'unknown', null]));
+            $this->assertSame('Strong change, moving the wrong way', $comparison('declined')['period']);
+            $this->assertSame([true, true, false], array_map(fn (string $d) => $comparison($d)['shareable'], ['improved', 'mixed', 'declined']));
+            $declined = $headline(2, 100, 'progress', ['direction' => 'declined']);
+            $this->assertSame(['Time to reset', 'Moving the wrong way', false], [$declined['headline'], $declined['period'], $declined['shareable']]);
         });
     }
 
