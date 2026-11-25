@@ -32,6 +32,8 @@ class Dashboard extends Component
     public function checkIn(AttendanceService $attendance): void
     {
         $record = $attendance->selfCheckIn($this->member());
+        $streak = app(StreakService::class)->summary($this->member());
+        $this->dispatch('streak-grew', count: $streak['current_streak'], milestone: in_array($streak['current_streak'], $streak['milestones'], true));
         $this->dispatch('notify', message: 'Checked in at '.$record->check_in_at->format('h:i A').'. Have a great workout!');
     }
 

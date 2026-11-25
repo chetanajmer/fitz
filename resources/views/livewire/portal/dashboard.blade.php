@@ -69,15 +69,22 @@
 
     {{-- Streak + QR --}}
     <div class="grid gap-6 lg:grid-cols-3">
-        <div class="card card-body lg:col-span-2">
+        <div class="streak-card card card-body lg:col-span-2" x-data="streakCard" data-count="{{ $streak['current_streak'] }}" data-state="{{ ! $streak['current_streak'] ? 'none' : ($streak['at_risk'] ? 'risk' : 'alive') }}" x-on:streak-grew.window="grew($event.detail)">
             <div class="flex items-center gap-4">
-                <div class="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-[0_10px_30px_-10px_color-mix(in_srgb,var(--gym-orange)_80%,transparent)]"><x-ui.icon name="fire" class="size-7" /></div>
+                <div wire:ignore class="streak-flame" :class="[state, flare ? 'flare' : '']" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" class="size-8" fill="currentColor">
+                        <path class="streak-flame-outer" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.867 8.21 8.21 0 003 2.48z" />
+                        <path class="streak-flame-inner" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" />
+                    </svg>
+                    <template x-for="ember in embers" :key="ember.id"><span class="streak-ember" :style="ember.style"></span></template>
+                </div>
                 <div class="flex-1">
-                    <p class="text-2xl font-bold text-gray-900">{{ $streak['current_streak'] }} day streak</p>
+                    <p class="text-2xl font-bold text-gray-900"><span class="sr-only">{{ $streak['current_streak'] }} day streak</span><span aria-hidden="true"><span wire:ignore class="streak-count" :class="flare && 'flare'" x-text="shown">{{ $streak['current_streak'] }}</span> day streak</span></p>
                     <p class="text-sm text-gray-500">{{ $streak['visits_this_month'] }} visits this month · best {{ $streak['longest_streak'] }}</p>
                 </div>
             </div>
             @if ($streak['at_risk'])<p class="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">Visit today to keep your streak alive!</p>@endif
+            <p wire:ignore role="status"><span x-show="reached" x-cloak x-transition class="mt-4 flex items-center gap-2 rounded-lg bg-brand-600/10 px-3 py-2 text-sm font-semibold text-gray-900"><x-ui.icon name="trophy" class="size-5 text-brand-600" /> <span><span x-text="reached"></span> day milestone reached!</span></span></p>
             <x-streak.week :week="$streak['week']" class="mt-6" />
             @if ($streak['next_milestone'])
                 @php($milestonePct = (int) round(($streak['next_milestone']['target'] - $streak['next_milestone']['remaining']) / max(1, $streak['next_milestone']['target']) * 100))
@@ -86,7 +93,7 @@
                         <p class="text-gray-500">{{ $streak['next_milestone']['remaining'] }} more visit days to your {{ $streak['next_milestone']['target'] }}-day milestone.</p>
                         <x-ui.icon name="trophy" class="size-5 shrink-0 text-brand-600" />
                     </div>
-                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-gradient-to-r from-brand-600 to-brand-400" style="width: {{ $milestonePct }}%"></div></div>
+                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-gray-100"><div class="streak-bar h-full rounded-full bg-gradient-to-r from-brand-600 to-brand-400" style="width: {{ $milestonePct }}%"></div></div>
                 </div>
             @endif
         </div>

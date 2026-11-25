@@ -55,6 +55,7 @@ class SelfCheckInTest extends TestCase
 
         Livewire::test(Dashboard::class)
             ->call('checkIn')
+            ->assertDispatched('streak-grew', count: 1, milestone: false)
             ->assertHasNoErrors()
             ->assertSee('Checked in at')
             ->assertSee('1 day streak')
