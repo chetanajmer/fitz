@@ -3,11 +3,11 @@
 namespace App\Support;
 
 /**
- * The automatic member notifications Gymai can send, with their default wording, timing and rules.
+ * The automatic member notifications Fitnix can send, with their default wording, timing and rules.
  *
  * The Super Admin edits the wording, default time and rules (notification_templates table).
  * Gyms can only switch a notification on / off and change its time and rules (never the wording).
- * Texts may only use the placeholders listed for their type; the values are filled in by Gymai.
+ * Texts may only use the placeholders listed for their type; the values are filled in by Fitnix.
  */
 class NotificationCatalog
 {

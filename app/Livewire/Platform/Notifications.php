@@ -157,7 +157,7 @@ class Notifications extends Component
     {
         $config->resetTemplate($key, Auth::user());
         $this->edit($key, $config);
-        $this->dispatch('notify', message: 'Back to the Gymai default.');
+        $this->dispatch('notify', message: 'Back to the Fitnix default.');
     }
 
     // ---- Rules --------------------------------------------------------------------------------

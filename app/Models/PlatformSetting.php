@@ -10,10 +10,10 @@ class PlatformSetting extends Model
     protected $fillable = ['key', 'value'];
 
     public const DEFAULTS = [
-        'platform_name' => 'Gymai',
+        'platform_name' => 'Fitnix',
         'support_email' => 'support@gymai.com',
         'support_phone' => null,
-        'invoice_prefix' => 'GYMAI',
+        'invoice_prefix' => 'FITNIX',
         'invoice_due_days' => '15',
         'company_address' => null,
         'gst_number' => null,

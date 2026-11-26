@@ -1,5 +1,5 @@
 {{-- Shared sidebar shell for the gym panel and the platform panel. --}}
-@props(['title' => null, 'brandName' => 'Gymai', 'brandSub' => null, 'brandLogo' => null, 'accountRoute' => null])
+@props(['title' => null, 'brandName' => 'Fitnix', 'brandSub' => null, 'brandLogo' => null, 'accountRoute' => null])
 @php
     $user = auth()->user();
     $hour = (int) now()->format('G');
@@ -15,6 +15,8 @@
             <div class="flex h-16 shrink-0 items-center gap-3 border-b border-ink-700 px-5">
                 @if ($brandLogo)
                     <img src="{{ $brandLogo }}" alt="" class="size-9 rounded-lg bg-white object-contain p-0.5">
+                @elseif (str_starts_with($brandName, 'Fitnix'))
+                    <x-brand.logo size="sm" :wordmark="false" />
                 @else
                     <div class="flex size-9 items-center justify-center rounded-lg bg-brand-600 text-sm font-bold text-white shadow-[0_0_18px_-2px_color-mix(in_srgb,var(--gym-orange)_60%,transparent)]">{{ \Illuminate\Support\Str::of($brandName)->substr(0, 2)->upper() }}</div>
                 @endif

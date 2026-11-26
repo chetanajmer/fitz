@@ -1,7 +1,7 @@
 {{--
     A gym's own dashboard colours. The whole theme reads from the --gym-* variables in app.css, so overriding
     the accent (primary) and navigation background (secondary) here re-colours buttons, active items, links,
-    tints and charts. Renders nothing while the gym keeps the default Gymai theme.
+    tints and charts. Renders nothing while the gym keeps the default Fitnix theme.
 --}}
 @props(['area', 'gym' => null])
 @php

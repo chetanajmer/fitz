@@ -3,6 +3,9 @@
 namespace App\Services\Ai;
 
 use App\Models\PlatformSetting;
+use Illuminate\Contracts\Encryption\DecryptException;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
@@ -14,9 +17,74 @@ use RuntimeException;
  */
 class OpenRouterClient
 {
+    /** Platform setting holding the key saved by the Super Admin, encrypted with the app key. */
+    public const KEY_SETTING = 'ai_api_key';
+
     public function isConfigured(): bool
     {
-        return filled(config('services.openrouter.key'));
+        return filled($this->apiKey());
+    }
+
+    /** The key saved on the Super Admin's AI Coach page, otherwise OPENROUTER_API_KEY from .env. */
+    public function apiKey(): ?string
+    {
+        return $this->savedKey() ?? (config('services.openrouter.key') ?: null);
+    }
+
+    /** Null when none is saved, or when it can no longer be decrypted (APP_KEY changed). */
+    public function savedKey(): ?string
+    {
+        $stored = PlatformSetting::get(self::KEY_SETTING);
+
+        try {
+            return $stored ? Crypt::decryptString($stored) : null;
+        } catch (DecryptException) {
+            return null;
+        }
+    }
+
+    public function saveKey(?string $key): void
+    {
+        PlatformSetting::put([self::KEY_SETTING => $key === null ? null : Crypt::encryptString($key)]);
+    }
+
+    /** Whether OpenRouter accepts the key. Throws when OpenRouter cannot be reached. */
+    public function keyWorks(string $key): bool
+    {
+        $response = Http::withToken($key)->timeout(15)->get($this->url('/key'));
+
+        if (in_array($response->status(), [401, 403], true)) {
+            return false;
+        }
+
+        $response->throw();
+
+        return true;
+    }
+
+    /**
+     * Models that can do our reports: they read images and have a provider that keeps no data (the consent text
+     * promises that) and supports the structured output and reasoning settings complete() requires. Cached for an hour. Throws when OpenRouter cannot be reached.
+     *
+     * @return list<string>
+     */
+    public function suitableModels(): array
+    {
+        return Cache::remember('openrouter_suitable_models', 3600, function () {
+            $readsImages = collect(Http::timeout(15)->get($this->url('/models'))->throw()->json('data'))
+                ->filter(fn (array $m) => in_array('image', $m['architecture']['input_modalities'] ?? [], true))
+                ->pluck('id');
+            $keepsNoData = collect(Http::timeout(15)->get($this->url('/endpoints/zdr'))->throw()->json('data'))
+                ->filter(fn (array $e) => ! array_diff(['structured_outputs', 'reasoning'], $e['supported_parameters'] ?? []))
+                ->pluck('model_id');
+
+            return $readsImages->intersect($keepsNoData)->filter(fn (string $id) => ! str_ends_with($id, ':batch'))->sort()->values()->all();
+        });
+    }
+
+    protected function url(string $path): string
+    {
+        return rtrim(config('services.openrouter.url'), '/').$path;
     }
 
     /**
@@ -32,10 +100,10 @@ class OpenRouterClient
             throw new RuntimeException('OpenRouter is not configured (OPENROUTER_API_KEY).');
         }
 
-        $response = Http::withToken(config('services.openrouter.key'))
+        $response = Http::withToken($this->apiKey())
             ->withHeaders(['X-Title' => (string) PlatformSetting::get('platform_name')])
             ->timeout(75) // stays under the queue's retry_after (90 s), so a slow call is never run twice
-            ->post(rtrim(config('services.openrouter.url'), '/').'/chat/completions', [
+            ->post($this->url('/chat/completions'), [
                 'model' => (string) PlatformSetting::get('ai_model'),
                 'max_tokens' => $maxTokens,
                 'messages' => [

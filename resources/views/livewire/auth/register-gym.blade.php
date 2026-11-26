@@ -122,13 +122,13 @@
                                     @endif
                                 </button>
                             @empty
-                                <p class="col-span-full rounded-xl bg-gym-charcoal p-4 text-sm text-gym-muted">No cities are available yet. Please contact Gymai support.</p>
+                                <p class="col-span-full rounded-xl bg-gym-charcoal p-4 text-sm text-gym-muted">No cities are available yet. Please contact Fitnix support.</p>
                             @endforelse
                         </div>
                         @error('city_id') <p class="input-error">{{ $message }}</p> @enderror
                         <p class="mt-4 flex items-center gap-2 text-sm text-gym-muted">
                             <svg viewBox="0 0 20 20" fill="currentColor" class="size-5 shrink-0" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.25v3a.75.75 0 0 0 1.5 0v-3.75A.75.75 0 0 0 10 9H9Z" clip-rule="evenodd" /></svg>
-                            Your city isn't listed? Contact Gymai support and we'll add it.
+                            Your city isn't listed? Contact Fitnix support and we'll add it.
                         </p>
                     </div>
                 @elseif ($step === 2)

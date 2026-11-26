@@ -39,7 +39,7 @@ class SetMemberApiContext
         $gym = $member->gym;
 
         if ($mode !== 'any-gym-status' && (! $gym || ! $gym->isOperational())) {
-            throw new ApiException('Your gym is currently unavailable on Gymai.', 'GYM_INACTIVE', 403, ['gym_status' => $gym?->status?->value]);
+            throw new ApiException('Your gym is currently unavailable on Fitnix.', 'GYM_INACTIVE', 403, ['gym_status' => $gym?->status?->value]);
         }
 
         $this->tenant->set($gym);

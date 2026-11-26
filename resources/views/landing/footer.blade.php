@@ -16,7 +16,7 @@
     <div class="bg-forest text-chalk">
         <div class="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr] lg:px-8">
             <div>
-                <a href="#home" class="lp-display flex items-center gap-2 text-4xl text-gym-white"><x-ui.icon name="dumbbell" class="size-9 text-gym-orange" /><span>Gym<span class="text-gym-orange">ai</span></span></a>
+                <a href="#home" aria-label="Fitnix home"><x-brand.logo size="lg" /></a>
                 <p class="mt-4 max-w-xs text-sm text-chalk/70">All-in-one gym management software for memberships, payments, attendance, trainers and growth — built for independent gyms and studios.</p>
             </div>
             <nav aria-label="Quick links">
@@ -57,10 +57,10 @@
                 </ul>
             </div>
         </div>
-        <p aria-hidden="true" class="lp-display lp-outline -mb-[0.12em] text-center text-[27vw] select-none" style="--lp-stroke: rgb(245 245 245 / 0.18)">Gymai</p>
+        <p aria-hidden="true" class="lp-display lp-outline -mb-[0.12em] text-center text-[27vw] select-none" style="--lp-stroke: rgb(245 245 245 / 0.18)">Fitnix</p>
         <div class="border-t-2 border-chalk/15">
             <div class="lp-mono mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-chalk/60 sm:flex-row sm:px-6 lg:px-8">
-                <p>© {{ now()->year }} Gymai. All rights reserved.</p>
+                <p>© {{ now()->year }} Fitnix. All rights reserved.</p>
                 <p>Made for gyms in India</p>
             </div>
         </div>

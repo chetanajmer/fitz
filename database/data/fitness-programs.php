@@ -2,7 +2,7 @@
 
 /*
 |--------------------------------------------------------------------------
-| Gymai default programs — day-by-day workout and diet schedules
+| Fitnix default programs — day-by-day workout and diet schedules
 |--------------------------------------------------------------------------
 | A program is a repeating cycle of days. Each day points to a plan in the default
 | fitness library (database/data/fitness-library.php) by its key, or is a rest day.

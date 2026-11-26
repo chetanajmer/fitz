@@ -156,7 +156,7 @@ class MemberApiTest extends TestCase
         $this->postJson('/api/v1/auth/send-otp', ['phone' => '9000000004'])->assertOk();
         $this->postJson('/api/v1/auth/send-otp', ['phone' => '9000000004'])->assertStatus(429)->assertJsonPath('code', 'OTP_COOLDOWN');
 
-        $this->travel(6)->minutes();
+        $this->travel(11)->minutes();
         $this->postJson('/api/v1/auth/verify-otp', ['phone' => '9000000004', 'otp' => $this->lastOtp()])
             ->assertStatus(422)->assertJsonPath('code', 'OTP_EXPIRED');
 

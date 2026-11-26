@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Throwable;
 
 /** Super Admin: the platform AI switch, model and credit costs, and each gym's AI limits and usage. */
 #[Layout('components.layouts.platform')]
@@ -22,6 +23,9 @@ class AiCoach extends Component
 {
     /** @var array<string, string> */
     public array $settings = [];
+
+    /** A new OpenRouter key typed by the Super Admin. Never filled with the saved one. */
+    public string $apiKey = '';
 
     public ?int $editingGymId = null;
 
@@ -37,8 +41,9 @@ class AiCoach extends Component
         }
     }
 
-    public function save(): void
+    public function save(OpenRouterClient $client): void
     {
+        $this->apiKey = trim($this->apiKey);
         $data = $this->validate([
             'settings.ai_enabled' => 'required|in:0,1',
             'settings.ai_model' => ['required', 'string', 'max:100', 'regex:/^[a-z0-9._-]+\/[a-z0-9._:-]+$/i'],
@@ -46,10 +51,39 @@ class AiCoach extends Component
             'settings.ai_credits_photo_comparison' => 'required|integer|min:1|max:20',
             'settings.ai_default_gym_credits' => 'required|integer|min:0|max:100000',
             'settings.ai_default_member_ceiling' => 'required|integer|min:1|max:100',
-        ], ['settings.ai_model.regex' => 'Use an OpenRouter model id like openai/gpt-6-luna.'])['settings'];
+            'apiKey' => 'nullable|string|min:20|max:200',
+        ], ['settings.ai_model.regex' => 'Use an OpenRouter model id like openai/gpt-6-luna.'], ['apiKey' => 'API key'])['settings'];
+
+        try {
+            if ($this->apiKey !== '' && ! $client->keyWorks($this->apiKey)) {
+                $this->addError('apiKey', 'OpenRouter did not accept this key.');
+
+                return;
+            }
+            if (! in_array($data['ai_model'], $client->suitableModels(), true)) {
+                $this->addError('settings.ai_model', 'This model cannot be used: it must exist on OpenRouter, read images, support structured output and have a provider that keeps no data.');
+
+                return;
+            }
+        } catch (Throwable) {
+            $this->addError('settings.ai_model', 'Could not reach OpenRouter to check the settings. Nothing was saved; please try again.');
+
+            return;
+        }
 
         PlatformSetting::put($data);
+        if ($this->apiKey !== '') {
+            $client->saveKey($this->apiKey);
+        }
+        $this->reset('apiKey');
         $this->dispatch('notify', message: 'AI settings saved.');
+    }
+
+    /** Go back to OPENROUTER_API_KEY from .env. */
+    public function removeKey(OpenRouterClient $client): void
+    {
+        $client->saveKey(null);
+        $this->dispatch('notify', message: 'Saved API key removed.');
     }
 
     public function editGym(int $gymId, AiAccessService $access): void
@@ -93,6 +127,9 @@ class AiCoach extends Component
 
         return view('livewire.platform.ai-coach', [
             'configured' => $client->isConfigured(),
+            'savedKey' => $client->savedKey(),
+            'envKey' => filled(config('services.openrouter.key')),
+            'models' => rescue(fn () => $client->suitableModels(), [], false),
             'gyms' => Gym::orderBy('name')->get(['id', 'name', 'city', 'status']),
             'gymSettings' => GymAiSetting::query()->get()->keyBy('gym_id'),
             'usage' => $usage,

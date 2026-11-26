@@ -125,6 +125,8 @@
         </div>
     </div>
 
+    <livewire:portal.weight-goal />
+
     <div class="pm-reveal">
         @include('livewire.portal.partials.programs', ['programs' => $programs, 'types' => ['workout', 'diet'], 'detailed' => false])
     </div>

@@ -102,7 +102,7 @@ class NotificationSettings
         return $enabled;
     }
 
-    /** Put a template back to the Gymai default wording, time and rules. */
+    /** Put a template back to the Fitnix default wording, time and rules. */
     public function resetTemplate(string $key, User $by): void
     {
         $definition = NotificationCatalog::TYPES[$key];

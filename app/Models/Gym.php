@@ -45,7 +45,7 @@ class Gym extends Model
         ],
     ];
 
-    /** Dashboard theme colours (Gymai black + electric orange): primary accent and navigation background. */
+    /** Dashboard theme colours (Fitnix black + electric orange): primary accent and navigation background. */
     public const DASHBOARD_THEME_DEFAULTS = ['primary' => '#ff6b00', 'secondary' => '#0d0d0d'];
 
     /** Dashboards whose colours a gym can change. */
@@ -206,7 +206,7 @@ class Gym extends Model
 
     /**
      * The colours a gym picked for one of its dashboards ('admin' panel or 'member' app), falling back to
-     * the Gymai theme. `custom` is false while the gym uses the default theme.
+     * the Fitnix theme. `custom` is false while the gym uses the default theme.
      *
      * @return array{primary: string, secondary: string, custom: bool}
      */

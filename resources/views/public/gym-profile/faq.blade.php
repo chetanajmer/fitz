@@ -8,8 +8,8 @@
         ['How much does a membership cost?', $plans->isNotEmpty()
             ? 'Plans start at '.money($fromPrice, false).': '.$plans->map(fn ($p) => $p->name.' ('.$p->durationLabel().') '.money($p->price, false))->implode(', ').'. You pay at the gym.'
             : 'Please call or send an enquiry for current membership prices.'],
-        ['How do I join?', 'Tap "Join now" to register online through Gymai — choose your city, pick '.$gym->name.' and verify your mobile number. The gym approves your registration and you choose a plan at the front desk. You can also send an enquiry and the team will call you.'],
-        ['Will I get a member app?', 'Yes. Once the gym approves you, sign in to the Gymai app with your mobile number to check in with your QR code and see your workout plans, diet plans, attendance and progress.'],
+        ['How do I join?', 'Tap "Join now" to register online through Fitnix — choose your city, pick '.$gym->name.' and verify your mobile number. The gym approves your registration and you choose a plan at the front desk. You can also send an enquiry and the team will call you.'],
+        ['Will I get a member app?', 'Yes. Once the gym approves you, sign in to the Fitnix app with your mobile number to check in with your QR code and see your workout plans, diet plans, attendance and progress.'],
         $facilities->isNotEmpty() ? ['What facilities are available?', $facilities->pluck('name')->implode(', ').'.'] : null,
     ]);
 @endphp

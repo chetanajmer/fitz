@@ -1,7 +1,7 @@
-{{-- How joining works and what members get in the Gymai app; the phone shows a labelled preview, not real data. --}}
+{{-- How joining works and what members get in the Fitnix app; the phone shows a labelled preview, not real data. --}}
 @php
     $joinSteps = [
-        ['search', 'Join online', 'Find '.$gym->name.' on Gymai and send your details.'],
+        ['search', 'Join online', 'Find '.$gym->name.' on Fitnix and send your details.'],
         ['check', 'Gym approves you', 'The gym confirms your registration and you get your member ID.'],
         ['cash', 'Choose your plan', 'Pick a membership plan and pay at the front desk.'],
         ['device', 'Train with the app', 'Sign in with your mobile number: QR check-ins, workouts, diet plans and progress.'],

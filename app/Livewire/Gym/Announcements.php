@@ -95,7 +95,7 @@ class Announcements extends Component
 
         $this->reset('title', 'body', 'image');
         $this->resetPage();
-        $this->dispatch('notify', message: 'Sent to Gymai for approval. You can send it as soon as it is approved.');
+        $this->dispatch('notify', message: 'Sent to Fitnix for approval. You can send it as soon as it is approved.');
     }
 
     public function openSend(int $announcementId): void
@@ -169,7 +169,7 @@ class Announcements extends Component
 
         $config->resetForGym(current_gym(), $key);
         $this->loadAutomatic($config);
-        $this->dispatch('notify', message: 'Back to the Gymai default time and rules.');
+        $this->dispatch('notify', message: 'Back to the Fitnix default time and rules.');
     }
 
     public function render(PushNotificationService $notifications, NotificationSettings $config): View

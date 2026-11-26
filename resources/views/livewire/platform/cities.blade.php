@@ -1,5 +1,5 @@
 <div>
-    <x-ui.page-header title="Cities" subtitle="Where Gymai is live. Gyms pick their city from this list, and members choose a city first when they sign up in the app." />
+    <x-ui.page-header title="Cities" subtitle="Where Fitnix is live. Gyms pick their city from this list, and members choose a city first when they sign up in the app." />
 
     <div class="grid gap-6 lg:grid-cols-3">
         <form wire:submit="save" class="card card-body h-fit space-y-4">
@@ -58,7 +58,7 @@
                                 </tr>
                             @endif
                         @empty
-                            <tr><td colspan="6"><x-ui.empty message="No cities yet. Add the first city Gymai is live in." icon="building" /></td></tr>
+                            <tr><td colspan="6"><x-ui.empty message="No cities yet. Add the first city Fitnix is live in." icon="building" /></td></tr>
                         @endforelse
                     </tbody>
                 </table>

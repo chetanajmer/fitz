@@ -8,7 +8,7 @@
             'tone' => 'brightness-105 contrast-110',
             'title' => 'Your fitness journey',
             'accent' => 'starts here.',
-            'text' => 'Pick your city and find gyms near you that are on Gymai.',
+            'text' => 'Pick your city and find gyms near you that are on Fitnix.',
         ],
         2 => [
             'image' => 'images/register/step-2-gym.jpg',
@@ -32,7 +32,7 @@
             'tone' => 'brightness-90 contrast-115',
             'title' => 'One last',
             'accent' => 'rep.',
-            'text' => 'Verify your mobile number — you\'ll use it to sign in to the Gymai app.',
+            'text' => 'Verify your mobile number — you\'ll use it to sign in to the Fitnix app.',
         ],
         5 => [
             'image' => 'images/register/step-1-city.jpg',
@@ -60,7 +60,7 @@
     <div class="flex flex-col border-t border-gym-border p-6 sm:p-10 lg:border-t-0 lg:border-l lg:p-12">
         @if ($step < 5)
             <h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">Join a gym</h1>
-            <p class="mt-3 text-gym-muted">Find your gym on Gymai and register as a member. <strong class="text-gym-orange">The gym confirms your registration.</strong></p>
+            <p class="mt-3 text-gym-muted">Find your gym on Fitnix and register as a member. <strong class="text-gym-orange">The gym confirms your registration.</strong></p>
 
             {{-- Progress: City → Gym → Details → Verify --}}
             <ol class="mt-8 flex items-center gap-2.5" aria-label="Sign-up progress">
@@ -162,13 +162,13 @@
                         </button>
                     @empty
                         <p class="col-span-full rounded-xl bg-gym-charcoal p-4 text-center text-sm text-gym-muted">
-                            {{ trim($citySearch) !== '' ? 'No city matches "'.trim($citySearch).'".' : "Gymai isn't live in any city yet. Please check back soon." }}
+                            {{ trim($citySearch) !== '' ? 'No city matches "'.trim($citySearch).'".' : "Fitnix isn't live in any city yet. Please check back soon." }}
                         </p>
                     @endforelse
                 </div>
                 <p class="mt-4 flex items-center gap-2 text-sm text-gym-muted">
                     <svg viewBox="0 0 20 20" fill="currentColor" class="size-5 shrink-0" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.25v3a.75.75 0 0 0 1.5 0v-3.75A.75.75 0 0 0 10 9H9Z" clip-rule="evenodd" /></svg>
-                    Don't see your city? Gymai isn't there yet.
+                    Don't see your city? Fitnix isn't there yet.
                 </p>
                 <p class="mt-3 text-sm text-gym-muted">Just looking? <a href="{{ route('gyms.browse') }}" class="font-semibold text-gym-orange hover:underline">Browse gyms in your city</a></p>
             </div>

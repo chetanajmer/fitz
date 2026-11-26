@@ -50,7 +50,7 @@ class Index extends Component
         $this->scan = '';
 
         if (! preg_match('/^[A-Za-z0-9]{20,64}$/', $token)) {
-            $this->addError('scan', 'That does not look like a Gymai member QR code.');
+            $this->addError('scan', 'That does not look like a Fitnix member QR code.');
 
             return;
         }

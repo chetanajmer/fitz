@@ -7,7 +7,7 @@ namespace App\Support;
  *
  * Grants are stored as direct Spatie permissions on the trainer's user. The trainer role
  * itself only carries `gym.dashboard`, so a trainer sees exactly the sections granted here.
- * Gym settings, Gymai billing and trainer management are never grantable (no escalation).
+ * Gym settings, Fitnix billing and trainer management are never grantable (no escalation).
  */
 class TrainerAccess
 {

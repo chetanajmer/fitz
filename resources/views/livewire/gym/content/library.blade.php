@@ -111,7 +111,7 @@
                             <button wire:click="openSend" class="btn-primary btn-sm">Create one for a member</button>
                         @elseif ($canManage)
                             <div class="flex flex-wrap justify-center gap-2">
-                                <button wire:click="openImport" class="btn-primary btn-sm"><x-ui.icon name="upload" class="size-4" /> Import Gymai's ready-made {{ strtolower($planType->pluralLabel()) }}</button>
+                                <button wire:click="openImport" class="btn-primary btn-sm"><x-ui.icon name="upload" class="size-4" /> Import Fitnix's ready-made {{ strtolower($planType->pluralLabel()) }}</button>
                                 <a href="{{ route('gym.content.create', ['type' => $planType->value]) }}" class="btn-secondary btn-sm">Create your own</a>
                             </div>
                         @endif
@@ -149,7 +149,7 @@
     @if ($canManage)
         <x-ui.modal wire-model="showImport" :title="'Import default '.strtolower($planType->pluralLabel())" max-width="2xl">
             <p class="text-sm text-gray-600">
-                Ready-made {{ strtolower($planType->pluralLabel()) }} prepared by Gymai, based on
+                Ready-made {{ strtolower($planType->pluralLabel()) }} prepared by Fitnix, based on
                 {{ $planType === \App\Enums\FitnessPlanType::Diet ? 'ICMR-NIN Dietary Guidelines for Indians (2024), ISSN protein recommendations and ICMR-INDIAB research' : 'ACSM resistance-training guidance and WHO physical activity guidelines' }}.
                 Everything is editable after import, and you can add your own photos.
             </p>

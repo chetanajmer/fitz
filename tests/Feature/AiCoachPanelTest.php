@@ -11,10 +11,13 @@ use App\Models\GymAiSetting;
 use App\Models\Member;
 use App\Models\PlatformSetting;
 use App\Models\User;
+use App\Services\Ai\OpenRouterClient;
 use App\Services\BodyProgressService;
 use App\Services\MembershipService;
 use App\Services\TrainerService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Factory as HttpFactory;
+use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -73,6 +76,69 @@ class AiCoachPanelTest extends TestCase
         $this->assertTrue($settings->allowed);
         $this->assertSame(50, $settings->monthly_credits);
         $this->assertSame(3, $settings->memberMonthlyLimit());
+    }
+
+    /** OpenRouter as seen by the AI Coach page: "good-key" is valid, one suitable model and one that cannot read images. */
+    protected function fakeOpenRouterCatalog(): void
+    {
+        Http::swap(new HttpFactory);
+        Http::preventStrayRequests();
+        Http::fake([
+            'openrouter.ai/api/v1/key' => fn (Request $request) => $request->hasHeader('Authorization', 'Bearer good-key-0000000000000000')
+                ? Http::response(['data' => ['label' => 'x']]) : Http::response(['error' => 'No auth'], 401),
+            'openrouter.ai/api/v1/models' => Http::response(['data' => [
+                ['id' => 'openai/gpt-6-luna', 'architecture' => ['input_modalities' => ['image', 'text']]],
+                ['id' => 'text/only', 'architecture' => ['input_modalities' => ['text']]],
+                ['id' => 'no/reasoning', 'architecture' => ['input_modalities' => ['image', 'text']]],
+            ]]),
+            'openrouter.ai/api/v1/endpoints/zdr' => Http::response(['data' => [
+                ['model_id' => 'openai/gpt-6-luna', 'supported_parameters' => ['structured_outputs', 'reasoning']],
+                ['model_id' => 'no/reasoning', 'supported_parameters' => ['structured_outputs']],
+                ['model_id' => 'text/only', 'supported_parameters' => ['structured_outputs', 'reasoning']],
+            ]]),
+        ]);
+    }
+
+    public function test_super_admin_saves_a_checked_api_key_that_is_stored_encrypted_and_used(): void
+    {
+        $this->fakeOpenRouterCatalog();
+        config(['services.openrouter.key' => 'env-key']);
+        $client = app(OpenRouterClient::class);
+        $this->actingAs($this->superAdmin());
+
+        Livewire::test(PlatformAiCoach::class)
+            ->assertSee('OPENROUTER_API_KEY from .env')
+            ->set('apiKey', 'wrong-key-000000000000000')->call('save')->assertHasErrors('apiKey')
+            ->set('settings.ai_model', 'text/only')->set('apiKey', '')->call('save')->assertHasErrors('settings.ai_model')
+            ->set('settings.ai_model', 'no/reasoning')->call('save')->assertHasErrors('settings.ai_model')
+            ->set('settings.ai_model', 'openai/gpt-6-luna')->set('apiKey', 'good-key-0000000000000000')->call('save')
+            ->assertHasNoErrors()->assertSet('apiKey', '')->assertSee('ending in')->assertDontSee('good-key-0000000000000000');
+
+        $stored = PlatformSetting::query()->where('key', OpenRouterClient::KEY_SETTING)->value('value');
+        $this->assertStringNotContainsString('good-key', $stored);
+        $this->assertSame('good-key-0000000000000000', $client->apiKey());
+
+        // Saving other settings keeps the key; removing it goes back to .env.
+        Livewire::test(PlatformAiCoach::class)->set('settings.ai_credits_progress', '2')->call('save')->assertHasNoErrors();
+        $this->assertSame('good-key-0000000000000000', $client->apiKey());
+        Livewire::test(PlatformAiCoach::class)->call('removeKey');
+        $this->assertSame('env-key', $client->apiKey());
+    }
+
+    public function test_nothing_is_saved_when_openrouter_cannot_be_reached(): void
+    {
+        Http::swap(new HttpFactory);
+        Http::fake(['openrouter.ai/*' => Http::response('down', 503)]);
+        $this->actingAs($this->superAdmin());
+
+        Livewire::test(PlatformAiCoach::class)->set('settings.ai_model', 'openai/gpt-6-luna')->set('settings.ai_credits_progress', '3')
+            ->call('save')->assertHasErrors('settings.ai_model');
+        $this->assertSame('1', PlatformSetting::get('ai_credits_progress'));
+    }
+
+    public function test_only_the_super_admin_can_open_the_ai_settings(): void
+    {
+        $this->actingAs($this->owner)->get(route('platform.ai-coach'))->assertForbidden();
     }
 
     public function test_gym_admin_switches_ai_on_within_the_super_admin_ceiling(): void

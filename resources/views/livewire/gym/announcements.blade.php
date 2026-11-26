@@ -28,7 +28,7 @@
                 <form wire:submit="submit" class="card card-body space-y-4">
                     <div>
                         <h2 class="card-title flex items-center gap-2"><x-ui.icon name="bell" class="size-5 text-indigo-500" /> New notification</h2>
-                        <p class="mt-1 text-sm text-gray-500">Gymai reviews every custom notification before it can be sent.</p>
+                        <p class="mt-1 text-sm text-gray-500">Fitnix reviews every custom notification before it can be sent.</p>
                     </div>
 
                     <x-ui.field label="Title" name="title" required>
@@ -160,7 +160,7 @@
                     <h2 class="card-title">How it works</h2>
                     <ol class="mt-3 space-y-3">
                         <li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">1</span> Write your message and submit it.</li>
-                        <li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">2</span> Gymai checks it to keep notifications friendly and relevant for members.</li>
+                        <li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">2</span> Fitnix checks it to keep notifications friendly and relevant for members.</li>
                         <li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">3</span> Once approved, press <strong>Send</strong>: now or at a time you choose.</li>
                     </ol>
                     <ul class="mt-4 list-disc space-y-1 border-t border-gray-100 pt-3 pl-5">
@@ -195,7 +195,7 @@
         <div class="card overflow-hidden {{ $paused ? 'opacity-60' : '' }}">
             <div class="card-header">
                 <h2 class="card-title">Automatic notifications</h2>
-                <p class="mt-1 text-sm text-gray-500">Sent by Gymai without you doing anything. You choose which ones and when; the wording is set by Gymai. Each one reaches a member only once.</p>
+                <p class="mt-1 text-sm text-gray-500">Sent by Fitnix without you doing anything. You choose which ones and when; the wording is set by Fitnix. Each one reaches a member only once.</p>
             </div>
             <ul class="divide-y divide-gray-100">
                 @foreach ($catalog as $key => $item)
@@ -216,7 +216,7 @@
                                         Sent: <strong class="text-gray-800">{{ $sent['by_type'][$key]['today'] }}</strong> today ·
                                         <strong class="text-gray-800">{{ $sent['by_type'][$key]['month'] }}</strong> in 30 days
                                     </span>
-                                    @if (! $tpl['is_enabled'])<span class="mt-1 inline-block"><x-ui.badge color="gray">Turned off by Gymai</x-ui.badge></span>@endif
+                                    @if (! $tpl['is_enabled'])<span class="mt-1 inline-block"><x-ui.badge color="gray">Turned off by Fitnix</x-ui.badge></span>@endif
                                 </span>
                             </div>
                         </div>

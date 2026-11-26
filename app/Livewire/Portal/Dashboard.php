@@ -13,6 +13,7 @@ use App\Services\WeightTrackingService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
@@ -48,6 +49,10 @@ class Dashboard extends Component
             ];
         })->all();
     }
+
+    /** The weight card saved a weigh-in or goal: refresh the Fitness progress tile. */
+    #[On('weight-saved')]
+    public function weightSaved(): void {}
 
     public function render(): View
     {

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A city Gymai operates in. Platform-level (not tenant-scoped): managed by the Super Admin,
+ * A city Fitnix operates in. Platform-level (not tenant-scoped): managed by the Super Admin,
  * shown to gyms when they pick their city and to members when they sign up from the app.
  */
 class City extends Model

@@ -47,7 +47,7 @@ class AiCoach extends Component
             'planIds' => ['array', $this->eligibility === 'plans' ? 'min:1' : 'nullable'],
             'planIds.*' => ['integer', Rule::exists('membership_plans', 'id')->where('gym_id', current_gym()->id)],
             'memberLimit' => ['required', 'integer', 'min:1', 'max:'.$settings->member_ceiling],
-        ], ['planIds.min' => 'Pick at least one plan.', 'memberLimit.max' => 'Gymai allows at most :max credits per member per month.'], ['memberLimit' => 'credits per member']);
+        ], ['planIds.min' => 'Pick at least one plan.', 'memberLimit.max' => 'Fitnix allows at most :max credits per member per month.'], ['memberLimit' => 'credits per member']);
 
         $settings->fill([
             'enabled' => $this->enabled,

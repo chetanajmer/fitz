@@ -25,10 +25,10 @@
         ['route' => 'gym.plans.index', 'match' => 'gym.plans.*', 'icon' => 'tag', 'label' => 'Membership Plans', 'can' => 'plans.manage'],
         ['route' => 'gym.trainers.index', 'match' => 'gym.trainers.*', 'icon' => 'whistle', 'label' => 'Trainers', 'can' => 'trainers.manage'],
         ['route' => 'gym.settings', 'match' => 'gym.settings*', 'icon' => 'cog', 'label' => 'Gym Profile', 'can' => 'gym.settings'],
-        ['route' => 'gym.billing', 'match' => 'gym.billing*', 'icon' => 'receipt', 'label' => 'Gymai Billing', 'can' => 'gym.billing'],
+        ['route' => 'gym.billing', 'match' => 'gym.billing*', 'icon' => 'receipt', 'label' => 'Fitnix Billing', 'can' => 'gym.billing'],
     ];
 @endphp
-<x-layouts.panel :title="$title" :brand-name="$gym?->name ?? 'Gymai'" brand-sub="Powered by Gymai" :brand-logo="$gym?->logoUrl()" account-route="gym.account">
+<x-layouts.panel :title="$title" :brand-name="$gym?->name ?? 'Fitnix'" brand-sub="Powered by Fitnix" :brand-logo="$gym?->logoUrl()" account-route="gym.account">
     <x-slot:nav>
         <x-ui.dashboard-theme area="admin" :gym="$gym" />
         @foreach ($links as $link)

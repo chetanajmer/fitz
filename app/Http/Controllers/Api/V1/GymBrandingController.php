@@ -22,7 +22,7 @@ class GymBrandingController extends ApiController
         $gym = Gym::find($gymId);
 
         if (! $gym) {
-            throw new ApiException('Gym is not registered on Gymai.', 'GYM_NOT_FOUND', 404);
+            throw new ApiException('Gym is not registered on Fitnix.', 'GYM_NOT_FOUND', 404);
         }
 
         if ($gym->id !== $member->gym_id) {
@@ -31,7 +31,7 @@ class GymBrandingController extends ApiController
 
         if (! $gym->isOperational()) {
             throw new ApiException(
-                'This gym is currently '.$gym->status->label().' on Gymai. Please contact your gym.',
+                'This gym is currently '.$gym->status->label().' on Fitnix. Please contact your gym.',
                 'GYM_INACTIVE',
                 403,
                 ['gym_id' => $gym->id, 'gym_status' => $gym->status->value, 'is_active' => false],
