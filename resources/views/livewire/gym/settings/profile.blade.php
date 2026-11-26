@@ -37,7 +37,7 @@
                             <x-ui.field label="Email" name="profile.email"><input wire:model="profile.email" type="email" class="input"></x-ui.field>
                             <x-ui.field label="Address" name="profile.address"><input wire:model="profile.address" class="input"></x-ui.field>
                             <x-ui.field label="Google Maps link" name="profile.map_url" hint="Paste your gym's location link from Google Maps."><input wire:model="profile.map_url" type="url" class="input" placeholder="https://maps.app.goo.gl/…"></x-ui.field>
-                            <x-ui.field label="City" name="profile.city_id" required hint="Missing your city? Ask Gymai support to add it.">
+                            <x-ui.field label="City" name="profile.city_id" required hint="Missing your city? Ask Fitnix support to add it.">
                                 <select wire:model.live="profile.city_id" class="input">
                                     <option value="">Select city</option>
                                     @foreach ($cities as $c)
@@ -55,19 +55,16 @@
                     <div class="space-y-6">
                         <div class="card card-body space-y-4">
                             <h2 class="card-title">Logo</h2>
-                            <div class="flex items-center gap-4">
+                            <x-ui.file-drop model="logo" :title="$gym->logo_path || $logo ? 'Replace logo' : 'Upload your logo'" hint="Click or drop an image. JPG, PNG, WebP or GIF, up to 10 MB.">
                                 @if ($logo && $logo->isPreviewable())
-                                    <img src="{{ $logo->temporaryUrl() }}" class="size-16 rounded-lg object-contain ring-1 ring-gray-200" alt="">
+                                    <img src="{{ $logo->temporaryUrl() }}" class="size-16 rounded-xl bg-white object-contain p-1 ring-1 ring-gray-200" alt="">
                                 @elseif ($gym->logoUrl())
-                                    <img src="{{ $gym->logoUrl() }}" class="size-16 rounded-lg object-contain ring-1 ring-gray-200" alt="">
+                                    <img src="{{ $gym->logoUrl() }}" class="size-16 rounded-xl bg-white object-contain p-1 ring-1 ring-gray-200" alt="">
                                 @else
-                                    <div class="flex size-16 items-center justify-center rounded-lg text-lg font-bold text-white" style="background: {{ $gym->primaryColor() }}">{{ $gym->initials() }}</div>
+                                    <div class="flex size-16 items-center justify-center rounded-xl text-lg font-bold text-white" style="background: {{ $gym->primaryColor() }}">{{ $gym->initials() }}</div>
                                 @endif
-                                <div class="space-y-2">
-                                    <input wire:model="logo" type="file" accept="image/*" class="text-sm">
-                                    @if ($gym->logo_path)<button type="button" wire:click="removeLogo" class="text-xs text-red-600 hover:underline">Remove logo</button>@endif
-                                </div>
-                            </div>
+                            </x-ui.file-drop>
+                            @if ($gym->logo_path)<button type="button" wire:click="removeLogo" wire:confirm="Remove the logo?" class="text-xs font-medium text-red-600 hover:underline">Remove logo</button>@endif
                             <p class="hint">Square works best. We resize and compress it automatically (under 70 KB).@if ($gym->logo_path && ($logoKb = $fileKb($gym->logo_path))) Current file: {{ $logoKb }} KB.@endif</p>
                             @error('logo') <p class="input-error">{{ $message }}</p> @enderror
                         </div>
@@ -75,18 +72,16 @@
                             <h2 class="card-title">Banner image</h2>
                             <p class="hint !mt-0">Shown at the top of your public page and member app. Wide image, e.g. 1920×720. We resize and compress it automatically (under 500 KB).</p>
                             @if ($gym->banner_path && ($bannerKb = $fileKb($gym->banner_path)))<p class="hint !mt-0">Current file: {{ $bannerKb }} KB</p>@endif
-                            @if ($banner && $banner->isPreviewable())
-                                <img src="{{ $banner->temporaryUrl() }}" class="aspect-[8/3] w-full rounded-lg object-cover ring-1 ring-gray-200" alt="">
-                            @elseif ($gym->bannerUrl())
-                                <img src="{{ $gym->bannerUrl() }}" class="aspect-[8/3] w-full rounded-lg object-cover ring-1 ring-gray-200" alt="">
-                            @else
-                                <div class="aspect-[8/3] w-full rounded-lg" style="background: linear-gradient(135deg, {{ $gym->primaryColor() }}, {{ $gym->secondaryColor() }})"></div>
-                            @endif
-                            <div class="flex items-center justify-between gap-2">
-                                <input wire:model="banner" type="file" accept="image/*" class="text-sm">
-                                @if ($gym->banner_path)<button type="button" wire:click="removeBanner" class="text-xs text-red-600 hover:underline">Remove</button>@endif
-                            </div>
-                            <div wire:loading wire:target="banner" class="hint">Uploading…</div>
+                            <x-ui.file-drop model="banner" cover :title="$gym->banner_path || $banner ? 'Replace banner' : 'Upload a banner'" hint="Click or drop a wide image. JPG, PNG or WebP, up to 10 MB.">
+                                @if ($banner && $banner->isPreviewable())
+                                    <img src="{{ $banner->temporaryUrl() }}" class="aspect-[8/3] w-full object-cover" alt="">
+                                @elseif ($gym->bannerUrl())
+                                    <img src="{{ $gym->bannerUrl() }}" class="aspect-[8/3] w-full object-cover" alt="">
+                                @else
+                                    <div class="aspect-[8/3] w-full" style="background: linear-gradient(135deg, {{ $gym->primaryColor() }}, {{ $gym->secondaryColor() }})"></div>
+                                @endif
+                            </x-ui.file-drop>
+                            @if ($gym->banner_path)<button type="button" wire:click="removeBanner" wire:confirm="Remove the banner?" class="text-xs font-medium text-red-600 hover:underline">Remove banner</button>@endif
                             @error('banner') <p class="input-error">{{ $message }}</p> @enderror
                         </div>
                         <div class="card card-body space-y-4">
@@ -141,7 +136,7 @@
     @if ($tab === 'photos')
         <div class="card mb-6">
             <form wire:submit="uploadPhotos" class="card-body flex flex-col gap-3 sm:flex-row sm:items-end">
-                <x-ui.field label="Add photos (max 10 at once)" name="photos" class="flex-1"><input wire:model="photos" type="file" accept="image/*" multiple class="text-sm"></x-ui.field>
+                <x-ui.field label="Add photos" name="photos" class="flex-1"><x-ui.file-drop model="photos" multiple title="Choose photos or drop them here" hint="Up to 10 at once, 4 MB each." /></x-ui.field>
                 <x-ui.field label="Caption" name="photoCaption" class="flex-1"><input wire:model="photoCaption" class="input"></x-ui.field>
                 <button type="submit" class="btn-primary" wire:loading.attr="disabled">Upload</button>
             </form>
@@ -217,7 +212,7 @@
                             <h2 class="card-title">{{ $areaLabel }}</h2>
                             <p class="mt-0.5 text-xs text-gray-500">{{ $areaHints[$area] }}</p>
                         </div>
-                        <x-ui.badge :color="$saved['custom'] ? 'indigo' : 'gray'" class="shrink-0 whitespace-nowrap">{{ $saved['custom'] ? 'Custom' : 'Gymai default' }}</x-ui.badge>
+                        <x-ui.badge :color="$saved['custom'] ? 'indigo' : 'gray'" class="shrink-0 whitespace-nowrap">{{ $saved['custom'] ? 'Custom' : 'Fitnix default' }}</x-ui.badge>
                     </div>
                     <div class="card-body space-y-5">
                         {{-- Live preview --}}
@@ -281,7 +276,7 @@
                         </div>
 
                         <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4 dark:border-ink-700">
-                            <button type="button" wire:click="resetTheme('{{ $area }}')" wire:confirm="Reset the {{ strtolower($areaLabel) }} to the Gymai colours?" class="text-sm font-medium text-gray-500 hover:text-brand-600 disabled:opacity-40" @disabled(! $saved['custom'])>Reset to default</button>
+                            <button type="button" wire:click="resetTheme('{{ $area }}')" wire:confirm="Reset the {{ strtolower($areaLabel) }} to the Fitnix colours?" class="text-sm font-medium text-gray-500 hover:text-brand-600 disabled:opacity-40" @disabled(! $saved['custom'])>Reset to default</button>
                             <button type="button" wire:click="saveTheme('{{ $area }}')" class="btn-primary" wire:loading.attr="disabled" wire:target="saveTheme('{{ $area }}')">Save {{ strtolower($areaLabel) }} colours</button>
                         </div>
                     </div>

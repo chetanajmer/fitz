@@ -4,8 +4,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ? $title.' · ' : '' }}{{ config('app.name', 'Gymai') }}</title>
+    <title>{{ $title ? $title.' · ' : '' }}{{ config('app.name', 'Fitnix') }}</title>
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     {{ $head ?? '' }}

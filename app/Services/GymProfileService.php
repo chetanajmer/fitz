@@ -62,7 +62,7 @@ class GymProfileService
     }
 
     /**
-     * Save (or, with null, reset to the Gymai theme) the colours of one dashboard: 'admin' or 'member'.
+     * Save (or, with null, reset to the Fitnix theme) the colours of one dashboard: 'admin' or 'member'.
      *
      * @param  array{primary: string, secondary: string}|null  $colors
      */

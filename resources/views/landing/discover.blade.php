@@ -31,7 +31,7 @@
                 <a href="{{ route('member.join') }}" class="lp-btn lp-btn-ghost">Register as Member</a>
             </div>
         </div>
-        <p class="mt-6 max-w-2xl text-lg font-medium text-gym-light/85">Every gym on Gymai gets a public profile with photos, facilities, timings and plans. People find you by city and locality, then join online — their details land straight in your panel.</p>
+        <p class="mt-6 max-w-2xl text-lg font-medium text-gym-light/85">Every gym on Fitnix gets a public profile with photos, facilities, timings and plans. People find you by city and locality, then join online — their details land straight in your panel.</p>
 
         <div class="mt-10 grid gap-8 lg:grid-cols-[22rem_1fr] lg:items-center">
             {{-- Gyms in this locality; hovering one lights up its pin on the map (and the other way round). --}}

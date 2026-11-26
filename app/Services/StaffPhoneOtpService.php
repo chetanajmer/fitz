@@ -51,7 +51,7 @@ class StaffPhoneOtpService
             $verification->save();
         });
 
-        $this->sms->send($digits, "{$code} is your Gymai mobile verification OTP. It is valid for ".intdiv($ttl, 60).' minutes. Do not share it with anyone.');
+        $this->sms->send($digits, "{$code} is your Fitnix mobile verification OTP. It is valid for ".intdiv($ttl, 60).' minutes. Do not share it with anyone.');
     }
 
     /** Check a code; throws on a wrong, expired or used-up code. Wrong guesses count against the code. */

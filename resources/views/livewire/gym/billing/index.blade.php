@@ -1,5 +1,5 @@
 <div>
-    <x-ui.page-header title="Gymai billing" subtitle="Simple pricing: pay only for members with an active, valid membership. No setup fee." />
+    <x-ui.page-header title="Fitnix billing" subtitle="Simple pricing: pay only for members with an active, valid membership. No setup fee." />
 
     <div class="mb-6 grid gap-4 sm:grid-cols-3">
         <x-ui.stat label="Billable members this month" :value="$estimate['members']" icon="users" :hint="'Active + valid membership in '.$estimate['period_start']->format('F')" />

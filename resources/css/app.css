@@ -64,6 +64,8 @@
     --color-indigo-500: var(--gym-orange);
     --color-indigo-600: var(--gym-orange);
     --color-indigo-700: var(--gym-orange-hover);
+    --color-indigo-800: color-mix(in srgb, var(--gym-orange) 60%, black);
+    --color-indigo-900: color-mix(in srgb, var(--gym-orange) 45%, black);
 
     /* Card / control surface: white in the light panel theme, #222222 under .theme-dark. */
     --color-surface: #ffffff;
@@ -136,6 +138,8 @@
     --color-indigo-500: var(--gym-orange);
     --color-indigo-600: var(--gym-orange);
     --color-indigo-700: var(--gym-orange-light);
+    --color-indigo-800: color-mix(in srgb, var(--gym-orange) 45%, white);
+    --color-indigo-900: color-mix(in srgb, var(--gym-orange) 35%, white);
 
     --color-emerald-50: rgb(16 185 129 / 0.12);
     --color-emerald-100: rgb(16 185 129 / 0.18);

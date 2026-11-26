@@ -271,7 +271,7 @@ class BillingService
 
     protected function nextInvoiceNumber(Carbon $periodStart): string
     {
-        $prefix = PlatformSetting::get('invoice_prefix', 'GYMAI').'-'.$periodStart->format('Ym').'-';
+        $prefix = PlatformSetting::get('invoice_prefix', 'FITNIX').'-'.$periodStart->format('Ym').'-';
         $last = SaasInvoice::where('invoice_number', 'like', $prefix.'%')->lockForUpdate()->orderByDesc('invoice_number')->value('invoice_number');
         $next = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
 

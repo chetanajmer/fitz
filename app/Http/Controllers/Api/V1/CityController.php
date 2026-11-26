@@ -11,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * Public lists used by the app's sign-up flow: cities Gymai is live in, their localities, the gyms
+ * Public lists used by the app's sign-up flow: cities Fitnix is live in, their localities, the gyms
  * in a city (optionally one locality) and each gym's public profile.
  * Only active cities and operational gyms are ever returned.
  */
@@ -88,7 +88,7 @@ class CityController extends ApiController
     {
         $gym = Gym::operational()->whereHas('cityRecord', fn ($q) => $q->active())->find($gymId);
         if (! $gym) {
-            throw new ApiException('This gym is not available on Gymai.', 'GYM_NOT_FOUND', 404);
+            throw new ApiException('This gym is not available on Fitnix.', 'GYM_NOT_FOUND', 404);
         }
 
         return $this->success($profiles->publicSummary($gym), 'Gym profile.');
@@ -96,6 +96,6 @@ class CityController extends ApiController
 
     protected function activeCity(int $cityId): City
     {
-        return City::active()->find($cityId) ?? throw new ApiException('This city is not available on Gymai.', 'CITY_NOT_FOUND', 404);
+        return City::active()->find($cityId) ?? throw new ApiException('This city is not available on Fitnix.', 'CITY_NOT_FOUND', 404);
     }
 }

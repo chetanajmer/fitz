@@ -1,10 +1,10 @@
 <div>
-    <x-ui.page-header title="AI Coach" subtitle="AI progress reports through OpenRouter. Included in the per-member price, so these limits control what AI costs Gymai." />
+    <x-ui.page-header title="AI Coach" subtitle="AI progress reports through OpenRouter. Included in the per-member price, so these limits control what AI costs Fitnix." />
 
     @unless ($configured)
         <div class="card card-body mb-6 flex items-start gap-3 border-amber-200 bg-amber-50 text-sm text-amber-800">
             <x-ui.icon name="warning" class="size-5 shrink-0" />
-            <p>OPENROUTER_API_KEY is not set in .env: every AI report will fail (no credits are used).</p>
+            <p>No OpenRouter API key: add one below (or OPENROUTER_API_KEY in .env). Until then every AI report fails; no credits are used.</p>
         </div>
     @endunless
 
@@ -15,8 +15,22 @@
                 <x-ui.field label="AI coach" name="settings.ai_enabled">
                     <select wire:model="settings.ai_enabled" class="input"><option value="1">On — gyms you allow can use it</option><option value="0">Off for every gym</option></select>
                 </x-ui.field>
-                <x-ui.field label="OpenRouter model" name="settings.ai_model" hint="Must read images, support structured output and have a zero-data-retention provider; otherwise reports fail.">
-                    <input wire:model="settings.ai_model" class="input" placeholder="openai/gpt-6-luna">
+                <x-ui.field label="OpenRouter API key" name="apiKey">
+                    <input wire:model="apiKey" type="password" autocomplete="off" class="input font-mono" placeholder="{{ $savedKey ? 'Leave empty to keep the saved key' : 'sk-or-v1-…' }}">
+                    <p class="hint">
+                        @if ($savedKey)
+                            In use: the key saved here, ending in <span class="font-mono">{{ substr($savedKey, -4) }}</span>. It is stored encrypted and never shown again.
+                            <button type="button" wire:click="removeKey" wire:confirm="Remove the saved key?{{ $envKey ? ' The key in .env is used instead.' : ' AI reports will fail until a new key is added.' }}" class="font-medium text-red-600 hover:underline">Remove</button>
+                        @elseif ($envKey)
+                            In use: OPENROUTER_API_KEY from .env. A key saved here replaces it.
+                        @else
+                            No key yet. Create one at openrouter.ai, under Keys.
+                        @endif
+                    </p>
+                </x-ui.field>
+                <x-ui.field label="OpenRouter model" name="settings.ai_model" hint="Checked when you save: it must read images, support structured output and have a provider that keeps no data.">
+                    <input wire:model="settings.ai_model" list="ai-models" class="input" placeholder="openai/gpt-6-luna">
+                    <datalist id="ai-models">@foreach ($models as $model)<option value="{{ $model }}">@endforeach</datalist>
                 </x-ui.field>
                 <div class="grid grid-cols-2 gap-3">
                     <x-ui.field label="Credits: progress report" name="settings.ai_credits_progress"><input wire:model="settings.ai_credits_progress" type="number" min="1" class="input"></x-ui.field>

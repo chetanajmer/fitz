@@ -3,10 +3,7 @@
 @endphp
 <header data-lp-nav class="lp-nav fixed inset-x-0 top-0 z-50">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:h-20 lg:px-8">
-        <a href="#home" class="lp-display flex items-center gap-2 text-3xl text-gym-white" aria-label="Gymai home">
-            <x-ui.icon name="dumbbell" class="size-8 text-gym-orange" />
-            <span>Gym<span class="text-gym-orange">ai</span></span>
-        </a>
+        <a href="#home" aria-label="Fitnix home"><x-brand.logo /></a>
 
         <nav class="hidden items-center xl:flex" aria-label="Primary">
             @foreach ($navLinks as $id => $label)

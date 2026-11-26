@@ -77,7 +77,7 @@
         <div class="card overflow-hidden">
             <div class="card-header">
                 <h2 class="card-title">Automatic notification templates</h2>
-                <p class="mt-1 text-sm text-gray-500">Used by every gym. Gyms can switch a notification off and change its time and rules, never the wording. Placeholders in <code>{braces}</code> are filled in by Gymai.</p>
+                <p class="mt-1 text-sm text-gray-500">Used by every gym. Gyms can switch a notification off and change its time and rules, never the wording. Placeholders in <code>{braces}</code> are filled in by Fitnix.</p>
             </div>
             <ul class="divide-y divide-gray-100">
                 @foreach ($catalog as $key => $item)
@@ -130,7 +130,7 @@
                                     <p class="text-gray-600">{{ \App\Support\NotificationCatalog::render($form['body'], $sample) }}</p>
                                 </div>
                                 <div class="flex justify-end gap-2">
-                                    <button type="button" wire:click="resetTemplate('{{ $key }}')" wire:confirm="Put this template back to the Gymai default?" class="mr-auto text-xs font-medium text-gray-500 hover:underline">Reset to default</button>
+                                    <button type="button" wire:click="resetTemplate('{{ $key }}')" wire:confirm="Put this template back to the Fitnix default?" class="mr-auto text-xs font-medium text-gray-500 hover:underline">Reset to default</button>
                                     <button type="button" wire:click="cancelEdit" class="btn-secondary">Cancel</button>
                                     <button type="submit" class="btn-primary">Save</button>
                                 </div>

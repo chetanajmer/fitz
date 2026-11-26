@@ -129,7 +129,7 @@ class RegisterGym extends Component
         $data['map_url'] = $data['map_url'] ?: null;
         $owner = $service->register($data);
 
-        session()->flash('success', 'Welcome to Gymai! Your gym is ready.');
+        session()->flash('success', 'Welcome to Fitnix! Your gym is ready.');
 
         return $this->redirect($owner->homeRoute());
     }

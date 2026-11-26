@@ -27,7 +27,7 @@
         <span class="lp-db-shadow"></span>
     </div>
 
-    <p class="lp-display relative z-10 mt-8 text-5xl sm:mt-16">Gym<span class="lp-hl ml-0.5 text-forest">ai</span></p>
+    <p class="lp-display relative z-10 mt-8 text-5xl sm:mt-16">Fit<span class="lp-hl ml-0.5 text-forest">nix</span></p>
 
     <div class="mt-6 w-60">
         <p class="lp-mono flex justify-between text-chalk/70"><span data-lp-loader-status>Chalking up</span><span><span data-lp-loader-count>0</span>%</span></p>

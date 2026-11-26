@@ -1,16 +1,16 @@
 <div>
-    <x-ui.page-header title="AI Coach" subtitle="AI progress reports and photo comparisons for your members, included in your Gymai plan." />
+    <x-ui.page-header title="AI Coach" subtitle="AI progress reports and photo comparisons for your members, included in your Fitnix plan." />
 
     @if (! $platformEnabled || ! $settings->allowed)
         <div class="card card-body mb-6 flex items-start gap-3 border-amber-200 bg-amber-50 text-sm text-amber-800">
             <x-ui.icon name="warning" class="size-5 shrink-0" />
-            <p>AI coach is not available for your gym yet. Contact Gymai support to switch it on.</p>
+            <p>AI coach is not available for your gym yet. Contact Fitnix support to switch it on.</p>
         </div>
     @endif
 
     <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <x-ui.stat label="Credits used this month" :value="$used.' / '.$settings->monthly_credits" icon="sparkles" :color="$used >= $settings->monthly_credits ? 'red' : 'brand'" hint="Gym pool set by Gymai, resets on the 1st" />
-        <x-ui.stat label="Per member limit" :value="$settings->memberMonthlyLimit().' credits'" icon="user" color="blue" :hint="'Gymai maximum: '.$settings->member_ceiling" />
+        <x-ui.stat label="Credits used this month" :value="$used.' / '.$settings->monthly_credits" icon="sparkles" :color="$used >= $settings->monthly_credits ? 'red' : 'brand'" hint="Gym pool set by Fitnix, resets on the 1st" />
+        <x-ui.stat label="Per member limit" :value="$settings->memberMonthlyLimit().' credits'" icon="user" color="blue" :hint="'Fitnix maximum: '.$settings->member_ceiling" />
         <x-ui.stat label="Photo comparison" :value="$settings->photos_allowed ? 'Included' : 'Not included'" icon="camera" :color="$settings->photos_allowed ? 'green' : 'gray'" />
         <x-ui.stat label="Members who consented" :value="$consentedCount" icon="shield" color="green" hint="Accepted the AI consent in the app" />
     </div>

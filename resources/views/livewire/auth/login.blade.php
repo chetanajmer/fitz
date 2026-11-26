@@ -37,7 +37,7 @@
     {{-- Right: the form --}}
     <div class="flex flex-col justify-center border-t border-gym-border p-6 sm:p-10 lg:border-t-0 lg:border-l lg:p-12">
         <h1 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">Welcome back</h1>
-        <p class="mt-3 text-gym-muted">Sign in to your <strong class="text-gym-orange">Gymai</strong> account.</p>
+        <p class="mt-3 text-gym-muted">Sign in to your <strong class="text-gym-orange">Fitnix</strong> account.</p>
 
         <div class="mt-8 grid grid-cols-2 gap-1 rounded-full border border-gym-border bg-gym-charcoal p-1 text-sm font-semibold">
             <button type="button" wire:click="$set('mode', 'password')" @class([$tab, 'bg-gym-orange text-white shadow-[0_0_24px_-4px_rgb(255_107_0/0.7)]' => $mode === 'password', 'text-gym-muted hover:text-white' => $mode !== 'password'])>
@@ -143,7 +143,7 @@
         @endif
 
         <div class="mt-8 flex items-center gap-4 text-xs font-semibold tracking-[0.2em] text-gym-muted uppercase">
-            <span class="h-px flex-1 bg-gym-border"></span> New to Gymai? <span class="h-px flex-1 bg-gym-border"></span>
+            <span class="h-px flex-1 bg-gym-border"></span> New to Fitnix? <span class="h-px flex-1 bg-gym-border"></span>
         </div>
         <div class="mt-4 grid gap-3 sm:grid-cols-2">
             <a href="{{ route('register.gym') }}" class="group flex items-center gap-3 rounded-xl border border-gym-border bg-gym-charcoal p-3 transition hover:border-gym-orange/60 hover:bg-gym-orange/5">

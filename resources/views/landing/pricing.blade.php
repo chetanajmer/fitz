@@ -2,7 +2,7 @@
     Pricing comes from the live billing model: one plan billed per active member per month
     (PricingRate::rateOn(), editable by the Super Admin). There are no tiers, member/staff
     limits or yearly billing in the platform, so none are shown. The section frames the rate as a
-    small add-on to each member's fee, so the gym can pass it on and members cover Gymai.
+    small add-on to each member's fee, so the gym can pass it on and members cover Fitnix.
 --}}
 @php
     $included = ['Members & memberships', 'QR attendance & streaks', 'Fees, receipts & invoices', 'Diet & workout programs', 'Trainer logins & access', 'Enquiries & follow-ups', 'Member portal & app', 'Push notifications', 'Your public gym page', 'AI Coach reports'];
@@ -15,12 +15,12 @@
 
         <div class="mt-10 grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
             <div class="lp-reveal flex flex-col border-2 border-forest p-6 sm:p-8">
-                <p class="lp-mono">Gymai Complete</p>
+                <p class="lp-mono">Fitnix Complete</p>
                 <p class="mt-4 flex flex-wrap items-end gap-x-3">
                     <span class="lp-display text-8xl sm:text-9xl">{{ $priceLabel }}</span>
                     <span class="pb-3 font-bold">per member<br>per month</span>
                 </p>
-                <p class="mt-4 text-lg leading-snug font-bold">Add it to your membership fee and your members pay for Gymai, not you.</p>
+                <p class="mt-4 text-lg leading-snug font-bold">Add it to your membership fee and your members pay for Fitnix, not you.</p>
                 <p class="mt-2 text-sm font-medium text-forest/70">No setup fee, no registration fee, every feature. Only members with an active membership count — enquiries, expired and inactive members are free.</p>
                 <ul class="mt-6 grid gap-x-4 gap-y-2.5 text-sm font-semibold sm:grid-cols-2">
                     @foreach ($included as $line)
@@ -60,7 +60,7 @@
                     <p class="lp-mono flex justify-between"><span>A member's receipt</span><span data-lp-calc-per>/ month</span></p>
                     <dl class="mt-4 space-y-2 text-sm font-semibold">
                         <div class="flex justify-between"><dt>Membership fee</dt><dd data-lp-calc-fee-line>₹{{ number_format($sampleFee) }}</dd></div>
-                        <div class="flex justify-between text-clay"><dt>+ Gymai app, QR check-in &amp; streaks</dt><dd data-lp-calc-rate-line>{{ $priceLabel }}</dd></div>
+                        <div class="flex justify-between text-clay"><dt>+ Fitnix app, QR check-in &amp; streaks</dt><dd data-lp-calc-rate-line>{{ $priceLabel }}</dd></div>
                         <div class="flex items-end justify-between border-t-2 border-dashed border-forest/40 pt-3"><dt class="font-bold">Member pays</dt><dd class="lp-display text-4xl" data-lp-calc-member-pays>₹{{ number_format($sampleFee + $price) }}</dd></div>
                     </dl>
                     <p class="mt-2 text-xs font-medium text-forest/70">Just <span data-lp-calc-share>{{ round($price / $sampleFee * 100, 1) }}%</span> more for them — about the price of a cup of chai.</p>
@@ -68,7 +68,7 @@
 
                 <div class="mt-auto flex flex-wrap items-end justify-between gap-4 border-t-2 border-chalk/20 pt-6">
                     <div>
-                        <p class="lp-mono text-chalk/70">Gymai costs you</p>
+                        <p class="lp-mono text-chalk/70">Fitnix costs you</p>
                         <p class="lp-display mt-2 text-7xl text-volt">₹0</p>
                         <p class="mt-2 text-sm font-medium text-chalk/75">when you add {{ $priceLabel }} to each member's fee</p>
                     </div>

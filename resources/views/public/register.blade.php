@@ -16,7 +16,7 @@
                 <livewire:public-site.member-registration-form :gym="$gym" />
             </div>
             <a href="{{ $gym->publicUrl() }}" class="mt-6 text-center text-sm text-white/90 hover:underline">View {{ $gym->name }} →</a>
-            <p class="mt-4 text-center text-xs text-white/60">Powered by Gymai</p>
+            <p class="mt-4 text-center text-xs text-white/60">Powered by Fitnix</p>
         </div>
     </div>
 </x-layouts.base>

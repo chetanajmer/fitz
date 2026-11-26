@@ -41,7 +41,7 @@
             @endforeach
         </div>
         <div class="flex items-center justify-between gap-3 border-t border-gray-100 px-5 py-3">
-            <p class="text-xs text-gray-500">Gym profile, Gymai billing and trainer management stay with gym admins.</p>
+            <p class="text-xs text-gray-500">Gym profile, Fitnix billing and trainer management stay with gym admins.</p>
             <button type="submit" class="btn-primary" wire:loading.attr="disabled" wire:target="saveAccess">Save access</button>
         </div>
     </form>
