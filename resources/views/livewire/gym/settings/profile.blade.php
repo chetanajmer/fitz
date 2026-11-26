@@ -55,19 +55,16 @@
                     <div class="space-y-6">
                         <div class="card card-body space-y-4">
                             <h2 class="card-title">Logo</h2>
-                            <div class="flex items-center gap-4">
+                            <x-ui.file-drop model="logo" :title="$gym->logo_path || $logo ? 'Replace logo' : 'Upload your logo'" hint="Click or drop an image. JPG, PNG, WebP or GIF, up to 10 MB.">
                                 @if ($logo && $logo->isPreviewable())
-                                    <img src="{{ $logo->temporaryUrl() }}" class="size-16 rounded-lg object-contain ring-1 ring-gray-200" alt="">
+                                    <img src="{{ $logo->temporaryUrl() }}" class="size-16 rounded-xl bg-white object-contain p-1 ring-1 ring-gray-200" alt="">
                                 @elseif ($gym->logoUrl())
-                                    <img src="{{ $gym->logoUrl() }}" class="size-16 rounded-lg object-contain ring-1 ring-gray-200" alt="">
+                                    <img src="{{ $gym->logoUrl() }}" class="size-16 rounded-xl bg-white object-contain p-1 ring-1 ring-gray-200" alt="">
                                 @else
-                                    <div class="flex size-16 items-center justify-center rounded-lg text-lg font-bold text-white" style="background: {{ $gym->primaryColor() }}">{{ $gym->initials() }}</div>
+                                    <div class="flex size-16 items-center justify-center rounded-xl text-lg font-bold text-white" style="background: {{ $gym->primaryColor() }}">{{ $gym->initials() }}</div>
                                 @endif
-                                <div class="space-y-2">
-                                    <input wire:model="logo" type="file" accept="image/*" class="text-sm">
-                                    @if ($gym->logo_path)<button type="button" wire:click="removeLogo" class="text-xs text-red-600 hover:underline">Remove logo</button>@endif
-                                </div>
-                            </div>
+                            </x-ui.file-drop>
+                            @if ($gym->logo_path)<button type="button" wire:click="removeLogo" wire:confirm="Remove the logo?" class="text-xs font-medium text-red-600 hover:underline">Remove logo</button>@endif
                             <p class="hint">Square works best. We resize and compress it automatically (under 70 KB).@if ($gym->logo_path && ($logoKb = $fileKb($gym->logo_path))) Current file: {{ $logoKb }} KB.@endif</p>
                             @error('logo') <p class="input-error">{{ $message }}</p> @enderror
                         </div>
@@ -75,18 +72,16 @@
                             <h2 class="card-title">Banner image</h2>
                             <p class="hint !mt-0">Shown at the top of your public page and member app. Wide image, e.g. 1920×720. We resize and compress it automatically (under 500 KB).</p>
                             @if ($gym->banner_path && ($bannerKb = $fileKb($gym->banner_path)))<p class="hint !mt-0">Current file: {{ $bannerKb }} KB</p>@endif
-                            @if ($banner && $banner->isPreviewable())
-                                <img src="{{ $banner->temporaryUrl() }}" class="aspect-[8/3] w-full rounded-lg object-cover ring-1 ring-gray-200" alt="">
-                            @elseif ($gym->bannerUrl())
-                                <img src="{{ $gym->bannerUrl() }}" class="aspect-[8/3] w-full rounded-lg object-cover ring-1 ring-gray-200" alt="">
-                            @else
-                                <div class="aspect-[8/3] w-full rounded-lg" style="background: linear-gradient(135deg, {{ $gym->primaryColor() }}, {{ $gym->secondaryColor() }})"></div>
-                            @endif
-                            <div class="flex items-center justify-between gap-2">
-                                <input wire:model="banner" type="file" accept="image/*" class="text-sm">
-                                @if ($gym->banner_path)<button type="button" wire:click="removeBanner" class="text-xs text-red-600 hover:underline">Remove</button>@endif
-                            </div>
-                            <div wire:loading wire:target="banner" class="hint">Uploading…</div>
+                            <x-ui.file-drop model="banner" cover :title="$gym->banner_path || $banner ? 'Replace banner' : 'Upload a banner'" hint="Click or drop a wide image. JPG, PNG or WebP, up to 10 MB.">
+                                @if ($banner && $banner->isPreviewable())
+                                    <img src="{{ $banner->temporaryUrl() }}" class="aspect-[8/3] w-full object-cover" alt="">
+                                @elseif ($gym->bannerUrl())
+                                    <img src="{{ $gym->bannerUrl() }}" class="aspect-[8/3] w-full object-cover" alt="">
+                                @else
+                                    <div class="aspect-[8/3] w-full" style="background: linear-gradient(135deg, {{ $gym->primaryColor() }}, {{ $gym->secondaryColor() }})"></div>
+                                @endif
+                            </x-ui.file-drop>
+                            @if ($gym->banner_path)<button type="button" wire:click="removeBanner" wire:confirm="Remove the banner?" class="text-xs font-medium text-red-600 hover:underline">Remove banner</button>@endif
                             @error('banner') <p class="input-error">{{ $message }}</p> @enderror
                         </div>
                         <div class="card card-body space-y-4">
@@ -141,7 +136,7 @@
     @if ($tab === 'photos')
         <div class="card mb-6">
             <form wire:submit="uploadPhotos" class="card-body flex flex-col gap-3 sm:flex-row sm:items-end">
-                <x-ui.field label="Add photos (max 10 at once)" name="photos" class="flex-1"><input wire:model="photos" type="file" accept="image/*" multiple class="text-sm"></x-ui.field>
+                <x-ui.field label="Add photos" name="photos" class="flex-1"><x-ui.file-drop model="photos" multiple title="Choose photos or drop them here" hint="Up to 10 at once, 4 MB each." /></x-ui.field>
                 <x-ui.field label="Caption" name="photoCaption" class="flex-1"><input wire:model="photoCaption" class="input"></x-ui.field>
                 <button type="submit" class="btn-primary" wire:loading.attr="disabled">Upload</button>
             </form>
