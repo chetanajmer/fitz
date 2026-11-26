@@ -23,7 +23,7 @@ use Livewire\WithPagination;
 
 /**
  * Gym notifications:
- *  - custom notifications: written here, approved by the Super Admin, then sent by the gym;
+ *  - custom notifications: written here and sent by the gym to its own members, now or at a set time;
  *  - automatic notifications: the gym switches them on / off and picks the time and rules
  *    (the wording is set by the Super Admin).
  */
@@ -48,7 +48,7 @@ class Announcements extends Component
     /** Optional picture shown in the notification (JPG / PNG, max 1 MB). */
     public $image = null;
 
-    // ---- Send an approved notification ----
+    // ---- When to send (new notification, or one in the list) ----
     #[Locked]
     public ?int $sendingId = null;
 
@@ -77,15 +77,18 @@ class Announcements extends Component
             'audience' => 'required|in:'.implode(',', array_keys(Announcement::AUDIENCES)),
             'trainerId' => 'nullable|required_if:audience,trainer|integer',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:'.NotificationSettings::IMAGE_MAX_KB,
+            'when' => 'required|in:now,later',
+            'scheduledAt' => 'nullable|required_if:when,later|date',
         ], [
             'trainerId.required_if' => 'Choose a trainer.',
+            'scheduledAt.required_if' => 'Choose when to send it.',
             'image.max' => 'The picture must be smaller than 2 MB.',
             'image.mimes' => 'Use a JPG, PNG or WebP picture.',
         ]);
 
         $imagePath = $this->image ? $this->image->store('gyms/'.current_gym()->id.'/notifications', 'public') : null;
 
-        $notifications->submit(Auth::user(), [
+        $announcement = $notifications->submit(Auth::user(), [
             'title' => $this->title,
             'body' => $this->body,
             'audience' => $this->audience,
@@ -95,7 +98,13 @@ class Announcements extends Component
 
         $this->reset('title', 'body', 'image');
         $this->resetPage();
-        $this->dispatch('notify', message: 'Sent to Fitnix for approval. You can send it as soon as it is approved.');
+
+        // If it cannot go out (daily limit, quiet hours), it stays in the list, ready to send later.
+        $announcement = $notifications->send($announcement, $this->when === 'later' ? $this->scheduledAt : null);
+        $this->reset('when', 'scheduledAt');
+        $this->dispatch('notify', message: $announcement->scheduled_at->isFuture()
+            ? 'Scheduled for '.$announcement->scheduled_at->format('d M, h:i A').'.'
+            : 'Sending to your members now.');
     }
 
     public function openSend(int $announcementId): void
@@ -191,7 +200,7 @@ class Announcements extends Component
             'withApp' => $canPreview ? $notifications->audienceQuery($preview)->whereHas('devices')->count() : 0,
             'stats' => [
                 'members_with_app' => Member::query()->active()->whereHas('devices')->count(),
-                'pending' => $this->visibleAnnouncements()->where('status', Announcement::PENDING)->count(),
+                'scheduled' => $this->visibleAnnouncements()->where('status', Announcement::SCHEDULED)->count(),
                 'sent_30' => Announcement::where('status', Announcement::SENT)->where('sent_at', '>=', now()->subDays(30))->count(),
                 'left_today' => max(0, $limit - Announcement::whereIn('status', [Announcement::SCHEDULED, Announcement::SENDING, Announcement::SENT])->whereDate('scheduled_at', today())->count()),
             ],

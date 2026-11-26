@@ -12,7 +12,7 @@
 
     <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <x-ui.stat label="Members with the app" :value="$stats['members_with_app']" icon="users" :hint="$phones.' phones registered'" />
-        <x-ui.stat label="Waiting for approval" :value="$stats['pending']" icon="clock" :color="$stats['pending'] ? 'amber' : 'gray'" />
+        <x-ui.stat label="Scheduled" :value="$stats['scheduled']" icon="clock" :color="$stats['scheduled'] ? 'blue' : 'gray'" />
         <x-ui.stat label="Sent" :value="$stats['sent_30']" icon="bell" color="green" hint="Last 30 days" />
         <x-ui.stat label="Can still send today" :value="$stats['left_today']" icon="flag" :color="$stats['left_today'] ? 'gray' : 'red'" :hint="'Up to '.$limit.' a day'" />
     </div>
@@ -28,7 +28,7 @@
                 <form wire:submit="submit" class="card card-body space-y-4">
                     <div>
                         <h2 class="card-title flex items-center gap-2"><x-ui.icon name="bell" class="size-5 text-indigo-500" /> New notification</h2>
-                        <p class="mt-1 text-sm text-gray-500">Fitnix reviews every custom notification before it can be sent.</p>
+                        <p class="mt-1 text-sm text-gray-500">Goes only to members of {{ $gym->name }}.</p>
                     </div>
 
                     <x-ui.field label="Title" name="title" required>
@@ -85,8 +85,18 @@
                     <div class="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
                         <p class="text-sm text-gray-600"><strong>{{ $recipients }}</strong> {{ $recipients === 1 ? 'member' : 'members' }} · <strong>{{ $withApp }}</strong> with the app on their phone</p>
                         <button type="submit" class="btn-primary" wire:loading.attr="disabled" wire:target="submit,image">
-                            <x-ui.icon name="check" class="size-4" /> Submit for approval
+                            <x-ui.icon name="bell" class="size-4" /> {{ $when === 'later' ? 'Schedule' : 'Send now' }}
                         </button>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4 text-sm">
+                        <label class="inline-flex items-center gap-2"><input type="radio" wire:model.live="when" value="now" class="text-indigo-600"> Send now</label>
+                        <label class="inline-flex items-center gap-2"><input type="radio" wire:model.live="when" value="later" class="text-indigo-600"> Schedule</label>
+                        @if ($when === 'later' && ! $sendingId)<input type="datetime-local" wire:model="scheduledAt" class="input w-auto" min="{{ now()->format('Y-m-d\TH:i') }}">@endif
+                        <span class="w-full text-xs text-gray-500">Nothing is sent during quiet hours ({{ $quiet['start'] }} – {{ $quiet['end'] }}); "Send now" then goes out at {{ $quiet['end'] }}.</span>
+                        @if (! $sendingId)
+                            @error('scheduledAt') <span class="w-full text-xs text-red-600">{{ $message }}</span> @enderror
+                            @error('announcement') <span class="w-full text-xs text-red-600">{{ $message }}</span> @enderror
+                        @endif
                     </div>
                 </form>
 
@@ -126,7 +136,7 @@
                                         @if (in_array($a->status, [\App\Models\Announcement::PENDING, \App\Models\Announcement::APPROVED, \App\Models\Announcement::REJECTED], true))
                                             <button wire:click="cancel({{ $a->id }})" wire:confirm="Withdraw this notification?" class="ml-2 text-xs font-medium text-gray-500 hover:underline">Withdraw</button>
                                         @elseif ($a->status === \App\Models\Announcement::SCHEDULED)
-                                            <button wire:click="cancel({{ $a->id }})" wire:confirm="Cancel the scheduled send? It stays approved." class="text-xs font-medium text-red-600 hover:underline">Cancel send</button>
+                                            <button wire:click="cancel({{ $a->id }})" wire:confirm="Cancel the scheduled send? It stays in the list, ready to send." class="text-xs font-medium text-red-600 hover:underline">Cancel send</button>
                                         @endif
                                     </td>
                                 </tr>
@@ -159,9 +169,9 @@
                 <div class="card card-body text-sm text-gray-600">
                     <h2 class="card-title">How it works</h2>
                     <ol class="mt-3 space-y-3">
-                        <li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">1</span> Write your message and submit it.</li>
-                        <li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">2</span> Fitnix checks it to keep notifications friendly and relevant for members.</li>
-                        <li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">3</span> Once approved, press <strong>Send</strong>: now or at a time you choose.</li>
+                        <li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">1</span> Write your message and choose who gets it.</li>
+                        <li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">2</span> Press <strong>Send now</strong>, or schedule it for a time you choose.</li>
+                        <li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">3</span> It reaches members' phones and the notification list in their app.</li>
                     </ol>
                     <ul class="mt-4 list-disc space-y-1 border-t border-gray-100 pt-3 pl-5">
                         <li>Only members of {{ $gym->name }} receive your notifications.</li>

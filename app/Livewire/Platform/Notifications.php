@@ -23,7 +23,6 @@ use Livewire\WithPagination;
 
 /**
  * Super Admin: member app notifications.
- *  - approvals: custom notifications gyms want to send (approve / reject with a reason);
  *  - templates: the wording, default time and rules of every automatic notification;
  *  - rules: quiet hours and the daily limit for custom notifications.
  */
@@ -33,9 +32,9 @@ class Notifications extends Component
 {
     use WithPagination;
 
-    /** approvals | templates | rules */
-    #[Url(except: 'approvals')]
-    public string $tab = 'approvals';
+    /** templates | rules */
+    #[Url(except: 'templates')]
+    public string $tab = 'templates';
 
     /** pending | reviewed */
     #[Url(except: 'pending')]

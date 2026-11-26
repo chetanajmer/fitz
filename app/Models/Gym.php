@@ -183,6 +183,23 @@ class Gym extends Model
         return in_array($days, [7, 15, 30], true) ? $days : 15;
     }
 
+    /**
+     * Joining fee and GST for member fees (Gym Profile, Fees & GST). Prices include GST.
+     *
+     * @return array{joining_fee: float, gst_enabled: bool, gstin: ?string, gst_rate: float}
+     */
+    public function feeSettings(): array
+    {
+        $fees = $this->settings['fees'] ?? [];
+
+        return [
+            'joining_fee' => round(max(0, (float) ($fees['joining_fee'] ?? 0)), 2),
+            'gst_enabled' => (bool) ($fees['gst_enabled'] ?? false) && filled($fees['gstin'] ?? null),
+            'gstin' => $fees['gstin'] ?? null,
+            'gst_rate' => (float) ($fees['gst_rate'] ?? 18),
+        ];
+    }
+
     public function allowsSelfCheckIn(): bool
     {
         return (bool) ($this->settings['attendance']['member_self_checkin'] ?? self::DEFAULT_SETTINGS['attendance']['member_self_checkin']);

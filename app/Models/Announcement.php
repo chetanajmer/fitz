@@ -15,7 +15,7 @@ class Announcement extends Model
 
     public const PENDING = 'pending';     // waiting for Super Admin review
 
-    public const APPROVED = 'approved';   // approved, the gym can send it
+    public const APPROVED = 'approved';   // ready: the gym can send it
 
     public const REJECTED = 'rejected';
 
@@ -30,7 +30,7 @@ class Announcement extends Model
     /** status => [label, badge colour] */
     public const STATUSES = [
         self::PENDING => ['Waiting for approval', 'amber'],
-        self::APPROVED => ['Approved', 'green'],
+        self::APPROVED => ['Ready to send', 'blue'],
         self::REJECTED => ['Not approved', 'red'],
         self::SCHEDULED => ['Scheduled', 'blue'],
         self::SENDING => ['Sending', 'amber'],

@@ -58,7 +58,9 @@
                     <div>
                         <h2 class="font-semibold text-gray-900">Renewal</h2>
                         <p class="mt-1 text-sm text-gray-600">
-                            @if ($current && $daysLeft <= 7)
+                            @if ($current && ($frozen = $current->freezeOn()))
+                                Your membership is <strong>paused until {{ $frozen->end_date->format('d M Y') }}</strong>. It now ends on {{ $current->end_date->format('d M Y') }}. Ask the front desk to end the pause early.
+                            @elseif ($current && $daysLeft <= 7)
                                 Your plan ends in <strong>{{ $daysLeft }} {{ \Illuminate\Support\Str::plural('day', $daysLeft) }}</strong>. Renew at the front desk so your next plan starts on {{ $current->end_date->copy()->addDay()->format('d M') }}.
                             @elseif ($current)
                                 You're all set until <strong>{{ $current->end_date->format('d M Y') }}</strong>. We'll remind you a few days before it ends.

@@ -1,6 +1,7 @@
 @php($invoiceNo = 'INV-'.$gym->id.'-'.str_pad((string) $membership->id, 5, '0', STR_PAD_LEFT))
 <x-layouts.print :title="'Invoice '.$invoiceNo">
-    @include('documents.partials.gym-header', ['docTitle' => 'Invoice'])
+    @php($gst = $membership->gstBreakup())
+    @include('documents.partials.gym-header', ['docTitle' => $gst ? 'Tax invoice' : 'Invoice', 'gstin' => $membership->gstin])
 
     <div class="mt-6 grid grid-cols-2 gap-6 text-sm">
         <div>
@@ -25,13 +26,21 @@
                 <td class="py-3">{{ $membership->start_date->format('d M Y') }} – {{ $membership->end_date->format('d M Y') }}</td>
                 <td class="py-3 text-right">{{ money($membership->price) }}</td>
             </tr>
+            @if ((float) $membership->joining_fee > 0)
+                <tr class="border-b border-gray-100"><td class="py-3">Joining fee <span class="block text-xs text-gray-500">One-time</span></td><td class="py-3"></td><td class="py-3 text-right">{{ money($membership->joining_fee) }}</td></tr>
+            @endif
         </tbody>
     </table>
 
     <div class="mt-6 ml-auto w-full max-w-xs space-y-1 text-sm">
-        <div class="flex justify-between"><span class="text-gray-600">Subtotal</span><span>{{ money($membership->price) }}</span></div>
+        <div class="flex justify-between"><span class="text-gray-600">Subtotal</span><span>{{ money((float) $membership->price + (float) $membership->joining_fee) }}</span></div>
         @if ((float) $membership->discount > 0)<div class="flex justify-between"><span class="text-gray-600">Discount</span><span>−{{ money($membership->discount) }}</span></div>@endif
-        <div class="flex justify-between border-t border-gray-200 pt-1 text-base font-bold"><span>Total</span><span>{{ money($membership->total_amount) }}</span></div>
+        @if ($gst)
+            <div class="flex justify-between text-gray-600"><span>Taxable value</span><span>{{ money($gst['taxable']) }}</span></div>
+            <div class="flex justify-between text-gray-600"><span>CGST {{ rtrim(rtrim(number_format($gst['rate'] / 2, 2), '0'), '.') }}%</span><span>{{ money($gst['cgst']) }}</span></div>
+            <div class="flex justify-between text-gray-600"><span>SGST {{ rtrim(rtrim(number_format($gst['rate'] / 2, 2), '0'), '.') }}%</span><span>{{ money($gst['sgst']) }}</span></div>
+        @endif
+        <div class="flex justify-between border-t border-gray-200 pt-1 text-base font-bold"><span>Total{{ $gst ? ' (incl. GST)' : '' }}</span><span>{{ money($membership->total_amount) }}</span></div>
         <div class="flex justify-between text-gray-600"><span>Paid</span><span>{{ money($membership->amount_paid) }}</span></div>
         <div class="flex justify-between font-semibold {{ $membership->balance() > 0 ? 'text-amber-700' : 'text-emerald-600' }}"><span>Balance due</span><span>{{ money($membership->balance()) }}</span></div>
     </div>

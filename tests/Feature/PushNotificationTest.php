@@ -169,7 +169,7 @@ class PushNotificationTest extends TestCase
         $this->assertSame(0, MemberDevice::withoutGlobalScope(GymScope::class)->count());
     }
 
-    public function test_custom_notification_needs_super_admin_approval_and_reaches_only_own_members(): void
+    public function test_gym_sends_its_own_notification_without_approval_and_reaches_only_own_members(): void
     {
         Storage::fake('public');
         $otherGym = $this->gymOf($this->createGymOwner('Other Gym'));
@@ -193,27 +193,10 @@ class PushNotificationTest extends TestCase
             ->set('title', 'Closed on Sunday')->set('body', 'Hi {first_name}, {gym_name} is closed this Sunday.')
             ->set('image', UploadedFile::fake()->image('banner.webp', 600, 300))
             ->assertSeeHtml('<strong>2</strong> members')
-            ->call('submit')->assertHasNoErrors()
-            ->assertSee('Waiting for approval');
+            ->call('submit')->assertHasNoErrors()->assertDispatched('notify', message: 'Sending to your members now.');
 
         $announcement = $this->inGym($this->gym, fn () => Announcement::sole());
-        $this->assertSame(Announcement::PENDING, $announcement->status);
-        $this->assertSame([], $this->fcm->sent);
-
-        // Cannot be sent before approval.
-        $this->expectValidationError(fn () => $this->inGym($this->gym, fn () => app(PushNotificationService::class)->send($announcement)));
-
-        // Super Admin approves.
-        $admin = $this->superAdmin();
-        $this->actingAs($admin);
-        Livewire::test(PlatformNotifications::class)->assertSee('Closed on Sunday')->assertSee('Push Gym')->call('approve', $announcement->id);
-        $this->assertSame(Announcement::APPROVED, $announcement->fresh()->status);
-        $this->assertSame($admin->id, $announcement->fresh()->reviewed_by);
-
-        // The gym sends it.
-        $this->actingAs($this->owner);
-        Livewire::test(Announcements::class)->call('openSend', $announcement->id)->call('closeSend')->assertSet('sendingId', null)
-            ->call('openSend', $announcement->id)->set('when', 'now')->call('send')->assertHasNoErrors();
+        $this->assertNull($announcement->reviewed_by);
 
         $announcement->refresh();
         $this->assertSame([Announcement::SENT, 2, 1], [$announcement->status, $announcement->recipients_count, $announcement->pushed_count]);
@@ -234,24 +217,21 @@ class PushNotificationTest extends TestCase
         $this->get(route('gym.announcements'))->assertOk()->assertSee('Closed on Sunday')->assertSee('1 on phone');
     }
 
-    public function test_rejected_notifications_show_the_reason_and_only_super_admins_review(): void
+    public function test_a_notification_that_cannot_go_out_now_stays_ready_and_super_admins_have_no_approval_queue(): void
     {
-        $this->createMember($this->gym);
+        $this->withPhone($this->createMember($this->gym), str_repeat('k', 40));
         $this->actingAs($this->owner);
-        $announcement = $this->inGym($this->gym, fn () => app(PushNotificationService::class)->submit($this->owner, ['title' => 'BIG SALE!!!', 'body' => 'Click here', 'audience' => 'all']));
+        $this->travelTo(Carbon::parse('2026-11-23 10:00'));
+
+        Livewire::test(Announcements::class)
+            ->set('title', 'Holiday hours')->set('body', 'Open 8 to 12 tomorrow.')->set('audience', 'all')
+            ->set('when', 'later')->set('scheduledAt', '2026-11-23 23:00')->call('submit')->assertHasErrors('scheduledAt')
+            ->assertSee('Ready to send');
+        $this->assertSame(Announcement::APPROVED, $this->inGym($this->gym, fn () => Announcement::sole())->status);
 
         $this->get(route('platform.notifications'))->assertForbidden();
-
         $this->actingAs($this->superAdmin());
-        Livewire::test(PlatformNotifications::class)
-            ->call('startReject', $announcement->id)->call('cancelReject')->assertSet('rejectingId', null)
-            ->call('startReject', $announcement->id)->set('reason', '')->call('reject')->assertHasErrors('reason')
-            ->set('reason', 'Please avoid capitals and links.')->call('reject')->assertHasNoErrors();
-        $this->assertSame(Announcement::REJECTED, $announcement->fresh()->status);
-
-        $this->actingAs($this->owner);
-        $this->get(route('gym.announcements'))->assertSee('Not approved')->assertSee('Please avoid capitals and links.');
-        $this->expectValidationError(fn () => $this->inGym($this->gym, fn () => app(PushNotificationService::class)->send($announcement->fresh())));
+        $this->get(route('platform.notifications'))->assertOk()->assertDontSee('Approvals');
     }
 
     public function test_trainers_need_the_permission_and_only_reach_their_members(): void
@@ -273,10 +253,6 @@ class PushNotificationTest extends TestCase
 
         $announcement = $this->inGym($this->gym, fn () => Announcement::sole());
         $this->assertSame('trainer', $announcement->audience);
-        $this->inGym($this->gym, function () use ($announcement) {
-            app(PushNotificationService::class)->approve($announcement, $this->superAdmin());
-            app(PushNotificationService::class)->send($announcement->fresh());
-        });
 
         $this->assertSame([str_repeat('f', 40)], array_column($this->fcm->sent, 'token'));
         $this->assertSame(1, $this->inGym($this->gym, fn () => MemberNotification::where('member_id', $mine->id)->count()));
@@ -289,14 +265,8 @@ class PushNotificationTest extends TestCase
         $this->withPhone($this->createMember($this->gym), str_repeat('h', 40));
         $this->actingAs($this->owner);
         $service = app(PushNotificationService::class);
-        $admin = $this->superAdmin();
 
-        $approved = fn (string $title) => $this->inGym($this->gym, function () use ($service, $admin, $title) {
-            $a = $service->submit($this->owner, ['title' => $title, 'body' => 'x', 'audience' => 'all']);
-            $service->approve($a, $admin);
-
-            return $a->fresh();
-        });
+        $approved = fn (string $title) => $this->inGym($this->gym, fn () => $service->submit($this->owner, ['title' => $title, 'body' => 'x', 'audience' => 'all'])->fresh());
 
         // Scheduled during quiet hours -> refused; at 18:00 -> fine; cancelling keeps it approved.
         $first = $approved('New batch');

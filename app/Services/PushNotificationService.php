@@ -217,11 +217,11 @@ class PushNotificationService
             ->update(['read_at' => now()]);
     }
 
-    // ---- Custom notifications (approved by the Super Admin) -----------------------------------
+    // ---- Custom notifications, written and sent by the gym -------------------------------------
 
     /**
-     * A gym submits a custom notification. It goes to the Super Admin for review and can only
-     * be sent once approved. Trainers without "see all members" can only reach their own members.
+     * A gym writes a custom notification for its own members. It is ready to send straight away
+     * (status approved); no one outside the gym reviews it. Trainers without "see all members" can only reach their own members.
      * Only {member_name}, {first_name} and {gym_name} are filled in per member.
      *
      * @param  array{title: string, body: string, audience: string, trainer_id?: ?int, image_path?: ?string}  $data
@@ -261,7 +261,7 @@ class PushNotificationService
             'image_path' => $data['image_path'] ?? null,
             'audience' => $audience,
             'trainer_id' => $trainerId,
-            'status' => Announcement::PENDING,
+            'status' => Announcement::APPROVED,
         ]);
 
         if (! $this->audienceQuery($announcement)->exists()) {
@@ -293,7 +293,7 @@ class PushNotificationService
     }
 
     /**
-     * The gym sends an approved notification now or at a later time (outside quiet hours).
+     * The gym sends a ready notification now or at a later time (outside quiet hours).
      * "Now" during quiet hours is moved to the end of quiet hours.
      */
     public function send(Announcement $announcement, ?string $at = null): Announcement

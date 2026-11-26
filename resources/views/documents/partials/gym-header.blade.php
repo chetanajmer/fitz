@@ -9,6 +9,7 @@
             <p class="text-xl font-bold">{{ $gym->name }}</p>
             <p class="text-sm text-gray-500">{{ trim($gym->address.', '.$gym->city, ', ') }}</p>
             <p class="text-sm text-gray-500">{{ $gym->phone }} @if($gym->email) · {{ $gym->email }} @endif</p>
+            @if ($gstin ?? null)<p class="text-sm font-medium text-gray-700">GSTIN: {{ $gstin }}</p>@endif
         </div>
     </div>
     <div class="text-right">

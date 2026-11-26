@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Models\Attendance;
 use App\Models\FitnessPlan;
 use App\Models\Member;
+use App\Models\MembershipFreeze;
 use App\Models\MembershipPlan;
 use App\Models\User;
 use App\Services\AttendanceService;
@@ -42,6 +43,14 @@ class Show extends Component
     /** @var array{plan_id: string, start_date: string, discount: string, notes: string, pay_now: bool, amount: string, method: string, reference: string} */
     public array $planForm = [];
 
+    // ---- Freeze modal ----
+    public bool $showFreezeModal = false;
+
+    public ?int $freezeMembershipId = null;
+
+    /** @var array{start_date: string, days: string, reason: string} */
+    public array $freezeForm = [];
+
     // ---- Payment modal ----
     public bool $showPaymentModal = false;
 
@@ -72,6 +81,8 @@ class Show extends Component
             'amount' => '',
             'method' => PaymentMethod::Cash->value,
             'reference' => '',
+            // Joining fee: suggested for a member's first membership only.
+            'joining_fee' => $mode === 'assign' && ! $this->member->memberships()->where('status', '!=', 'cancelled')->exists(),
         ];
         $this->showPlanModal = true;
     }
@@ -79,10 +90,16 @@ class Show extends Component
     public function updatedPlanFormPlanId(): void
     {
         $plan = $this->planForm['plan_id'] ? MembershipPlan::find($this->planForm['plan_id']) : null;
-        $this->planForm['amount'] = $plan ? (string) max(0, (float) $plan->price - (float) ($this->planForm['discount'] ?: 0)) : '';
+        $joiningFee = ($this->planForm['joining_fee'] ?? false) ? $this->member->gym->feeSettings()['joining_fee'] : 0;
+        $this->planForm['amount'] = $plan ? (string) (max(0, (float) $plan->price - (float) ($this->planForm['discount'] ?: 0)) + $joiningFee) : '';
     }
 
     public function updatedPlanFormDiscount(): void
+    {
+        $this->updatedPlanFormPlanId();
+    }
+
+    public function updatedPlanFormJoiningFee(): void
     {
         $this->updatedPlanFormPlanId();
     }
@@ -100,6 +117,7 @@ class Show extends Component
             'planForm.amount' => 'nullable|required_if:planForm.pay_now,true|numeric|min:0',
             'planForm.method' => 'required_if:planForm.pay_now,true|in:'.implode(',', PaymentMethod::values()),
             'planForm.reference' => 'nullable|string|max:100',
+            'planForm.joining_fee' => 'boolean',
         ], [], ['planForm.plan_id' => 'plan', 'planForm.start_date' => 'start date', 'planForm.amount' => 'amount']);
 
         // Tenant-scoped lookup: a plan id from another gym resolves to 404.
@@ -111,7 +129,7 @@ class Show extends Component
 
         $membership = $this->planMode === 'renew'
             ? $memberships->renew($this->member, $plan, (float) $this->planForm['discount'], $this->planForm['notes'] ?: null, $payment, $this->planForm['start_date'])
-            : $memberships->assign($this->member, $plan, $this->planForm['start_date'], (float) $this->planForm['discount'], $this->planForm['notes'] ?: null, $payment);
+            : $memberships->assign($this->member, $plan, $this->planForm['start_date'], (float) $this->planForm['discount'], $this->planForm['notes'] ?: null, $payment, null, (bool) ($this->planForm['joining_fee'] ?? false));
 
         $this->showPlanModal = false;
         $this->dispatch('notify', message: "{$membership->plan_name} assigned until {$membership->end_date->format('d M Y')}.");
@@ -125,6 +143,45 @@ class Show extends Component
         $membership = $this->member->memberships()->findOrFail($membershipId);
         $memberships->cancel($membership, 'Cancelled by '.Auth::user()->name);
         $this->dispatch('notify', message: 'Membership cancelled.');
+    }
+
+    public function openFreeze(int $membershipId): void
+    {
+        $this->authorizeMemberships();
+        $membership = $this->member->memberships()->findOrFail($membershipId);
+        $this->resetErrorBag();
+        $this->freezeMembershipId = $membership->id;
+        $this->freezeForm = ['start_date' => now()->max($membership->start_date)->toDateString(), 'days' => '', 'reason' => ''];
+        $this->showFreezeModal = true;
+    }
+
+    public function saveFreeze(MembershipService $memberships): void
+    {
+        $this->authorizeMemberships();
+        $this->validate([
+            'freezeForm.start_date' => 'required|date',
+            'freezeForm.days' => 'required|integer|min:1|max:365',
+            'freezeForm.reason' => 'nullable|string|max:255',
+        ], [], ['freezeForm.start_date' => 'start date', 'freezeForm.days' => 'days']);
+
+        $membership = $this->member->memberships()->findOrFail($this->freezeMembershipId);
+        $freeze = $memberships->freeze($membership, $this->freezeForm['start_date'], (int) $this->freezeForm['days'], $this->freezeForm['reason'] ?: null);
+        $this->showFreezeModal = false;
+        $this->dispatch('notify', message: "Frozen {$freeze->start_date->format('d M')} – {$freeze->end_date->format('d M')}. Membership now ends {$membership->refresh()->end_date->format('d M Y')}.");
+    }
+
+    public function endFreeze(int $freezeId, MembershipService $memberships): void
+    {
+        $this->authorizeMemberships();
+        $freeze = MembershipFreeze::whereIn('membership_id', $this->member->memberships()->select('id'))->findOrFail($freezeId);
+        $memberships->endFreeze($freeze);
+        $this->dispatch('notify', message: 'Freeze ended. Unused days were taken off the end date.');
+    }
+
+    protected function authorizeMemberships(): void
+    {
+        Gate::authorize('update', $this->member);
+        abort_unless(Auth::user()->can('memberships.manage'), 403);
     }
 
     // ---- Payments ---------------------------------------------------------
@@ -234,10 +291,10 @@ class Show extends Component
             'canPay' => $user->can('payments.manage'),
             'canMembership' => $user->can('update', $member) && $user->can('memberships.manage'),
             'state' => $member->membershipState(),
-            'current' => $member->currentMembership(),
+            'current' => $member->currentMembership()?->load('freezes'),
             'latest' => $member->latestMembership()->first(),
             'pending' => $member->pendingAmount(),
-            'memberships' => $member->memberships()->withCount('payments')->get(),
+            'memberships' => $member->memberships()->withCount('payments')->with('freezes')->get(),
             'payments' => $this->tab === 'payments' ? $member->payments()->with('membership')->paginate(10, pageName: 'payments') : null,
             'attendance' => $this->tab === 'attendance' ? $member->attendances()->paginate(15, pageName: 'attendance') : null,
             'customPlans' => $this->tab === 'plans' ? FitnessPlan::where('member_id', $member->id)->with('category')->withCount('sections')->latest('updated_at')->get() : collect(),

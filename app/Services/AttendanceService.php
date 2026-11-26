@@ -29,6 +29,11 @@ class AttendanceService
             throw ValidationException::withMessages(['member' => "{$member->name} has no active membership today."]);
         }
 
+        $frozen = $member->memberships()->valid()->with('freezes')->get()->map->freezeOn()->filter()->first();
+        if ($frozen) {
+            throw ValidationException::withMessages(['member' => "{$member->name}'s membership is frozen until {$frozen->end_date->format('d M Y')}. End the freeze on their page first."]);
+        }
+
         $today = Carbon::today()->toDateString();
 
         $existing = Attendance::where('member_id', $member->id)->whereDate('date', $today)->first();

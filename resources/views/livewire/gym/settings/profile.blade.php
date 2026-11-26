@@ -19,7 +19,7 @@
     @endif
 
     <div class="mb-6 flex gap-6 overflow-x-auto border-b border-gray-200">
-        @foreach (['profile' => 'Profile & branding', 'hours' => 'Hours & facilities', 'photos' => 'Photos', 'qr' => 'QR registration', 'theme' => 'Dashboard colours'] as $key => $label)
+        @foreach (['profile' => 'Profile & branding', 'hours' => 'Hours & facilities', 'photos' => 'Photos', 'qr' => 'QR registration', 'fees' => 'Fees & GST', 'theme' => 'Dashboard colours'] as $key => $label)
             <button wire:key="tab-{{ $key }}" wire:click="$set('tab', '{{ $key }}')" class="tab {{ $tab === $key ? 'tab-active' : '' }}">{{ $label }}</button>
         @endforeach
     </div>
@@ -153,6 +153,32 @@
                 <div class="card col-span-full"><x-ui.empty message="No photos yet. Show off your gym!" icon="upload" /></div>
             @endforelse
         </div>
+    @endif
+
+    @if ($tab === 'fees')
+        <form wire:submit="saveFees" class="card max-w-2xl">
+            <div class="card-header"><h2 class="card-title">Fees & GST</h2></div>
+            <div class="card-body space-y-5">
+                <x-ui.field label="Joining fee (₹)" name="fees.joining_fee" hint="Charged once, with a member's first membership. Staff can untick it when assigning. 0 = no joining fee.">
+                    <input wire:model="fees.joining_fee" type="number" min="0" step="1" class="input max-w-xs">
+                </x-ui.field>
+                <label class="flex items-start gap-2 text-sm">
+                    <input wire:model.live="fees.gst_enabled" type="checkbox" class="mt-0.5 rounded border-gray-300 text-indigo-600">
+                    <span><span class="font-medium text-gray-900">My gym charges GST</span>
+                        <span class="block text-gray-500">Your prices stay the same: GST is included in them. Invoices and receipts become tax invoices with the GST split out (CGST + SGST) and your GSTIN.</span></span>
+                </label>
+                @if ($fees['gst_enabled'] ?? false)
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <x-ui.field label="GSTIN" name="fees.gstin" required><input wire:model="fees.gstin" maxlength="15" class="input font-mono uppercase" placeholder="08ABCDE1234F1Z5"></x-ui.field>
+                        <x-ui.field label="GST rate" name="fees.gst_rate" hint="Gym and fitness services are usually 18%.">
+                            <select wire:model="fees.gst_rate" class="input">@foreach ([18, 12, 5] as $rate)<option value="{{ $rate }}">{{ $rate }}%</option>@endforeach</select>
+                        </x-ui.field>
+                    </div>
+                @endif
+                <p class="hint">Changes apply to memberships created from now on. Existing invoices keep the fee and GST they were made with.</p>
+            </div>
+            <div class="border-t border-gray-100 px-5 py-4"><button type="submit" class="btn-primary">Save</button></div>
+        </form>
     @endif
 
     @if ($tab === 'qr')

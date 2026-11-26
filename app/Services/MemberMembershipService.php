@@ -23,7 +23,7 @@ class MemberMembershipService
     public function card(Member $member): array
     {
         $today = Carbon::today();
-        $memberships = $member->memberships()->where('status', '!=', MembershipStatus::Cancelled->value)->get();
+        $memberships = $member->memberships()->where('status', '!=', MembershipStatus::Cancelled->value)->with('freezes')->get();
 
         $current = $memberships->first(fn (Membership $m) => $m->start_date->lte($today) && $m->end_date->gte($today));
         $upcoming = $memberships->filter(fn (Membership $m) => $m->start_date->gt($today))->sortBy('start_date')->values();
@@ -61,7 +61,7 @@ class MemberMembershipService
      */
     public function history(Member $member, int $limit = 20): array
     {
-        return $member->memberships()->orderByDesc('start_date')->orderByDesc('id')->limit($limit)->get()
+        return $member->memberships()->with('freezes')->orderByDesc('start_date')->orderByDesc('id')->limit($limit)->get()
             ->map(fn (Membership $m) => [...$this->details($m), 'status' => $m->computedStatus()->value])
             ->all();
     }
@@ -88,10 +88,16 @@ class MemberMembershipService
             'progress_percent' => round($daysUsed / max(1, $totalDays) * 100, 1),
             'price' => (float) $membership->price,
             'discount' => (float) $membership->discount,
+            'joining_fee' => (float) $membership->joining_fee,
             'total_amount' => (float) $membership->total_amount,
+            'gst_included' => $membership->gstBreakup() ? ['rate' => (float) $membership->gst_rate] + $membership->gstBreakup() : null,
             'amount_paid' => (float) $membership->amount_paid,
             'balance' => $membership->balance(),
             'payment_status' => $membership->paymentStatus(), // paid | partial | unpaid
+            'freeze_days_allowed' => (int) $membership->max_freeze_days,
+            'freeze_days_used' => $membership->freezeDaysUsed(),
+            'frozen_until' => $membership->freezeOn()?->end_date->toDateString(),
+            'freezes' => $membership->freezes->map(fn ($f) => ['start_date' => $f->start_date->toDateString(), 'end_date' => $f->end_date->toDateString(), 'days' => $f->days])->all(),
         ];
     }
 
@@ -119,6 +125,10 @@ class MemberMembershipService
     protected function message(string $state, Membership $membership, ?Membership $renewal): string
     {
         $days = $membership->daysRemaining();
+
+        if (in_array($state, ['active', 'expiring_soon'], true) && ($freeze = $membership->freezeOn())) {
+            return 'Paused until '.$freeze->end_date->format('d M Y').'. Now valid till '.$membership->end_date->format('d M Y').'.';
+        }
 
         return match ($state) {
             'expiring_soon' => $renewal

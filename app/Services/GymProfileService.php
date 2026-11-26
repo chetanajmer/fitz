@@ -166,6 +166,20 @@ class GymProfileService
         return $gym;
     }
 
+    /** Joining fee and GST for member fees; applies to memberships created from now on. */
+    public function updateFees(Gym $gym, float $joiningFee, bool $gstEnabled, ?string $gstin, float $gstRate): Gym
+    {
+        $gym->settings = array_merge($gym->settings ?? [], ['fees' => [
+            'joining_fee' => round($joiningFee, 2),
+            'gst_enabled' => $gstEnabled,
+            'gstin' => $gstin ? strtoupper($gstin) : null,
+            'gst_rate' => $gstRate,
+        ]]);
+        $gym->save();
+
+        return $gym;
+    }
+
     /** Which check-in QR members must scan: 'printed' or 'screen'. */
     public function setCheckinQrMode(Gym $gym, string $mode): Gym
     {

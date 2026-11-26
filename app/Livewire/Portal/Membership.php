@@ -23,7 +23,7 @@ class Membership extends Component
 
         return view('livewire.portal.membership', [
             'member' => $member,
-            'current' => $member->currentMembership(),
+            'current' => $member->currentMembership()?->load('freezes'),
             'latest' => $member->latestMembership()->first(),
             'state' => $member->membershipState(),
             'pending' => $member->pendingAmount(),

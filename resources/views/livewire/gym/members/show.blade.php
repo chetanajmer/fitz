@@ -52,7 +52,7 @@
                             <div class="grid gap-4 sm:grid-cols-4">
                                 <div><p class="text-xs text-gray-500">Plan</p><p class="font-medium">{{ $current->plan_name }}</p></div>
                                 <div><p class="text-xs text-gray-500">Period</p><p class="font-medium">{{ $current->start_date->format('d M') }} – {{ $current->end_date->format('d M Y') }}</p></div>
-                                <div><p class="text-xs text-gray-500">Days left</p><p class="font-medium">{{ $current->daysRemaining() }}</p></div>
+                                <div><p class="text-xs text-gray-500">Days left</p><p class="font-medium">{{ $current->daysRemaining() }}</p>@if ($frozen = $current->freezeOn())<p class="text-xs font-medium text-sky-700">Frozen until {{ $frozen->end_date->format('d M') }}</p>@endif</div>
                                 <div><p class="text-xs text-gray-500">Balance</p><p class="font-medium {{ $current->balance() > 0 ? 'text-amber-700' : 'text-emerald-600' }}">{{ $current->balance() > 0 ? money($current->balance()) : 'Paid' }}</p></div>
                             </div>
                         @else
@@ -156,7 +156,17 @@
                         @php($status = $ms->computedStatus())
                         <tr wire:key="ms-{{ $ms->id }}">
                             <td><p class="font-medium text-gray-900">{{ $ms->plan_name }}</p><p class="text-xs text-gray-500">{{ $ms->duration_days }} days @if($ms->renewed_from_id)· renewal @endif</p></td>
-                            <td>{{ $ms->start_date->format('d M Y') }} – {{ $ms->end_date->format('d M Y') }}</td>
+                            <td>
+                                {{ $ms->start_date->format('d M Y') }} – {{ $ms->end_date->format('d M Y') }}
+                                @foreach ($ms->freezes as $f)
+                                    <span wire:key="fz-{{ $f->id }}" class="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-sky-700">
+                                        <x-ui.icon name="clock" class="size-3.5" /> Frozen {{ $f->start_date->format('d M') }} – {{ $f->end_date->format('d M') }} ({{ $f->days }} {{ \Illuminate\Support\Str::plural('day', $f->days) }})
+                                        @if ($canMembership && $f->end_date->gte(today()))
+                                            <button wire:click="endFreeze({{ $f->id }})" wire:confirm="{{ $f->start_date->gt(today()) ? 'Remove this planned freeze?' : 'End this freeze today? Unused days come off the end date.' }}" class="font-medium underline">{{ $f->start_date->gt(today()) ? 'Remove' : 'End now' }}</button>
+                                        @endif
+                                    </span>
+                                @endforeach
+                            </td>
                             <td>{{ money($ms->total_amount) }} @if((float) $ms->discount > 0)<span class="block text-xs text-gray-500">−{{ money($ms->discount) }} discount</span>@endif</td>
                             <td>{{ money($ms->amount_paid) }}</td>
                             <td class="{{ $ms->balance() > 0 && $status->value !== 'cancelled' ? 'font-medium text-amber-700' : '' }}">{{ $status->value === 'cancelled' ? '—' : money($ms->balance()) }}</td>
@@ -167,6 +177,9 @@
                                     @if ($ms->balance() > 0)
                                         <button wire:click="openPaymentModal({{ $ms->id }})" class="text-xs font-medium text-emerald-600 hover:underline">Collect</button>
                                     @endif
+                                @endif
+                                @if ($canMembership && $ms->max_freeze_days > 0 && $ms->freezeDaysLeft() > 0 && in_array($status->value, ['active', 'upcoming'], true))
+                                    <button wire:click="openFreeze({{ $ms->id }})" class="text-xs font-medium text-sky-700 hover:underline">Freeze</button>
                                 @endif
                                 @if ($canMembership && $status->value !== 'cancelled' && (float) $ms->amount_paid === 0.0)
                                     <button wire:click="cancelMembership({{ $ms->id }})" wire:confirm="Cancel this membership?" class="text-xs font-medium text-red-600 hover:underline">Cancel</button>
@@ -268,6 +281,29 @@
         </div>
     @endif
 
+    {{-- Freeze modal --}}
+    @if ($canMembership)
+        <x-ui.modal wire-model="showFreezeModal" title="Freeze membership">
+            @php($fm = $freezeMembershipId ? $memberships->firstWhere('id', $freezeMembershipId) : null)
+            <form wire:submit="saveFreeze" class="space-y-4">
+                @if ($fm)
+                    <p class="text-sm text-gray-600">{{ $fm->plan_name }}, ends {{ $fm->end_date->format('d M Y') }}. <strong>{{ $fm->freezeDaysLeft() }} of {{ $fm->max_freeze_days }}</strong> freeze days left. The end date moves out by the days you freeze.</p>
+                @endif
+                @error('freeze') <div class="rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ $message }}</div> @enderror
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <x-ui.field label="From" name="freezeForm.start_date" required><input wire:model="freezeForm.start_date" type="date" min="{{ today()->toDateString() }}" class="input"></x-ui.field>
+                    <x-ui.field label="Days" name="freezeForm.days" required><input wire:model="freezeForm.days" type="number" min="1" max="{{ $fm?->freezeDaysLeft() ?? 365 }}" class="input"></x-ui.field>
+                </div>
+                <x-ui.field label="Reason" name="freezeForm.reason"><input wire:model="freezeForm.reason" class="input" placeholder="e.g. Travelling, injury"></x-ui.field>
+                <p class="hint">Check-ins are blocked while the membership is frozen. You can end a freeze early; unused days come off the end date again.</p>
+                <div class="flex justify-end gap-2">
+                    <button type="button" wire:click="$set('showFreezeModal', false)" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Freeze</button>
+                </div>
+            </form>
+        </x-ui.modal>
+    @endif
+
     {{-- Assign / renew modal --}}
     @if ($canMembership)
         <x-ui.modal wire-model="showPlanModal" :title="$planMode === 'renew' ? 'Renew membership' : 'Assign membership plan'">
@@ -286,6 +322,10 @@
                     <x-ui.field label="Start date" name="planForm.start_date" required><input wire:model="planForm.start_date" type="date" class="input"></x-ui.field>
                     <x-ui.field label="Discount (₹)" name="planForm.discount"><input wire:model.live.debounce.400ms="planForm.discount" type="number" min="0" step="0.01" class="input"></x-ui.field>
                 </div>
+                @php($joiningFee = $m->gym->feeSettings()['joining_fee'])
+                @if ($planMode === 'assign' && $joiningFee > 0)
+                    <label class="flex items-center gap-2 text-sm"><input wire:model.live="planForm.joining_fee" type="checkbox" class="rounded border-gray-300 text-indigo-600"> Add joining fee ({{ money($joiningFee) }})</label>
+                @endif
                 <x-ui.field label="Notes" name="planForm.notes"><input wire:model="planForm.notes" class="input"></x-ui.field>
 
                 @if ($canPay)

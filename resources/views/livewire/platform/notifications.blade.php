@@ -7,12 +7,9 @@
     ];
 @endphp
 <div>
-    <x-ui.page-header title="App notifications" subtitle="Approve what gyms send to their members, and control the wording and timing of every automatic notification." />
+    <x-ui.page-header title="App notifications" subtitle="Control the wording and timing of every automatic notification." />
 
     <div class="mb-6 flex gap-6 overflow-x-auto border-b border-gray-200">
-        <button wire:click="$set('tab', 'approvals')" class="tab {{ $tab === 'approvals' ? 'tab-active' : '' }}">
-            Approvals @if ($pendingCount)<span class="ml-1 rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white">{{ $pendingCount }}</span>@endif
-        </button>
         <button wire:click="$set('tab', 'templates')" class="tab {{ $tab === 'templates' ? 'tab-active' : '' }}">Templates</button>
         <button wire:click="$set('tab', 'rules')" class="tab {{ $tab === 'rules' ? 'tab-active' : '' }}">Rules</button>
     </div>

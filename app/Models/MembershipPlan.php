@@ -13,7 +13,7 @@ class MembershipPlan extends Model
     use BelongsToGym, SoftDeletes;
 
     protected $fillable = [
-        'name', 'duration_type', 'duration_days', 'price', 'description', 'features', 'is_active', 'is_public', 'sort_order',
+        'name', 'duration_type', 'duration_days', 'max_freeze_days', 'price', 'description', 'features', 'is_active', 'is_public', 'sort_order',
     ];
 
     protected function casts(): array

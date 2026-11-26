@@ -46,6 +46,9 @@ class Profile extends Component
     /** @var array<string, array{primary: string, secondary: string}> Dashboard colours per area (admin, member). */
     public array $theme = [];
 
+    /** @var array{joining_fee: string, gst_enabled: bool, gstin: string, gst_rate: string} */
+    public array $fees = [];
+
     /** Ready-made colour pairs offered beside the pickers: [label, primary, secondary]. */
     public const THEME_PRESETS = [
         ['Electric Orange', '#ff6b00', '#0d0d0d'],
@@ -72,7 +75,23 @@ class Profile extends Component
             'social' => array_map(fn ($v) => (string) $v, $all['social']),
         ];
         $this->facilities = implode("\n", $all['facilities']);
+        $fees = $gym->feeSettings();
+        $this->fees = ['joining_fee' => (string) $fees['joining_fee'], 'gst_enabled' => (bool) ($gym->settings['fees']['gst_enabled'] ?? false), 'gstin' => (string) $fees['gstin'], 'gst_rate' => (string) (int) $fees['gst_rate']];
         $this->theme = collect(Gym::DASHBOARD_AREAS)->map(fn ($label, $area) => collect($gym->dashboardColors($area))->only(['primary', 'secondary'])->all())->all();
+    }
+
+    public function saveFees(GymProfileService $service): void
+    {
+        $data = $this->validate([
+            'fees.joining_fee' => 'required|numeric|min:0|max:100000',
+            'fees.gst_enabled' => 'boolean',
+            // GSTIN: 2-digit state code, PAN, entity number, Z, check digit.
+            'fees.gstin' => ['nullable', 'required_if:fees.gst_enabled,true', 'regex:/^[0-9]{2}[A-Za-z]{5}[0-9]{4}[A-Za-z][1-9A-Za-z][Zz][0-9A-Za-z]$/'],
+            'fees.gst_rate' => 'required|in:5,12,18',
+        ], ['fees.gstin.regex' => 'Enter a valid 15-character GSTIN, e.g. 08ABCDE1234F1Z5.'], ['fees.joining_fee' => 'joining fee', 'fees.gstin' => 'GSTIN', 'fees.gst_rate' => 'GST rate'])['fees'];
+
+        $service->updateFees($this->gym(), (float) $data['joining_fee'], (bool) $data['gst_enabled'], $data['gstin'] ?: null, (float) $data['gst_rate']);
+        $this->dispatch('notify', message: 'Fees & GST saved. They apply to memberships you create from now on.');
     }
 
     public function applyThemePreset(string $area, int $preset): void

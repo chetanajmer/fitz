@@ -1,5 +1,6 @@
 <x-layouts.print :title="'Receipt '.$payment->receipt_number">
-    @include('documents.partials.gym-header', ['docTitle' => 'Payment receipt'])
+    @php($gst = $payment->membership?->gstBreakup((float) $payment->amount))
+    @include('documents.partials.gym-header', ['docTitle' => 'Payment receipt', 'gstin' => $payment->membership?->gstin])
 
     <div class="mt-6 grid grid-cols-2 gap-6 text-sm">
         <div>
@@ -22,7 +23,7 @@
             <tr class="border-b border-gray-100">
                 <td class="py-3">
                     @if ($payment->membership)
-                        {{ $payment->membership->plan_name }} membership
+                        {{ $payment->membership->plan_name }} membership{{ (float) $payment->membership->joining_fee > 0 ? ' + joining fee' : '' }}
                         <span class="block text-xs text-gray-500">{{ $payment->membership->start_date->format('d M Y') }} – {{ $payment->membership->end_date->format('d M Y') }}</span>
                     @else
                         Membership payment
@@ -35,6 +36,9 @@
 
     <div class="mt-6 ml-auto w-full max-w-xs space-y-1 text-sm">
         <div class="flex justify-between text-lg font-bold"><span>Amount paid</span><span>{{ money($payment->amount) }}</span></div>
+        @if ($gst)
+            <div class="flex justify-between text-gray-600"><span>Includes CGST + SGST ({{ rtrim(rtrim(number_format($gst['rate'], 2), '0'), '.') }}%)</span><span>{{ money($gst['cgst'] + $gst['sgst']) }}</span></div>
+        @endif
         @if ($payment->membership)
             <div class="flex justify-between text-gray-600"><span>Membership total</span><span>{{ money($payment->membership->total_amount) }}</span></div>
             <div class="flex justify-between text-gray-600"><span>Total paid to date</span><span>{{ money($payment->membership->amount_paid) }}</span></div>

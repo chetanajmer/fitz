@@ -27,9 +27,12 @@ class Membership extends Model
             'price' => 'decimal:2',
             'discount' => 'decimal:2',
             'total_amount' => 'decimal:2',
+            'joining_fee' => 'decimal:2',
+            'gst_rate' => 'decimal:2',
             'amount_paid' => 'decimal:2',
             'status' => MembershipStatus::class,
             'duration_type' => PlanDuration::class,
+            'max_freeze_days' => 'integer',
         ];
     }
 
@@ -48,9 +51,51 @@ class Membership extends Model
         return $this->belongsTo(Membership::class, 'renewed_from_id');
     }
 
+    public function freezes(): HasMany
+    {
+        return $this->hasMany(MembershipFreeze::class)->orderBy('start_date');
+    }
+
+    public function freezeDaysUsed(): int
+    {
+        return (int) $this->freezes->sum('days');
+    }
+
+    public function freezeDaysLeft(): int
+    {
+        return max(0, (int) $this->max_freeze_days - $this->freezeDaysUsed());
+    }
+
+    /** The freeze covering the day (today by default), if any. */
+    public function freezeOn(?Carbon $day = null): ?MembershipFreeze
+    {
+        $day ??= Carbon::today();
+
+        return $this->freezes->first(fn (MembershipFreeze $f) => $f->covers($day));
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class)->orderByDesc('paid_at');
+    }
+
+    /**
+     * GST inside an amount (prices include GST): the taxable value and the CGST / SGST halves. Null without GST.
+     *
+     * @return array{taxable: float, cgst: float, sgst: float, rate: float}|null
+     */
+    public function gstBreakup(?float $amount = null): ?array
+    {
+        if ($this->gst_rate === null || (float) $this->gst_rate <= 0) {
+            return null;
+        }
+
+        $amount ??= (float) $this->total_amount;
+        $rate = (float) $this->gst_rate;
+        $taxable = round($amount * 100 / (100 + $rate), 2);
+        $cgst = round(($amount - $taxable) / 2, 2);
+
+        return ['taxable' => $taxable, 'cgst' => $cgst, 'sgst' => round($amount - $taxable - $cgst, 2), 'rate' => $rate];
     }
 
     public function balance(): float

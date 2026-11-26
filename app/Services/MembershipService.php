@@ -6,6 +6,7 @@ use App\Enums\MembershipStatus;
 use App\Enums\PlanDuration;
 use App\Models\Member;
 use App\Models\Membership;
+use App\Models\MembershipFreeze;
 use App\Models\MembershipPlan;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -30,7 +31,7 @@ class MembershipService
      *
      * @param  array{amount:float, method:string, reference?:?string, paid_at?:?string, notes?:?string}|null  $payment
      */
-    public function assign(Member $member, MembershipPlan $plan, ?string $startDate = null, float $discount = 0, ?string $notes = null, ?array $payment = null, ?Membership $renewedFrom = null): Membership
+    public function assign(Member $member, MembershipPlan $plan, ?string $startDate = null, float $discount = 0, ?string $notes = null, ?array $payment = null, ?Membership $renewedFrom = null, bool $chargeJoiningFee = false): Membership
     {
         if ((int) $plan->gym_id !== (int) $member->gym_id) {
             throw ValidationException::withMessages(['plan_id' => 'Plan does not belong to this gym.']);
@@ -48,7 +49,10 @@ class MembershipService
             ]);
         }
 
-        return DB::transaction(function () use ($member, $plan, $start, $end, $price, $discount, $notes, $payment, $renewedFrom) {
+        $fees = $member->gym->feeSettings();
+        $joiningFee = $chargeJoiningFee ? $fees['joining_fee'] : 0.0;
+
+        return DB::transaction(function () use ($member, $plan, $start, $end, $price, $discount, $notes, $payment, $renewedFrom, $fees, $joiningFee) {
             $membership = new Membership(['notes' => $notes]);
             $membership->gym_id = $member->gym_id;
             $membership->member_id = $member->id;
@@ -57,11 +61,15 @@ class MembershipService
             $membership->plan_name = $plan->name;
             $membership->duration_type = $plan->duration_type;
             $membership->duration_days = (int) $start->diffInDays($end) + 1;
+            $membership->max_freeze_days = (int) $plan->max_freeze_days;
             $membership->start_date = $start;
             $membership->end_date = $end;
             $membership->price = $price;
             $membership->discount = $discount;
-            $membership->total_amount = round($price - $discount, 2);
+            $membership->joining_fee = $joiningFee;
+            $membership->total_amount = round($price - $discount + $joiningFee, 2);
+            $membership->gst_rate = $fees['gst_enabled'] ? $fees['gst_rate'] : null;
+            $membership->gstin = $fees['gst_enabled'] ? $fees['gstin'] : null;
             $membership->amount_paid = 0;
             $membership->created_by = Auth::id();
             $membership->status = $start->isFuture() ? MembershipStatus::Upcoming : MembershipStatus::Active;
@@ -72,6 +80,76 @@ class MembershipService
             }
 
             return $membership->refresh();
+        });
+    }
+
+    /**
+     * Pause a membership for $days days from $startDate; its end date moves out by the same number of days.
+     * Allowed up to the plan's freeze days, on memberships that have not ended or been cancelled.
+     */
+    public function freeze(Membership $membership, string $startDate, int $days, ?string $reason = null): MembershipFreeze
+    {
+        $start = Carbon::parse($startDate)->startOfDay();
+        $end = $start->copy()->addDays($days - 1);
+        $membership->load('freezes');
+
+        $error = match (true) {
+            $membership->status === MembershipStatus::Cancelled => 'A cancelled membership cannot be frozen.',
+            $membership->end_date->lt(Carbon::today()) => 'This membership has already ended.',
+            $days < 1 => 'Freeze for at least one day.',
+            $start->lt(Carbon::today()) => 'A freeze cannot start in the past.',
+            $start->lt($membership->start_date) || $start->gt($membership->end_date) => 'The freeze must start between '.$membership->start_date->format('d M Y').' and '.$membership->end_date->format('d M Y').'.',
+            $membership->max_freeze_days === 0 => 'This plan does not allow freezing. Set freeze days on the plan for new memberships.',
+            $days > $membership->freezeDaysLeft() => 'Only '.$membership->freezeDaysLeft().' freeze '.str('day')->plural($membership->freezeDaysLeft()).' left on this membership.',
+            $membership->freezes->contains(fn (MembershipFreeze $f) => $f->start_date->lte($end) && $f->end_date->gte($start)) => 'These dates overlap another freeze.',
+            $membership->member->memberships()->where('id', '!=', $membership->id)->whereDate('start_date', '>', $membership->end_date)->where('status', '!=', MembershipStatus::Cancelled->value)->exists() => 'The member already has a later membership booked. Cancel or move it before freezing this one.',
+            default => null,
+        };
+
+        if ($error) {
+            throw ValidationException::withMessages(['freeze' => $error]);
+        }
+
+        return DB::transaction(function () use ($membership, $start, $end, $days, $reason) {
+            $freeze = new MembershipFreeze;
+            $freeze->gym_id = $membership->gym_id;
+            $freeze->membership_id = $membership->id;
+            $freeze->start_date = $start;
+            $freeze->end_date = $end;
+            $freeze->days = $days;
+            $freeze->reason = $reason;
+            $freeze->created_by = Auth::id();
+            $freeze->save();
+
+            $membership->end_date = $membership->end_date->copy()->addDays($days);
+            $membership->save();
+
+            return $freeze;
+        });
+    }
+
+    /** End a freeze today (the member is back) or, before it starts, remove it. Unused days go back. */
+    public function endFreeze(MembershipFreeze $freeze): void
+    {
+        $today = Carbon::today();
+        $membership = $freeze->membership;
+
+        if ($freeze->end_date->lt($today)) {
+            throw ValidationException::withMessages(['freeze' => 'This freeze is already over.']);
+        }
+
+        DB::transaction(function () use ($freeze, $membership, $today) {
+            $used = $freeze->start_date->lt($today) ? (int) $freeze->start_date->diffInDays($today) : 0;
+            $membership->end_date = $membership->end_date->copy()->subDays($freeze->days - $used);
+            $membership->save();
+
+            if ($used === 0) {
+                $freeze->delete();
+            } else {
+                $freeze->end_date = $today->copy()->subDay();
+                $freeze->days = $used;
+                $freeze->save();
+            }
         });
     }
 

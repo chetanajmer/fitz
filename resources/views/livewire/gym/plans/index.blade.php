@@ -9,7 +9,7 @@
                 <div class="flex items-start justify-between gap-2">
                     <div>
                         <h3 class="font-semibold text-gray-900">{{ $plan->name }}</h3>
-                        <p class="text-sm text-gray-500">{{ $plan->durationLabel() }} · {{ $plan->duration_days }} days</p>
+                        <p class="text-sm text-gray-500">{{ $plan->durationLabel() }} · {{ $plan->duration_days }} days{{ $plan->max_freeze_days ? ' · '.$plan->max_freeze_days.' freeze days' : '' }}</p>
                     </div>
                     <div class="flex flex-col items-end gap-1">
                         <x-ui.badge :color="$plan->is_active ? 'green' : 'gray'">{{ $plan->is_active ? 'Active' : 'Disabled' }}</x-ui.badge>
@@ -52,6 +52,7 @@
                     <x-ui.field label="Days" name="form.duration_days" required><input wire:model="form.duration_days" type="number" min="1" class="input"></x-ui.field>
                 @endif
                 <x-ui.field label="Price (₹)" name="form.price" required><input wire:model="form.price" type="number" min="0" step="0.01" class="input"></x-ui.field>
+                <x-ui.field label="Freeze days allowed" name="form.max_freeze_days" hint="Days a member can pause this plan. 0 = no freezing."><input wire:model="form.max_freeze_days" type="number" min="0" max="365" class="input"></x-ui.field>
                 <x-ui.field label="Sort order" name="form.sort_order"><input wire:model="form.sort_order" type="number" min="0" class="input"></x-ui.field>
             </div>
             <x-ui.field label="Description" name="form.description"><input wire:model="form.description" class="input"></x-ui.field>
