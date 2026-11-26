@@ -14,6 +14,7 @@ use App\Policies\FitnessPlanPolicy;
 use App\Policies\MemberPolicy;
 use App\Policies\SaasInvoicePolicy;
 use App\Services\Sms\LogSmsSender;
+use App\Services\Sms\SmartPingSmsSender;
 use App\Services\StreakService;
 use App\Tenancy\TenantManager;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -34,8 +35,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(TenantManager::class);
         $this->app->scoped(StreakService::class);
 
-        // SMS provider for member OTPs. Add real drivers (e.g. msg91) here.
+        // SMS provider for OTPs: "smartping" sends real SMS, "log" writes them to the log.
         $this->app->bind(SmsSender::class, fn () => match (config('gymai.sms.driver')) {
+            'smartping' => new SmartPingSmsSender,
             default => new LogSmsSender,
         });
     }

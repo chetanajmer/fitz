@@ -19,7 +19,7 @@ return [
     // Member app OTP login.
     'otp' => [
         'length' => 6,
-        'ttl_seconds' => 300,          // OTP valid for 5 minutes
+        'ttl_seconds' => 600,          // OTP valid for 10 minutes (the registered SMS template says 10)
         'resend_cooldown_seconds' => 30,
         'max_attempts' => 5,           // wrong guesses allowed per OTP
         'max_sends_per_hour' => 5,     // per phone number
@@ -30,6 +30,14 @@ return [
     // SMS provider for OTPs. "log" writes messages to storage/logs (development).
     'sms' => [
         'driver' => env('SMS_DRIVER', 'log'),
+        // SMS_DRIVER=smartping. The text must match the template registered on DLT exactly; {otp} is the code.
+        'smartping' => [
+            'url' => env('SMARTPING_URL', 'https://pgapi.smartping.io/fe/api/v1/send'),
+            'username' => env('SMARTPING_USERNAME'),
+            'password' => env('SMARTPING_PASSWORD'),
+            'sender' => env('SMARTPING_SENDER', 'PAMFIN'),
+            'template' => env('SMARTPING_TEMPLATE', 'Your OTP for verification is {otp} It is valid for 10 minutes. Do not share this code with anyone. PAM FINCAP'),
+        ],
     ],
 
     // Slugs that can never be used by a gym because they collide with application routes.
