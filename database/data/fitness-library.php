@@ -2,7 +2,7 @@
 
 /*
 |--------------------------------------------------------------------------
-| Gymai default fitness library — diet charts & workout plans
+| Fitnix default fitness library — diet charts & workout plans
 |--------------------------------------------------------------------------
 | Imported per gym from Diet Charts / Workout Plans → "Import default library".
 | Every category and plan has a stable `key`: never change a key once shipped,

@@ -1,5 +1,5 @@
 @php
-    // "A day at your gym": what Gymai does between opening and closing. [time, minutes after midnight, icon, text].
+    // "A day at your gym": what Fitnix does between opening and closing. [time, minutes after midnight, icon, text].
     // Names and figures are demo data. landing.js plays the day as the visitor scrolls.
     $events = [
         ['5:42 AM', 342, 'qr', 'Doors open. First QR check-in of the day.'],
@@ -21,7 +21,7 @@
         <div class="items-end gap-10 lg:grid lg:grid-cols-[1fr_auto]">
             <div>
                 <p class="lp-mono">A day at your gym</p>
-                <h2 data-lp-slam class="lp-display mt-3 text-5xl sm:text-7xl">You coach.<br> <span class="lp-hl">Gymai runs the desk.</span></h2>
+                <h2 data-lp-slam class="lp-display mt-3 text-5xl sm:text-7xl">You coach.<br> <span class="lp-hl">Fitnix runs the desk.</span></h2>
             </div>
             <p class="hidden text-right lg:block" aria-hidden="true">
                 <span data-lp-day-clock class="lp-display lp-clock block text-7xl whitespace-nowrap">

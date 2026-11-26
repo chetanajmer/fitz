@@ -18,7 +18,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 
 /**
- * Super Admin: edit the Gymai default diet & workout library that gyms can import.
+ * Super Admin: edit the Fitnix default diet & workout library that gyms can import.
  * Gyms keep their own imported copies, so edits here affect future imports only
  * (plus empty photo slots being filled on re-import).
  */

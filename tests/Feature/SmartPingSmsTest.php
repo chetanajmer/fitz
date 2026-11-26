@@ -38,7 +38,7 @@ class SmartPingSmsTest extends TestCase
         Log::spy();
 
         try {
-            app(SmsSender::class)->send('9876543210', '123456 is your Gymai sign-in OTP.');
+            app(SmsSender::class)->send('9876543210', '123456 is your Fitnix sign-in OTP.');
             $this->fail('The refused SMS was not reported.');
         } catch (ApiException $e) {
             $this->assertSame('SMS_FAILED', $e->errorCode);

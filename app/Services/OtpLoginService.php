@@ -115,7 +115,7 @@ class OtpLoginService
 
         $channel === 'email'
             ? Mail::to($destination)->send(new LoginCodeMail($code, $minutes))
-            : $this->sms->send($destination, "{$code} is your Gymai sign-in OTP. It is valid for {$minutes} minutes. Do not share it with anyone.");
+            : $this->sms->send($destination, "{$code} is your Fitnix sign-in OTP. It is valid for {$minutes} minutes. Do not share it with anyone.");
     }
 
     /**

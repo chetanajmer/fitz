@@ -15,8 +15,8 @@
 @endphp
 <x-layouts.base title="Gym management software" body-class="landing">
     <x-slot:head>
-        <meta name="description" content="Gymai is all-in-one gym management software: members, memberships, payments, QR attendance, trainers, diet & workout plans, a member app and an AI Coach. {{ $priceLabel }} per active member per month, no setup fee.">
-        <meta property="og:title" content="Gymai — Lift your gym">
+        <meta name="description" content="Fitnix is all-in-one gym management software: members, memberships, payments, QR attendance, trainers, diet & workout plans, a member app and an AI Coach. {{ $priceLabel }} per active member per month, no setup fee.">
+        <meta property="og:title" content="Fitnix — Lift your gym">
         <meta property="og:description" content="All-in-one gym management software for memberships, payments, attendance, trainers, a member app and growth.">
         <meta property="og:type" content="website">
         <meta property="og:url" content="{{ url('/') }}">

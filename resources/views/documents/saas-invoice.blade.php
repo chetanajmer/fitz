@@ -29,7 +29,7 @@
         <thead><tr class="border-b border-gray-200 text-left text-xs text-gray-500 uppercase"><th class="py-2">Description</th><th class="py-2 text-right">Qty</th><th class="py-2 text-right">Rate</th><th class="py-2 text-right">Amount</th></tr></thead>
         <tbody>
             <tr class="border-b border-gray-100">
-                <td class="py-3">Gymai subscription — active members<span class="block text-xs text-gray-500">{{ $invoice->period_start->format('d M Y') }} – {{ $invoice->period_end->format('d M Y') }} · {{ $invoice->meta['billing_rule'] ?? '' }}</span></td>
+                <td class="py-3">Fitnix subscription — active members<span class="block text-xs text-gray-500">{{ $invoice->period_start->format('d M Y') }} – {{ $invoice->period_end->format('d M Y') }} · {{ $invoice->meta['billing_rule'] ?? '' }}</span></td>
                 <td class="py-3 text-right">{{ $invoice->active_members }}</td>
                 <td class="py-3 text-right">{{ money($invoice->rate_per_member) }}</td>
                 <td class="py-3 text-right">{{ money($invoice->subtotal) }}</td>

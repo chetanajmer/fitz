@@ -34,11 +34,9 @@
     <div aria-hidden="true" class="absolute inset-0 -z-10 hidden bg-gradient-to-r from-transparent via-transparent to-gym-black/60 lg:block"></div>
 
     <a href="{{ route('home') }}" class="flex items-center gap-3 self-start">
-        <span class="flex size-12 items-center justify-center rounded-xl bg-gym-orange text-white shadow-[0_0_28px_-4px_rgb(255_107_0/0.8)]">
-            <x-ui.icon name="dumbbell" class="size-7" />
-        </span>
+        <x-brand.logo size="lg" :wordmark="false" />
         <span>
-            <span class="block text-2xl leading-tight font-semibold text-white">Gymai</span>
+            <span class="block font-display text-3xl leading-none text-white uppercase">Fit<span class="text-gym-orange">nix</span></span>
             <span class="block text-xs text-gym-light/80 sm:text-sm">{{ $tagline }}</span>
         </span>
     </a>

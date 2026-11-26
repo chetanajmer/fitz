@@ -13,7 +13,7 @@
         ['route' => 'platform.settings', 'match' => 'platform.settings', 'icon' => 'cog', 'label' => 'Settings'],
     ];
 @endphp
-<x-layouts.panel :title="$title" brand-name="Gymai Platform" brand-sub="Super Admin" account-route="platform.account">
+<x-layouts.panel :title="$title" brand-name="Fitnix Platform" brand-sub="Super Admin" account-route="platform.account">
     <x-slot:nav>
         @foreach ($links as $link)
             <a href="{{ route($link['route']) }}" class="nav-link {{ request()->routeIs($link['match']) ? 'nav-link-active' : '' }}">

@@ -11,9 +11,9 @@
 <section id="about" data-lp-section class="relative bg-forest py-16 text-chalk sm:py-24">
     <div class="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.8fr_1.2fr] lg:px-8">
         <div class="lg:sticky lg:top-32 lg:self-start">
-            <p class="lp-mono text-volt">Why Gymai</p>
+            <p class="lp-mono text-volt">Why Fitnix</p>
             <h2 data-lp-slam class="lp-display mt-3 text-5xl sm:text-7xl">Built for Indian gyms. <span class="text-volt">Not adapted.</span></h2>
-            <p class="mt-6 max-w-md font-medium text-chalk/75">Gymai is made for independent gyms and fitness studios. We took the daily jobs — admissions, fees, attendance, renewals and follow-ups — and made them a few taps, so you spend your time on members, not registers.</p>
+            <p class="mt-6 max-w-md font-medium text-chalk/75">Fitnix is made for independent gyms and fitness studios. We took the daily jobs — admissions, fees, attendance, renewals and follow-ups — and made them a few taps, so you spend your time on members, not registers.</p>
             <a href="{{ $ctaUrl }}" class="lp-btn lp-btn-volt mt-8">{{ $ctaLabel }} <x-ui.icon name="arrow-right" class="size-4" /></a>
         </div>
 

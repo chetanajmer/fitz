@@ -40,7 +40,7 @@
     <div class="border-t border-gym-border">
         <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-xs text-gym-muted sm:px-6 lg:px-8">
             <p>© {{ now()->year }} {{ $gym->name }}</p>
-            <p>Powered by <a href="{{ route('home') }}" class="font-semibold text-gym-light hover:text-gym-orange">Gymai</a></p>
+            <p>Powered by <a href="{{ route('home') }}" class="font-semibold text-gym-light hover:text-gym-orange">Fitnix</a></p>
         </div>
     </div>
 </footer>

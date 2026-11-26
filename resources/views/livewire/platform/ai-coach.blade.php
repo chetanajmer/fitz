@@ -1,5 +1,5 @@
 <div>
-    <x-ui.page-header title="AI Coach" subtitle="AI progress reports through OpenRouter. Included in the per-member price, so these limits control what AI costs Gymai." />
+    <x-ui.page-header title="AI Coach" subtitle="AI progress reports through OpenRouter. Included in the per-member price, so these limits control what AI costs Fitnix." />
 
     @unless ($configured)
         <div class="card card-body mb-6 flex items-start gap-3 border-amber-200 bg-amber-50 text-sm text-amber-800">

@@ -82,7 +82,7 @@ class Account extends Component
         $digits = Member::normalizePhone($this->loginPhone);
 
         if (User::where('login_phone', $digits)->whereKeyNot($user->id)->exists()) {
-            $this->addError('loginPhone', 'Another Gymai account already signs in with this number.');
+            $this->addError('loginPhone', 'Another Fitnix account already signs in with this number.');
 
             return;
         }
@@ -113,7 +113,7 @@ class Account extends Component
         }
 
         if (User::where('login_phone', $digits)->whereKeyNot($user->id)->exists()) {
-            $this->addError('phoneCode', 'Another Gymai account already signs in with this number.');
+            $this->addError('phoneCode', 'Another Fitnix account already signs in with this number.');
 
             return;
         }

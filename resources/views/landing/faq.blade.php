@@ -1,13 +1,13 @@
 @php
     $faqs = [
-        ['What is Gymai?', 'Gymai is all-in-one gym management software. It handles members, membership plans, fees and receipts, QR attendance, trainers, diet charts, workout plans, enquiries and reports from one dashboard, with a portal and app for your members.'],
+        ['What is Fitnix?', 'Fitnix is all-in-one gym management software. It handles members, membership plans, fees and receipts, QR attendance, trainers, diet charts, workout plans, enquiries and reports from one dashboard, with a portal and app for your members.'],
         ['How can I register my gym?', 'Click "'.$ctaLabel.'", enter your details and your gym\'s name, city and address. Your dashboard, public gym page and QR codes are ready immediately.'],
         ['Do you offer a free trial?', 'There is no separate trial period, but there is also no setup or registration fee. You are billed '.$priceLabel.' per active member per month, so you can set up your plans, trainers and members and only pay once members hold a valid membership.'],
         ['Is there a limit on members or trainers?', 'No. Add members one by one, through the QR self-registration form or online joining, or import them in bulk from a CSV or Excel file. Add as many trainers as you need.'],
-        ['Can new members register themselves?', 'Yes. Members can find your gym on Gymai and join online, or scan your gym\'s registration QR code. They fill a short form and get a member ID instantly — you then assign a plan and collect the fee.'],
+        ['Can new members register themselves?', 'Yes. Members can find your gym on Fitnix and join online, or scan your gym\'s registration QR code. They fill a short form and get a member ID instantly — you then assign a plan and collect the fee.'],
         ['What does AI Coach do?', 'AI Coach writes progress reports for members from their check-ins, weight logs and progress photos, including photo comparisons. Members opt in first, and the gym can read every report.'],
-        ['Does Gymai support QR attendance?', 'Yes. Every member gets a personal QR code. Staff can scan it to check members in and out, members can check themselves in from the app, and you can still check in manually.'],
-        ['How does billing work?', 'Your subscription renews automatically each month. You receive a monthly invoice for your active members and can see your full billing history under "Gymai Billing" in your panel.'],
+        ['Does Fitnix support QR attendance?', 'Yes. Every member gets a personal QR code. Staff can scan it to check members in and out, members can check themselves in from the app, and you can still check in manually.'],
+        ['How does billing work?', 'Your subscription renews automatically each month. You receive a monthly invoice for your active members and can see your full billing history under "Fitnix Billing" in your panel.'],
         ['Can I manage fees and payments?', 'Yes. Record full or partial payments by cash, UPI, card or bank transfer, see pending dues for every member, and print receipts and invoices.'],
         ['Can I customize my gym branding?', 'Yes. Upload your logo, set your brand colours, add photos, facilities and opening hours. They appear on your public gym page, registration forms and in the member app.'],
     ];

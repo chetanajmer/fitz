@@ -12,7 +12,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * Cities Gymai operates in. Active cities are offered to gyms when they register and
+ * Cities Fitnix operates in. Active cities are offered to gyms when they register and
  * to members signing up from the app; switching a city off hides it (and its gyms) there.
  */
 #[Layout('components.layouts.platform')]

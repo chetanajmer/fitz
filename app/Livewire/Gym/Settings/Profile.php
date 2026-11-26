@@ -118,7 +118,7 @@ class Profile extends Component
         $this->theme[$area] = ['primary' => Gym::DASHBOARD_THEME_DEFAULTS['primary'], 'secondary' => Gym::DASHBOARD_THEME_DEFAULTS['secondary']];
         $this->resetValidation("theme.{$area}.*");
 
-        $this->confirmTheme($area, 'colours reset to the Gymai theme.');
+        $this->confirmTheme($area, 'colours reset to the Fitnix theme.');
     }
 
     /** Admin colours repaint this very panel, so reload it; member colours show in the member app. */

@@ -1,6 +1,6 @@
 {
     "info": {
-        "name": "Gymai Member App API (v1)",
+        "name": "Fitnix Member App API (v1)",
         "_postman_id": "8f6c2b1e-4a7d-4c1e-9b8a-gymai-member-v1",
         "description": "Member mobile app API.\n\n**Flow:** Check version → Send OTP → Verify OTP → Get gym branding.\n\nRun the requests in order. The test scripts save values into collection variables automatically:\n- **Send OTP** stores `otp` (from `debug_otp`, only returned when `OTP_EXPOSE_IN_RESPONSE=true` in a non-production environment) and `gym_id`.\n- **Verify OTP** stores `token` and `gym_id`.\n\nAll authenticated requests send `Authorization: Bearer {{token}}`.\n\n**Response format**\n- Success: `{ \"success\": true, \"message\": \"...\", \"data\": { ... } }`\n- Error: `{ \"success\": false, \"message\": \"...\", \"code\": \"ERROR_CODE\", \"data\"?: { ... }, \"errors\"?: { ... } }`\n\n**Error codes:** VALIDATION_ERROR, UNAUTHENTICATED, NO_GYM_CONNECTED, MEMBER_NOT_FOUND, MULTIPLE_GYMS, OTP_COOLDOWN, OTP_LIMIT_REACHED, OTP_NOT_FOUND, OTP_EXPIRED, OTP_INVALID, OTP_ATTEMPTS_EXCEEDED, MEMBER_INACTIVE, GYM_NOT_FOUND, GYM_INACTIVE, ALREADY_CHECKED_IN, ALREADY_CHECKED_OUT, NOT_CHECKED_IN, NO_ACTIVE_MEMBERSHIP, SELF_CHECKIN_DISABLED, PLAN_NOT_FOUND, FORBIDDEN, TOO_MANY_REQUESTS, NOT_FOUND.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -812,7 +812,7 @@
                                     "value": "application/json"
                                 }
                             ],
-                            "body": "{\n  \"success\": false,\n  \"message\": \"This gym is currently Suspended on Gymai. Please contact your gym.\",\n  \"code\": \"GYM_INACTIVE\",\n  \"data\": { \"gym_id\": 1, \"gym_status\": \"suspended\", \"is_active\": false }\n}"
+                            "body": "{\n  \"success\": false,\n  \"message\": \"This gym is currently Suspended on Fitnix. Please contact your gym.\",\n  \"code\": \"GYM_INACTIVE\",\n  \"data\": { \"gym_id\": 1, \"gym_status\": \"suspended\", \"is_active\": false }\n}"
                         },
                         {
                             "name": "Not logged in",
@@ -1893,7 +1893,7 @@
                                 "cities"
                             ]
                         },
-                        "description": "Step 1 of sign-up for people who are not members yet. Returns the cities Gymai is live in (managed by the Super Admin), A to Z.\n\nNo login needed. `gyms_count` counts only gyms that are currently active."
+                        "description": "Step 1 of sign-up for people who are not members yet. Returns the cities Fitnix is live in (managed by the Super Admin), A to Z.\n\nNo login needed. `gyms_count` counts only gyms that are currently active."
                     },
                     "response": [
                         {
@@ -2015,7 +2015,7 @@
                                     "value": "application/json"
                                 }
                             ],
-                            "body": "{\n    \"success\": false,\n    \"message\": \"This city is not available on Gymai.\",\n    \"code\": \"CITY_NOT_FOUND\"\n}"
+                            "body": "{\n    \"success\": false,\n    \"message\": \"This city is not available on Fitnix.\",\n    \"code\": \"CITY_NOT_FOUND\"\n}"
                         }
                     ]
                 },

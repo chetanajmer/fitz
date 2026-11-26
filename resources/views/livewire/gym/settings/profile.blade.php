@@ -37,7 +37,7 @@
                             <x-ui.field label="Email" name="profile.email"><input wire:model="profile.email" type="email" class="input"></x-ui.field>
                             <x-ui.field label="Address" name="profile.address"><input wire:model="profile.address" class="input"></x-ui.field>
                             <x-ui.field label="Google Maps link" name="profile.map_url" hint="Paste your gym's location link from Google Maps."><input wire:model="profile.map_url" type="url" class="input" placeholder="https://maps.app.goo.gl/…"></x-ui.field>
-                            <x-ui.field label="City" name="profile.city_id" required hint="Missing your city? Ask Gymai support to add it.">
+                            <x-ui.field label="City" name="profile.city_id" required hint="Missing your city? Ask Fitnix support to add it.">
                                 <select wire:model.live="profile.city_id" class="input">
                                     <option value="">Select city</option>
                                     @foreach ($cities as $c)
@@ -212,7 +212,7 @@
                             <h2 class="card-title">{{ $areaLabel }}</h2>
                             <p class="mt-0.5 text-xs text-gray-500">{{ $areaHints[$area] }}</p>
                         </div>
-                        <x-ui.badge :color="$saved['custom'] ? 'indigo' : 'gray'" class="shrink-0 whitespace-nowrap">{{ $saved['custom'] ? 'Custom' : 'Gymai default' }}</x-ui.badge>
+                        <x-ui.badge :color="$saved['custom'] ? 'indigo' : 'gray'" class="shrink-0 whitespace-nowrap">{{ $saved['custom'] ? 'Custom' : 'Fitnix default' }}</x-ui.badge>
                     </div>
                     <div class="card-body space-y-5">
                         {{-- Live preview --}}
@@ -276,7 +276,7 @@
                         </div>
 
                         <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4 dark:border-ink-700">
-                            <button type="button" wire:click="resetTheme('{{ $area }}')" wire:confirm="Reset the {{ strtolower($areaLabel) }} to the Gymai colours?" class="text-sm font-medium text-gray-500 hover:text-brand-600 disabled:opacity-40" @disabled(! $saved['custom'])>Reset to default</button>
+                            <button type="button" wire:click="resetTheme('{{ $area }}')" wire:confirm="Reset the {{ strtolower($areaLabel) }} to the Fitnix colours?" class="text-sm font-medium text-gray-500 hover:text-brand-600 disabled:opacity-40" @disabled(! $saved['custom'])>Reset to default</button>
                             <button type="button" wire:click="saveTheme('{{ $area }}')" class="btn-primary" wire:loading.attr="disabled" wire:target="saveTheme('{{ $area }}')">Save {{ strtolower($areaLabel) }} colours</button>
                         </div>
                     </div>

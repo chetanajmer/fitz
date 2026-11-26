@@ -62,7 +62,7 @@
                 <div class="flex flex-col items-center py-8 text-center">
                     <span class="flex size-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600"><x-ui.icon name="scale" class="size-7" /></span>
                     <p class="mt-3 font-semibold text-gray-900">Not enough weigh-ins yet</p>
-                    <p class="mt-1 max-w-xs text-sm text-gray-500">Log your weight in the Gymai app or at the front desk. Your trend appears here after two weigh-ins.</p>
+                    <p class="mt-1 max-w-xs text-sm text-gray-500">Log your weight in the Fitnix app or at the front desk. Your trend appears here after two weigh-ins.</p>
                 </div>
             @endif
         </div>

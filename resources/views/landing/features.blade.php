@@ -12,7 +12,7 @@
         ['enquiries', 'inbox', 'Enquiries', 'Capture walk-ins and calls, schedule follow-ups, convert in a click.', 'chalk'],
         ['push', 'bell', 'Push notifications', 'Send renewal reminders and announcements straight to members\' phones.', 'volt'],
         ['ai', 'sparkles', 'AI Coach', 'Progress reports and photo comparisons, written for every member.', 'clay'],
-        ['reports', 'chart', 'Reports & billing', 'Revenue, attendance, renewals and pending fees. Clear monthly Gymai bill.', 'outline'],
+        ['reports', 'chart', 'Reports & billing', 'Revenue, attendance, renewals and pending fees. Clear monthly Fitnix bill.', 'outline'],
     ];
     $cardStyles = [
         'chalk' => 'bg-chalk text-forest',

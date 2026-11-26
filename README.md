@@ -1,4 +1,4 @@
-# Gymai
+# Fitnix
 
 Multi-tenant gym management SaaS for Indian gyms. One install serves many gyms; every gym sees only its own data. Gyms pay the platform per active member per month (default ₹20).
 

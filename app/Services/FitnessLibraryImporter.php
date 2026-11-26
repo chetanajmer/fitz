@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Imports the Gymai default fitness library (edited by the Super Admin in Platform →
+ * Imports the Fitnix default fitness library (edited by the Super Admin in Platform →
  * Default Library) into the current gym. Idempotent via library_key: importing again
  * only adds missing plans and fills empty photo slots — it never duplicates content or
  * overwrites what the gym changed. Gyms receive their own copies of the photos.

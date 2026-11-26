@@ -2,7 +2,7 @@
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
             <h1 class="text-xl font-semibold">Browse gyms</h1>
-            <p class="mt-1 text-sm text-gray-500">See the gyms on Gymai in your city. Open a gym to view its photos, facilities, timings and prices.</p>
+            <p class="mt-1 text-sm text-gray-500">See the gyms on Fitnix in your city. Open a gym to view its photos, facilities, timings and prices.</p>
         </div>
         <a href="{{ route('member.join') }}" class="btn-primary btn-sm">Join a gym</a>
     </div>
@@ -22,7 +22,7 @@
                 </button>
             @empty
                 <p class="py-4 text-center text-sm text-gray-500 sm:col-span-2">
-                    {{ trim($citySearch) !== '' ? 'No city matches "'.trim($citySearch).'".' : "Gymai isn't live in any city yet." }}
+                    {{ trim($citySearch) !== '' ? 'No city matches "'.trim($citySearch).'".' : "Fitnix isn't live in any city yet." }}
                 </p>
             @endforelse
         </div>

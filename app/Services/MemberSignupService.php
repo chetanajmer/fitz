@@ -69,7 +69,7 @@ class MemberSignupService
             return $verification;
         });
 
-        $this->sms->send($digits, "{$code} is your Gymai sign-up OTP. It is valid for ".intdiv($ttl, 60).' minutes. Do not share it with anyone.');
+        $this->sms->send($digits, "{$code} is your Fitnix sign-up OTP. It is valid for ".intdiv($ttl, 60).' minutes. Do not share it with anyone.');
 
         return ['verification' => $verification, 'code' => $code];
     }
@@ -153,7 +153,7 @@ class MemberSignupService
     {
         $city = City::active()->find($cityId);
         if (! $city) {
-            throw new ApiException('This city is not available on Gymai.', 'CITY_NOT_FOUND', 404);
+            throw new ApiException('This city is not available on Fitnix.', 'CITY_NOT_FOUND', 404);
         }
 
         $gym = Gym::operational()->where('city_id', $city->id)->find($gymId);

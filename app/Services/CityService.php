@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Super Admin managed list of cities Gymai operates in, and linking gyms to them.
+ * Super Admin managed list of cities Fitnix operates in, and linking gyms to them.
  */
 class CityService
 {

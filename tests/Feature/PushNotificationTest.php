@@ -581,7 +581,7 @@ class PushNotificationTest extends TestCase
         $this->artisan('push:run')->assertSuccessful();
         $this->assertSame(['s' => ['Membership ends in 5 days', 'Time for your weigh-in']], $this->pushedByPhone()); // weigh-in is also at 08:00
 
-        // Reset puts the Gymai defaults back.
+        // Reset puts the Fitnix defaults back.
         Livewire::test(Announcements::class)->call('resetAutomatic', 'membership_expiring');
         $this->assertSame('10:00', app(NotificationSettings::class)->forGym($this->gym->fresh(), 'membership_expiring')['time']);
     }
