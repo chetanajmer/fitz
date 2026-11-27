@@ -132,7 +132,7 @@ class ProgramService
 
         $planIds = FitnessPlan::ofType($type)->defaults()->pluck('id')->all();
 
-        return DB::transaction(function () use ($program, $type, $data, $days, $planIds) {
+        $saved = DB::transaction(function () use ($program, $type, $data, $days, $planIds) {
             $program ??= new FitnessProgram(['type' => $type]);
             $program->fill(collect($data)->only(['title', 'summary', 'goal', 'level', 'diet_preference', 'duration_weeks', 'is_active'])->all());
             $program->type = $type;
@@ -156,6 +156,11 @@ class ProgramService
 
             return $program->load('days');
         });
+
+        // Members following this diet program get today's meal reminders from the new days.
+        app(ReminderService::class)->rebuildForProgram($saved);
+
+        return $saved;
     }
 
     /** Assign a program to a member from a date. Any current program of the same type is stopped. */
@@ -191,12 +196,20 @@ class ProgramService
 
         app(PushNotificationService::class)->programAssigned($assignment->setRelation('member', $member)->setRelation('program', $program));
 
+        if ($program->type === FitnessPlanType::Diet) {
+            app(ReminderService::class)->buildMealReminders($member);
+        }
+
         return $assignment;
     }
 
     public function stop(MemberProgram $assignment): void
     {
         $assignment->forceFill(['status' => 'stopped', 'stopped_at' => now()])->save();
+
+        if ($assignment->type === FitnessPlanType::Diet && $assignment->member) {
+            app(ReminderService::class)->buildMealReminders($assignment->member);
+        }
     }
 
     /** The member's program of a type that covers a date (newest wins). */

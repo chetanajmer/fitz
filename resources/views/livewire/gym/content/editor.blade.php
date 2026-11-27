@@ -26,6 +26,11 @@
                                 <x-ui.field label="Title" :name="'sections.'.$i.'.title'" required><input wire:model="sections.{{ $i }}.title" class="input" placeholder="{{ $hints['title'] }}"></x-ui.field>
                                 <x-ui.field label="Subtitle" :name="'sections.'.$i.'.subtitle'"><input wire:model="sections.{{ $i }}.subtitle" class="input" placeholder="{{ $hints['subtitle'] }}"></x-ui.field>
                             </div>
+                            @if ($planType === \App\Enums\FitnessPlanType::Diet)
+                                <x-ui.field label="Meal time" :name="'sections.'.$i.'.meal_time'" hint="Members who switch on meal reminders in the app get a reminder at this time. Leave empty for tips and guidelines (taken from the subtitle when it has a time, e.g. 8:30 AM).">
+                                    <input wire:model="sections.{{ $i }}.meal_time" type="time" class="input sm:max-w-40">
+                                </x-ui.field>
+                            @endif
                             <x-ui.field label="Details" :name="'sections.'.$i.'.body'"><textarea wire:model="sections.{{ $i }}.body" rows="4" class="input" placeholder="{{ $hints['body'] }}"></textarea></x-ui.field>
                         </div>
                         <div>

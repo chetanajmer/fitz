@@ -568,7 +568,9 @@ class PushNotificationService
 
         $today = Carbon::today();
         $programs = app(ProgramService::class);
+        // Members who set their own workout reminder in the app get that one instead.
         $members = Member::query()->active()->whereHas('devices')
+            ->whereDoesntHave('reminderSettings', fn ($q) => $q->where('workout_enabled', true))
             ->whereHas('programs', fn ($q) => $q->where('status', 'active')
                 ->whereDate('start_date', '<=', $today->toDateString())->whereDate('end_date', '>=', $today->toDateString()))
             ->get();

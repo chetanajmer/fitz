@@ -84,13 +84,15 @@ class BodyProgressService
     }
 
     /** All of the member's photos: the records now, the files once the transaction is committed. */
-    public function deleteAllPhotos(Member $member): void
+    public function deleteAllPhotos(Member $member): int
     {
         $photos = ProgressPhoto::forGym($member->gym_id)->where('member_id', $member->id);
         $paths = $photos->pluck('path')->all();
         $photos->delete();
 
         DB::afterCommit(fn () => Storage::disk(self::DISK)->delete($paths));
+
+        return count($paths);
     }
 
     public function deletePhoto(Member $member, int $id): void

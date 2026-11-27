@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use App\Contracts\SmsSender;
 use App\Models\Member;
 use App\Models\MemberOtp;
+use App\Models\Membership;
 use App\Models\PlatformSetting;
 use App\Services\MemberService;
 use App\Services\MembershipService;
@@ -154,7 +155,7 @@ class MemberApiTest extends TestCase
         $this->createMember($this->gymOf($this->createGymOwner()), ['phone' => '9000000004']);
 
         $this->postJson('/api/v1/auth/send-otp', ['phone' => '9000000004'])->assertOk();
-        $this->postJson('/api/v1/auth/send-otp', ['phone' => '9000000004'])->assertStatus(429)->assertJsonPath('code', 'OTP_COOLDOWN');
+        $this->postJson('/api/v1/auth/send-otp', ['phone' => '9000000004'])->assertStatus(429)->assertJsonPath('code', 'OTP_TOO_MANY');
 
         $this->travel(11)->minutes();
         $this->postJson('/api/v1/auth/verify-otp', ['phone' => '9000000004', 'otp' => $this->lastOtp()])
@@ -163,6 +164,70 @@ class MemberApiTest extends TestCase
         // A new OTP invalidates the previous one.
         $this->postJson('/api/v1/auth/send-otp', ['phone' => '9000000004'])->assertOk();
         $this->assertSame(1, MemberOtp::whereNull('consumed_at')->count());
+    }
+
+    public function test_one_ip_can_request_fifteen_otps_per_ten_minutes(): void
+    {
+        config(['gymai.otp.expose_in_response' => true]);
+        $gym = $this->gymOf($this->createGymOwner());
+        $phones = array_map(fn (int $n) => (string) (9000000100 + $n), range(1, 15));
+
+        foreach ([...$phones, '9000000014'] as $phone) {
+            $this->createMember($gym, ['phone' => $phone]);
+        }
+
+        foreach ($phones as $phone) {
+            $this->postJson('/api/v1/auth/send-otp', ['phone' => $phone])->assertOk()
+                ->assertJsonPath('data.otp_length', 6)
+                ->assertJsonMissingPath('data.debug_otp');
+        }
+
+        $this->postJson('/api/v1/auth/send-otp', ['phone' => '9000000014'])->assertStatus(429)
+            ->assertJsonPath('code', 'OTP_TOO_MANY')
+            ->assertJsonPath('data.retry_after', 600);
+
+        $this->travel(11)->minutes();
+        $this->postJson('/api/v1/auth/send-otp', ['phone' => '9000000014'])->assertOk();
+    }
+
+    public function test_the_demo_member_command_creates_a_review_account_that_can_log_in(): void
+    {
+        config(['gymai.otp.demo_phone' => '9251836248', 'gymai.otp.demo_code' => '123456']);
+        $gym = $this->gymOf($this->createGymOwner());
+        $this->createPlan($gym, ['price' => 999]);
+
+        $this->postJson('/api/v1/auth/send-otp', ['phone' => '9251836248'])->assertNotFound()->assertJsonPath('code', 'NO_GYM_CONNECTED');
+
+        $this->artisan('gymai:demo-member', ['gym' => $gym->id])->assertSuccessful();
+        $this->artisan('gymai:demo-member', ['gym' => $gym->slug])->assertSuccessful();
+
+        $this->postJson('/api/v1/auth/send-otp', ['phone' => '9251836248'])->assertOk();
+        $this->postJson('/api/v1/auth/verify-otp', ['phone' => '9251836248', 'otp' => '123456'])->assertOk()
+            ->assertJsonPath('data.member.membership_state', 'active');
+        $this->assertSame([], $this->sent);
+        $this->assertSame(1, Member::withoutGlobalScopes()->where('phone_digits', '9251836248')->count());
+        $this->assertSame(0.0, (float) Membership::withoutGlobalScopes()->sole()->balance());
+    }
+
+    public function test_the_store_review_number_always_gets_the_fixed_code_without_an_sms(): void
+    {
+        config(['gymai.otp.demo_phone' => '+91 92518 36248', 'gymai.otp.demo_code' => '123456']);
+        $gym = $this->gymOf($this->createGymOwner());
+        $this->createMember($gym, ['phone' => '9251836248']);
+        $this->createMember($gym, ['phone' => '9000000005']);
+
+        foreach (range(1, 3) as $try) {
+            $this->postJson('/api/v1/auth/send-otp', ['phone' => '9251836248'])->assertOk();
+        }
+        $this->assertSame([], $this->sent, 'No SMS goes to the review number, and no resend limits apply.');
+
+        $this->postJson('/api/v1/auth/verify-otp', ['phone' => '9251836248', 'otp' => '123456', 'device_name' => 'Review'])
+            ->assertOk()->assertJsonStructure(['data' => ['token']]);
+
+        // Every other number still gets a random code by SMS.
+        $this->postJson('/api/v1/auth/send-otp', ['phone' => '9000000005'])->assertOk();
+        $this->assertCount(1, $this->sent);
+        $this->postJson('/api/v1/auth/send-otp', ['phone' => '9000000005'])->assertStatus(429);
     }
 
     public function test_phone_registered_at_multiple_gyms_requires_gym_choice(): void

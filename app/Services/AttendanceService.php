@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class AttendanceService
@@ -72,6 +73,19 @@ class AttendanceService
         }
 
         return $this->checkIn($member, 'self');
+    }
+
+    /**
+     * Member scanned the gym's QR code in the app. The member row is locked so two quick scans can't both
+     * check in; returns null when the member was already checked in today.
+     */
+    public function checkInByGymQr(Member $member): ?Attendance
+    {
+        return DB::transaction(function () use ($member): ?Attendance {
+            Member::whereKey($member->id)->lockForUpdate()->first();
+
+            return $this->today($member) ? null : $this->checkIn($member, Attendance::METHOD_GYM_QR);
+        });
     }
 
     /** The member must be at the gym: the scanned QR has to be their own gym's current check-in code. */

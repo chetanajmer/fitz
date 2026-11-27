@@ -23,8 +23,13 @@ return [
         'resend_cooldown_seconds' => 30,
         'max_attempts' => 5,           // wrong guesses allowed per OTP
         'max_sends_per_hour' => 5,     // per phone number
+        'max_sends_per_ip' => 15,      // per IP address within ip_window_minutes (the store review number is exempt)
+        'ip_window_minutes' => 10,
         // Return the OTP in the API response — only for local testing without an SMS provider.
         'expose_in_response' => (bool) env('OTP_EXPOSE_IN_RESPONSE', false),
+        // Store review account (Google Play): this number always gets this code and no SMS is sent. Leave empty to turn off.
+        'demo_phone' => env('OTP_DEMO_PHONE'),
+        'demo_code' => env('OTP_DEMO_CODE'),
     ],
 
     // SMS provider for OTPs. "log" writes messages to storage/logs (development).
@@ -45,7 +50,7 @@ return [
         'admin', 'app', 'api', 'platform', 'login', 'logout', 'register', 'register-gym', 'join', 'join-gym', 'me',
         'member', 'members', 'livewire', 'up', 'storage', 'build', 'assets', 'css', 'js', 'images',
         'password', 'forgot-password', 'reset-password', 'dashboard', 'pricing', 'about', 'contact',
-        'terms', 'privacy', 'help', 'support', 'gymai', 'www', 'mail', 'checkin', 'receipt', 'invoice',
+        'terms', 'privacy', 'privacy-policy', 'delete-account', 'help', 'support', 'gymai', 'www', 'mail', 'checkin', 'receipt', 'invoice',
         'suspended', 'login-as', 'favicon.ico', 'robots.txt', 'gyms',
     ],
 ];

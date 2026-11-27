@@ -108,7 +108,7 @@ class FitnessPlanService
             throw ValidationException::withMessages(['form.plan_category_id' => 'Choose a valid category.']);
         }
 
-        return DB::transaction(function () use ($plan, $type, $data, $sections, $member, $cover, $removeCover, $categoryId) {
+        $saved = DB::transaction(function () use ($plan, $type, $data, $sections, $member, $cover, $removeCover, $categoryId) {
             $isNew = $plan === null;
             $plan ??= new FitnessPlan(['type' => $type]);
 
@@ -142,6 +142,11 @@ class FitnessPlanService
 
             return $plan->load('sections');
         });
+
+        // Meal times may have changed: today's meal reminders of members on this diet chart.
+        app(ReminderService::class)->rebuildForPlan($saved);
+
+        return $saved;
     }
 
     /** Copy a plan (e.g. a default chart) into a customised plan for one member. */
@@ -197,6 +202,10 @@ class FitnessPlanService
                 'body' => $input['body'] ?? null,
                 'sort_order' => $order,
             ]);
+            // The editor sends the meal time of diet sections; otherwise it is read from the subtitle.
+            if (array_key_exists('meal_time', $input)) {
+                $section->meal_time = $input['meal_time'] ?: null;
+            }
             $section->fitness_plan_id = $plan->id;
 
             $upload = $input['upload'] ?? null;

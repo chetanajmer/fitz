@@ -24,7 +24,7 @@ class SmartPingSmsSender implements SmsSender
             throw new RuntimeException('SmartPing can only send OTP messages that start with the code.');
         }
         if (blank($config['username']) || blank($config['password'])) {
-            throw new ApiException('SMS sending is not set up yet. Please try again later.', 'SMS_FAILED', 503);
+            throw new ApiException('SMS sending is not set up yet. Please try again later.', 'OTP_SEND_FAILED', 503);
         }
 
         $digits = preg_replace('/\D/', '', $phone);
@@ -50,7 +50,7 @@ class SmartPingSmsSender implements SmsSender
                 Log::error('SmartPing SMS was not accepted', ['status' => $response->status(), 'reply' => mb_substr($response->body(), 0, 300)]);
             }
 
-            throw new ApiException("We couldn't send the SMS. Please try again in a minute.", 'SMS_FAILED', 503);
+            throw new ApiException("We couldn't send the SMS. Please try again in a minute.", 'OTP_SEND_FAILED', 503);
         }
     }
 }

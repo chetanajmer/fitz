@@ -125,7 +125,9 @@ class AiCoachApiTest extends TestCase
         });
 
         $this->api()->getJson('/api/v1/me/ai/reports')->assertOk()->assertJsonCount(1, 'data.reports');
-        $this->api()->getJson("/api/v1/me/ai/reports/{$report->id}")->assertOk()->assertJsonPath('data.type', 'progress');
+        $this->api()->getJson("/api/v1/me/ai/reports/{$report->id}")->assertOk()->assertJsonPath('data.type', 'progress')
+            ->assertJsonPath('data.before_photo_url', null)
+            ->assertJsonStructure(['data' => ['result' => ['summary', 'direction', 'wins', 'focus_areas', 'missing', 'motivation', 'confidence'], 'highlight' => ['headline', 'period', 'stats', 'shareable']]]);
     }
 
     public function test_member_limit_and_gym_pool_stop_requests_and_failed_reports_cost_nothing(): void
@@ -200,6 +202,9 @@ class AiCoachApiTest extends TestCase
             ->assertStatus(202)
             ->assertJsonPath('data.report.status', 'completed')
             ->assertJsonPath('data.report.before_photo_id', $before) // always older → newer
+            ->assertJsonPath('data.report.before_photo_url', route('api.v1.me.progress-photos.image', $before))
+            ->assertJsonPath('data.report.after_photo_url', route('api.v1.me.progress-photos.image', $after))
+            ->assertJsonStructure(['data' => ['report' => ['highlight' => ['headline', 'period', 'stats', 'shareable']]]])
             ->assertJsonPath('data.credits.used', 2);
 
         Http::assertSent(fn (Request $request) => collect($request['messages'][1]['content'])->where('type', 'image_url')->count() === 2);
@@ -239,8 +244,15 @@ class AiCoachApiTest extends TestCase
         $this->api()->deleteJson("/api/v1/me/measurements/{$id}")->assertOk()->assertJsonCount(0, 'data.measurements');
     }
 
+    protected function photoConsent(?string $token = null): void
+    {
+        $this->api($token)->postJson('/api/v1/me/consents', ['type' => 'progress_photos', 'accepted' => true])->assertOk();
+    }
+
     protected function uploadPhoto(?string $takenOn = null, ?string $token = null): int
     {
+        $this->photoConsent($token);
+
         return $this->api($token)->post('/api/v1/me/progress-photos', array_filter([
             'photo' => UploadedFile::fake()->image('p.jpg', 300, 400),
             'pose' => 'front',
@@ -347,6 +359,7 @@ class AiCoachApiTest extends TestCase
         $jpeg = substr($jpeg, 0, 2)."\xFF\xE1".pack('n', strlen($exif) + 2).$exif.substr($jpeg, 2);
         $file = UploadedFile::fake()->createWithContent('phone.jpg', $jpeg);
 
+        $this->photoConsent();
         $this->api()->post('/api/v1/me/progress-photos', ['photo' => $file, 'pose' => 'front'], ['Accept' => 'application/json'])->assertCreated();
 
         $stored = Storage::disk('local')->get(ProgressPhoto::withoutGlobalScopes()->sole()->path);

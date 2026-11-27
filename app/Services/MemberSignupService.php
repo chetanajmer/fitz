@@ -42,12 +42,12 @@ class MemberSignupService
         if ($latest && $latest->consumed_at === null && $latest->created_at->gt(now()->subSeconds($cooldown))) {
             $wait = $cooldown - (int) $latest->created_at->diffInSeconds(now());
 
-            throw new ApiException('Please wait before requesting another OTP.', 'OTP_COOLDOWN', 429, ['retry_after' => max(1, $wait)]);
+            throw new ApiException('Please wait before requesting another OTP.', 'OTP_TOO_MANY', 429, ['retry_after' => max(1, $wait)]);
         }
 
         $key = 'signup-otp-send:'.$digits;
         if (RateLimiter::tooManyAttempts($key, (int) config('gymai.otp.max_sends_per_hour', 5))) {
-            throw new ApiException('Too many OTP requests. Please try again later.', 'OTP_LIMIT_REACHED', 429, ['retry_after' => RateLimiter::availableIn($key)]);
+            throw new ApiException('Too many OTP requests. Please try again later.', 'OTP_TOO_MANY', 429, ['retry_after' => RateLimiter::availableIn($key)]);
         }
         RateLimiter::hit($key, 3600);
 

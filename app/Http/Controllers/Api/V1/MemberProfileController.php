@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Enums\DietPreference;
+use App\Http\Requests\Api\V1\UpdateMemberProfileRequest;
 use App\Http\Resources\V1\MemberResource;
 use App\Models\Member;
 use App\Services\MemberMembershipService;
@@ -11,7 +11,6 @@ use App\Services\MemberService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 
 class MemberProfileController extends ApiController
 {
@@ -47,34 +46,13 @@ class MemberProfileController extends ApiController
 
     /**
      * PUT|PATCH /api/v1/me/profile — the member edits their own details.
-     * Only fields sent are changed; send null to clear one. Name and phone are managed by the gym.
+     * Only fields sent are changed; send null to clear one. Name, phone, member code, gym and membership
+     * are managed by the gym (FIELD_NOT_EDITABLE). Returns the same object as GET /me/profile.
      */
-    public function update(Request $request): JsonResponse
+    public function update(UpdateMemberProfileRequest $request): JsonResponse
     {
-        /** @var Member $member */
-        $member = $request->user('member');
-
-        $data = $request->validate([
-            'email' => ['sometimes', 'nullable', 'email', 'max:255',
-                // A web-portal login uses the email as username, so it must stay unique among users.
-                Rule::unique('users', 'email')->ignore($member->user_id)],
-            'gender' => ['sometimes', 'nullable', 'in:male,female,other'],
-            'date_of_birth' => ['sometimes', 'nullable', 'date', 'before:today', 'after:1900-01-01'],
-            'blood_group' => ['sometimes', 'nullable', 'in:A+,A-,B+,B-,AB+,AB-,O+,O-'],
-            'height_cm' => ['sometimes', 'nullable', 'numeric', 'between:50,250'],
-            'address' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'city' => ['sometimes', 'nullable', 'string', 'max:80'],
-            'emergency_contact_name' => ['sometimes', 'nullable', 'string', 'max:120'],
-            'emergency_contact_phone' => ['sometimes', 'nullable', 'regex:/^\+?[0-9\s\-]{8,15}$/'],
-            'emergency_contact_relation' => ['sometimes', 'nullable', 'string', 'max:50'],
-            'fitness_goal' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'diet_preference' => ['sometimes', 'nullable', Rule::enum(DietPreference::class)],
-            'medical_notes' => ['sometimes', 'nullable', 'string', 'max:2000'],
-        ]);
-
-        $data = collect($data)->only(MemberProfileService::EDITABLE_FIELDS)
-            ->map(fn ($value) => is_string($value) && trim($value) === '' ? null : $value)
-            ->all();
+        $member = $request->member();
+        $data = $request->profileData();
 
         if ($data === []) {
             return $this->success($this->profiles->full($member), 'Nothing to update.');

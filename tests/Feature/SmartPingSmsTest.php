@@ -41,7 +41,7 @@ class SmartPingSmsTest extends TestCase
             app(SmsSender::class)->send('9876543210', '123456 is your Fitnix sign-in OTP.');
             $this->fail('The refused SMS was not reported.');
         } catch (ApiException $e) {
-            $this->assertSame('SMS_FAILED', $e->errorCode);
+            $this->assertSame('OTP_SEND_FAILED', $e->errorCode);
         }
 
         Log::shouldHaveReceived('error')->withArgs(fn (string $message, array $context) => ! str_contains(json_encode($context), 'secret-pass'));

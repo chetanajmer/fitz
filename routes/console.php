@@ -7,15 +7,19 @@ use App\Models\Announcement;
 use App\Models\Gym;
 use App\Models\GymAiSetting;
 use App\Models\Member;
+use App\Models\MembershipPlan;
 use App\Models\Scopes\GymScope;
 use App\Services\AiAccessService;
 use App\Services\AiReportService;
 use App\Services\BillingService;
 use App\Services\GymProfileService;
+use App\Services\MemberOtpService;
+use App\Services\MemberService;
 use App\Services\MembershipService;
 use App\Services\Push\FcmClient;
 use App\Services\Push\PushMessage;
 use App\Services\PushNotificationService;
+use App\Services\ReminderService;
 use App\Services\StreakService;
 use App\Support\NotificationCatalog;
 use App\Support\SystemHealth;
@@ -83,6 +87,19 @@ foreach ([
         $sent = $eachGym(fn (Gym $gym) => $notifications->runScheduled($gym, $type));
         $this->info("Sent: {$sent}");
     })->purpose('Push now: '.NotificationCatalog::TYPES[$type]['label']);
+}
+
+// Personal reminders the member set in the app (water, meals, workout). Not saved to the notification list.
+foreach ([
+    'push:hydration' => ['sendHydration', 'Push the water reminders that are due'],
+    'push:meal-reminders' => ['sendMeals', 'Push the diet meal reminders that are due'],
+    'push:workout' => ['sendWorkouts', 'Push the personal workout reminders that are due'],
+    'push:build-meal-reminders' => ['buildMealRemindersForGym', "Build today's meal reminders from each member's diet program"],
+] as $signature => [$method, $purpose]) {
+    Artisan::command($signature, function (ReminderService $reminders) use ($eachGym, $method) {
+        $count = $eachGym(fn (Gym $gym) => $reminders->{$method}($gym));
+        $this->info("Done: {$count}");
+    })->purpose($purpose);
 }
 
 Artisan::command('push:test {member_id : Member id} {--image= : Optional full public URL of a picture}', function (PushNotificationService $notifications) {
@@ -197,9 +214,63 @@ Schedule::command('gymai:ai-monthly-reports')->monthlyOn(1, '07:00');
 // Member notifications: each gym's own times (Notifications page), checked every 5 minutes.
 Schedule::command('push:run')->everyFiveMinutes()->withoutOverlapping();
 Schedule::command('gymai:send-announcements')->everyMinute()->withoutOverlapping();
+// Personal reminders (member app): due ones every 5 minutes; meal reminders are rebuilt just after midnight.
+Schedule::command('push:hydration')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('push:meal-reminders')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('push:workout')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+Schedule::command('push:build-meal-reminders')->dailyAt('00:05')->withoutOverlapping()->onOneServer();
 // Heartbeats (see gymai:health and Super Admin -> App Notifications -> Rules): the scheduler
 // writes one directly, the queued job proves the queue worker runs too.
 Schedule::call(fn () => SystemHealth::beat(SystemHealth::SCHEDULER))->everyMinute()->name('scheduler-heartbeat');
 Schedule::job(new SchedulerHeartbeat)->everyMinute()->name('queue-heartbeat');
 // Shared hosting has no queue supervisor: the cron that runs schedule:run every minute also works the queue.
 Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=2')->everyMinute()->withoutOverlapping();
+
+// Store review account: the member that OTP_DEMO_PHONE logs in as (fixed OTP_DEMO_CODE, no SMS). Safe to run again.
+Artisan::command('gymai:demo-member {gym : Gym id or slug} {--name=Play Store Review}', function (MemberService $members, MembershipService $memberships) {
+    $phone = Member::normalizePhone((string) config('gymai.otp.demo_phone'));
+
+    if (! MemberOtpService::isDemoPhone($phone)) {
+        $this->error('Set OTP_DEMO_PHONE and OTP_DEMO_CODE (4-8 digits) in .env first, then run php artisan config:clear.');
+
+        return 1;
+    }
+
+    $gym = Gym::query()->where('id', $this->argument('gym'))->orWhere('slug', $this->argument('gym'))->first();
+
+    if (! $gym?->isOperational()) {
+        $this->error('No active gym found for "'.$this->argument('gym').'".');
+
+        return 1;
+    }
+
+    $elsewhere = Member::withoutGlobalScope(GymScope::class)->where('phone_digits', $phone)->where('gym_id', '!=', $gym->id)->where('status', 'active')->count();
+
+    return app(TenantManager::class)->runAs($gym, function () use ($gym, $phone, $members, $memberships, $elsewhere) {
+        $member = Member::where('phone_digits', $phone)->first()
+            ?? $members->create(['name' => $this->option('name'), 'phone' => $phone, 'joining_date' => now()->toDateString(), 'status' => 'active', 'notes' => 'Store review account (OTP_DEMO_PHONE).']);
+        $member->forceFill(['status' => 'active'])->save();
+
+        if (! Member::whereKey($member->id)->withValidMembership()->exists()) {
+            $plan = MembershipPlan::active()->get()->sortByDesc(fn (MembershipPlan $plan) => $memberships->calculateEndDate($plan, now()->startOfDay()))->first();
+
+            if (! $plan) {
+                $this->error("{$gym->name} has no active membership plan. Create one, then run this again.");
+
+                return 1;
+            }
+
+            // Fully discounted, so the review account adds no revenue or pending fees.
+            $memberships->assign($member, $plan, null, (float) $plan->price, 'Store review account');
+            $this->line("Assigned \"{$plan->name}\" (free).");
+        }
+
+        $this->info("Demo member ready: {$member->name} ({$member->member_code}) at {$gym->name}. Log in with {$phone} and OTP ".config('gymai.otp.demo_code').'.');
+
+        if ($elsewhere) {
+            $this->warn("This number is also an active member of {$elsewhere} other gym(s): the app will ask which gym to log in to.");
+        }
+
+        return 0;
+    });
+})->purpose('Create or refresh the store review member for OTP_DEMO_PHONE');

@@ -87,6 +87,18 @@
                         <span class="block text-xs text-gray-500">"Check in now" button in the member app and portal. Off = members show their QR at the desk. Self check-ins are marked SELF in attendance.</span>
                     </span>
                 </label>
+                <label class="flex items-start gap-2 text-sm">
+                    <input wire:model="qrCheckIn" type="checkbox" class="mt-0.5 rounded border-gray-300 text-indigo-600" @disabled(! $canEditRules)>
+                    <span>Members can check in by scanning the gym's QR in the app
+                        <span class="block text-xs text-gray-500">Works with your join, registration and check-in QR codes. With the live screen QR, only the screen code works. Marked GYM QR in attendance.</span>
+                    </span>
+                </label>
+                <label class="flex items-start gap-2 text-sm">
+                    <input wire:model="checkInHoursOnly" type="checkbox" class="mt-0.5 rounded border-gray-300 text-indigo-600" @disabled(! $canEditRules)>
+                    <span>Only during opening hours
+                        <span class="block text-xs text-gray-500">App check-ins are refused while the gym is closed (opening hours in Settings).</span>
+                    </span>
+                </label>
                 <x-ui.field label="Rest days allowed between visits" name="graceDays" hint="0 = must visit every open day. 1 = one rest day between visits keeps the streak, and so on.">
                     <select wire:model="graceDays" class="input" @disabled(! $canEditRules)>
                         @foreach (range(0, 7) as $n)<option value="{{ $n }}">{{ $n }} {{ $n === 1 ? 'day' : 'days' }}</option>@endforeach

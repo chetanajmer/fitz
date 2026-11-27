@@ -35,7 +35,7 @@
                             <td>{{ $a->check_in_at->format('h:i A') }}</td>
                             <td>{{ $a->check_out_at?->format('h:i A') ?? '—' }}</td>
                             <td>{{ $a->durationLabel() ?? '—' }}</td>
-                            <td>{{ strtoupper($a->method) }}</td>
+                            <td>{{ $a->methodLabel() }}</td>
                         </tr>
                     @empty
                         <tr><td colspan="6"><x-ui.empty message="No attendance on this day." icon="calendar" /></td></tr>

@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::view('/', 'welcome')->name('home');
+Route::view('/privacy-policy', 'privacy-policy')->name('privacy');
+// Account deletion link for the Play Console: the deletion section of the privacy policy.
+Route::redirect('/delete-account', '/privacy-policy#delete-account')->name('delete-account');
 
 Route::middleware('guest')->group(function () {
     Route::livewire('/login', Livewire\Auth\Login::class)->name('login');

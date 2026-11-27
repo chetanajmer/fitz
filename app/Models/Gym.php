@@ -32,6 +32,8 @@ class Gym extends Model
         ],
         'attendance' => [
             'member_self_checkin' => true, // members may check in from the portal / mobile app
+            'qr_checkin' => true,          // members may check in by scanning the gym's QR in the app
+            'checkin_hours_only' => false, // app check-ins only while the gym is open (opening hours)
         ],
         // Attendance streak rules (see StreakService).
         'streak' => [
@@ -186,6 +188,45 @@ class Gym extends Model
     public function allowsSelfCheckIn(): bool
     {
         return (bool) ($this->settings['attendance']['member_self_checkin'] ?? self::DEFAULT_SETTINGS['attendance']['member_self_checkin']);
+    }
+
+    /** Members may check in by scanning the gym's QR code in the mobile app. */
+    public function allowsQrCheckIn(): bool
+    {
+        return (bool) ($this->settings['attendance']['qr_checkin'] ?? self::DEFAULT_SETTINGS['attendance']['qr_checkin']);
+    }
+
+    /** App check-ins are refused outside opening hours. */
+    public function limitsCheckInToOpeningHours(): bool
+    {
+        return (bool) ($this->settings['attendance']['checkin_hours_only'] ?? self::DEFAULT_SETTINGS['attendance']['checkin_hours_only']);
+    }
+
+    /** Whether the gym is open at that moment, from its opening hours (a closing time before opening runs past midnight). */
+    public function isOpenAt(Carbon $moment): bool
+    {
+        $hours = $this->allSettings()['opening_hours'];
+        $time = $moment->format('H:i');
+        $today = $hours[strtolower($moment->format('l'))] ?? null;
+        $yesterday = $hours[strtolower($moment->copy()->subDay()->format('l'))] ?? null;
+
+        $within = function (?array $day, bool $afterMidnight) use ($time): bool {
+            if (! $day || ! empty($day['closed'])) {
+                return false;
+            }
+            $open = $day['open'] ?? null;
+            $close = $day['close'] ?? null;
+            if (! $open || ! $close) {
+                return ! $afterMidnight;
+            }
+            if ($close > $open) {
+                return ! $afterMidnight && $time >= $open && $time < $close;
+            }
+
+            return $afterMidnight ? $time < $close : $time >= $open;
+        };
+
+        return $within($today, false) || $within($yesterday, true);
     }
 
     /** Lower-case weekday names the gym is closed on, from opening hours. */

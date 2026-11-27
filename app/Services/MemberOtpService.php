@@ -52,22 +52,13 @@ class MemberOtpService
             throw $e;
         }
         $digits = $member->phone_digits;
+        $isDemo = self::isDemoPhone($digits);
 
-        $latest = MemberOtp::where('member_id', $member->id)->latest('id')->first();
-        $cooldown = (int) config('gymai.otp.resend_cooldown_seconds', 30);
-        if ($latest && $latest->consumed_at === null && $latest->created_at->gt(now()->subSeconds($cooldown))) {
-            $wait = $cooldown - (int) $latest->created_at->diffInSeconds(now());
-            throw new ApiException('Please wait before requesting another OTP.', 'OTP_COOLDOWN', 429, ['retry_after' => max(1, $wait)]);
+        if (! $isDemo) {
+            $this->guardSendLimits($member, $digits);
         }
 
-        $key = 'member-otp-send:'.$digits;
-        if (RateLimiter::tooManyAttempts($key, (int) config('gymai.otp.max_sends_per_hour', 5))) {
-            throw new ApiException('Too many OTP requests. Please try again later.', 'OTP_LIMIT_REACHED', 429, ['retry_after' => RateLimiter::availableIn($key)]);
-        }
-        RateLimiter::hit($key, 3600);
-
-        $code = $this->generateCode();
-
+        $code = $isDemo ? (string) config('gymai.otp.demo_code') : $this->generateCode();
         $otp = DB::transaction(function () use ($member, $digits, $code, $ip) {
             // Only the newest OTP is ever valid.
             MemberOtp::where('member_id', $member->id)->whereNull('consumed_at')->update(['consumed_at' => now()]);
@@ -83,10 +74,41 @@ class MemberOtpService
             return $otp;
         });
 
-        $gymName = $member->gym->name;
-        $this->sms->send($member->phone, "{$code} is your {$gymName} app login OTP. It is valid for ".intdiv((int) config('gymai.otp.ttl_seconds', 300), 60).' minutes. Do not share it with anyone.');
+        if (! $isDemo) {
+            $gymName = $member->gym->name;
+            $this->sms->send($member->phone, "{$code} is your {$gymName} app login OTP. It is valid for ".intdiv((int) config('gymai.otp.ttl_seconds', 300), 60).' minutes. Do not share it with anyone.');
+        }
 
         return ['member' => $member, 'otp' => $otp, 'code' => $code];
+    }
+
+    /**
+     * The store review number (config gymai.otp.demo_phone): it always gets the fixed demo code, without an SMS
+     * and without the resend limits, so reviewers can log in at any time.
+     */
+    public static function isDemoPhone(?string $phone): bool
+    {
+        $demoPhone = Member::normalizePhone((string) config('gymai.otp.demo_phone'));
+        $demoCode = (string) config('gymai.otp.demo_code');
+
+        return $demoPhone !== null && preg_match('/^\d{4,8}$/', $demoCode) === 1 && Member::normalizePhone($phone) === $demoPhone;
+    }
+
+    /** Resend cooldown and the hourly per-number limit. */
+    protected function guardSendLimits(Member $member, string $digits): void
+    {
+        $latest = MemberOtp::where('member_id', $member->id)->latest('id')->first();
+        $cooldown = (int) config('gymai.otp.resend_cooldown_seconds', 30);
+        if ($latest && $latest->consumed_at === null && $latest->created_at->gt(now()->subSeconds($cooldown))) {
+            $wait = $cooldown - (int) $latest->created_at->diffInSeconds(now());
+            throw new ApiException('Please wait before requesting another OTP.', 'OTP_TOO_MANY', 429, ['retry_after' => max(1, $wait)]);
+        }
+
+        $key = 'member-otp-send:'.$digits;
+        if (RateLimiter::tooManyAttempts($key, (int) config('gymai.otp.max_sends_per_hour', 5))) {
+            throw new ApiException('Too many OTP requests. Please try again later.', 'OTP_TOO_MANY', 429, ['retry_after' => RateLimiter::availableIn($key)]);
+        }
+        RateLimiter::hit($key, 3600);
     }
 
     /**

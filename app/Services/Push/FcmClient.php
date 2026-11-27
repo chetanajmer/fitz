@@ -44,9 +44,10 @@ class FcmClient
      *
      * @param  array<string, scalar|null>  $data  extra key/values for the app (type, screen ...); sent as strings
      * @param  string  $channel  Android notification channel id (must exist in the app)
+     * @param  array{ttl?: string, visibility?: string}  $android
      * @return string self::SENT | self::INVALID_TOKEN | self::FAILED
      */
-    public function send(string $token, string $title, string $body, array $data = [], string $channel = 'general', ?string $imageUrl = null): string
+    public function send(string $token, string $title, string $body, array $data = [], string $channel = 'general', ?string $imageUrl = null, array $android = []): string
     {
         $credentials = $this->credentials();
 
@@ -62,10 +63,12 @@ class FcmClient
                     'token' => $token,
                     'notification' => array_filter(['title' => $title, 'body' => $body, 'image' => $imageUrl]),
                     'data' => array_map(fn ($value) => is_bool($value) ? ($value ? 'true' : 'false') : (string) $value, array_filter($data, fn ($value) => $value !== null)),
-                    'android' => [
+                    // $android: "ttl" ("1800s": drop the push if the phone is offline longer) and "visibility" (PUBLIC = full text on the lock screen).
+                    'android' => array_filter([
                         'priority' => 'high',
-                        'notification' => array_filter(['channel_id' => $channel, 'sound' => 'default', 'image' => $imageUrl]),
-                    ],
+                        'ttl' => $android['ttl'] ?? null,
+                        'notification' => array_filter(['channel_id' => self::androidChannel($channel)['id'], 'sound' => self::androidChannel($channel)['sound'], 'image' => $imageUrl, 'visibility' => $android['visibility'] ?? null]),
+                    ]),
                     'apns' => $this->apns($imageUrl),
                 ],
             ]);
@@ -87,6 +90,18 @@ class FcmClient
         Log::warning('FCM send failed', ['status' => $response->status(), 'error' => $response->json('error.message')]);
 
         return self::FAILED;
+    }
+
+    /**
+     * The Android channel id and sound for a logical channel (config/push.php); unknown ones use "general".
+     *
+     * @return array{id: string, sound: string}
+     */
+    public static function androidChannel(string $channel): array
+    {
+        $channels = (array) config('push.channels', []);
+
+        return $channels[$channel] ?? $channels['general'] ?? ['id' => 'fitz_general', 'sound' => 'fitz_chime'];
     }
 
     /** A full http(s) URL a phone can load, or null (missing, relative, localhost or a private address). */

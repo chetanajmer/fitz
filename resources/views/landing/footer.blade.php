@@ -61,7 +61,7 @@
         <div class="border-t-2 border-chalk/15">
             <div class="lp-mono mx-auto flex max-w-7xl flex-col items-center justify-between gap-2 px-4 py-5 text-chalk/60 sm:flex-row sm:px-6 lg:px-8">
                 <p>© {{ now()->year }} Fitnix. All rights reserved.</p>
-                <p>Made for gyms in India</p>
+                <p><a href="{{ route('privacy') }}" class="hover:text-volt">Privacy policy</a> · Made for gyms in India</p>
             </div>
         </div>
     </div>

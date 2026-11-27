@@ -6,6 +6,8 @@ use App\Models\AiReport;
 use App\Models\Member;
 use App\Services\AiAccessService;
 use App\Services\AiReportService;
+use App\Services\ConsentService;
+use App\Services\TransformationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,7 +18,12 @@ use Illuminate\Validation\Rule;
  */
 class AiCoachController extends ApiController
 {
-    public function __construct(protected AiAccessService $access, protected AiReportService $reports) {}
+    public function __construct(
+        protected AiAccessService $access,
+        protected AiReportService $reports,
+        protected TransformationService $transformation,
+        protected ConsentService $consents,
+    ) {}
 
     /** GET /api/v1/me/ai — availability, consent, credits left, features and their cost. */
     public function status(Request $request): JsonResponse
@@ -29,7 +36,7 @@ class AiCoachController extends ApiController
     {
         $data = $request->validate(['accepted' => ['required', 'boolean']]);
         $member = $this->member($request);
-        $this->access->setConsent($member, (bool) $data['accepted']);
+        $this->access->setConsent($member, (bool) $data['accepted'], $request);
 
         return $this->success($this->access->status($member), $data['accepted'] ? 'Thanks! AI coach is ready.' : 'Consent withdrawn. Your AI reports and progress photos were deleted.');
     }
@@ -37,17 +44,20 @@ class AiCoachController extends ApiController
     /** GET /api/v1/me/ai/reports — latest 50, newest first. */
     public function index(Request $request): JsonResponse
     {
-        $reports = $this->member($request)->aiReports()->limit(50)->get();
+        $member = $this->member($request);
+        $reports = $member->aiReports()->with(['beforePhoto', 'afterPhoto'])->limit(50)->get();
+        $summary = $this->transformation->summary($member);
 
-        return $this->success(['reports' => $reports->map(fn (AiReport $r) => $this->reports->toArray($r))->all()], 'AI reports.');
+        return $this->success(['reports' => $reports->map(fn (AiReport $r) => $this->payload($r, $member, $summary))->all()], 'AI reports.');
     }
 
     /** GET /api/v1/me/ai/reports/{reportId} */
     public function show(Request $request, int $reportId): JsonResponse
     {
-        $report = $this->member($request)->aiReports()->findOrFail($reportId);
+        $member = $this->member($request);
+        $report = $member->aiReports()->with(['beforePhoto', 'afterPhoto'])->findOrFail($reportId);
 
-        return $this->success($this->reports->toArray($report), 'AI report.');
+        return $this->success($this->payload($report, $member), 'AI report.');
     }
 
     /** POST /api/v1/me/ai/reports  { type: progress | photo_comparison, before_photo_id?, after_photo_id? } */
@@ -60,13 +70,29 @@ class AiCoachController extends ApiController
         ]);
 
         $member = $this->member($request);
+
+        if ($data['type'] === AiReport::PHOTO_COMPARISON) {
+            $this->consents->requirePhotoConsent($member);
+        }
+
         $report = $this->reports->request($member, $data['type'], 'member', null, $data['before_photo_id'] ?? null, $data['after_photo_id'] ?? null);
 
         return $this->success(
-            ['report' => $this->reports->toArray($report->refresh()), 'credits' => $this->access->credits($member)],
+            ['report' => $this->payload($report->refresh(), $member), 'credits' => $this->access->credits($member)],
             'Your report is being prepared. We will notify you when it is ready.',
             202,
         );
+    }
+
+    /**
+     * The report plus its highlight card and photo URLs.
+     *
+     * @param  array<string, mixed>|null  $summary
+     * @return array<string, mixed>
+     */
+    protected function payload(AiReport $report, Member $member, ?array $summary = null): array
+    {
+        return $this->transformation->apiReport($report, $this->reports->toArray($report), $member, $summary ?? $this->transformation->summary($member));
     }
 
     protected function member(Request $request): Member

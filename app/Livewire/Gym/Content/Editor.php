@@ -4,6 +4,7 @@ namespace App\Livewire\Gym\Content;
 
 use App\Enums\FitnessPlanType;
 use App\Models\FitnessPlan;
+use App\Models\FitnessPlanSection;
 use App\Models\Member;
 use App\Models\PlanCategory;
 use App\Services\FitnessPlanService;
@@ -37,7 +38,7 @@ class Editor extends Component
     /** @var array<string, mixed> */
     public array $form = [];
 
-    /** @var list<array{key:string, id:?int, title:string, subtitle:string, body:string, image_url:?string, remove_image:bool}> */
+    /** @var list<array{key:string, id:?int, title:string, subtitle:string, meal_time?:string, body:string, image_url:?string, remove_image:bool}> */
     public array $sections = [];
 
     /** Section photo uploads keyed by section key. */
@@ -62,6 +63,7 @@ class Editor extends Component
             ];
             $this->sections = $plan->sections->map(fn ($s) => [
                 'key' => (string) Str::uuid(), 'id' => $s->id, 'title' => $s->title, 'subtitle' => (string) $s->subtitle,
+                'meal_time' => (string) $s->mealClock(),
                 'body' => (string) $s->body, 'image_url' => $s->imageUrl(), 'remove_image' => false,
             ])->all();
 
@@ -89,7 +91,7 @@ class Editor extends Component
 
     public function addSection(): void
     {
-        $this->sections[] = ['key' => (string) Str::uuid(), 'id' => null, 'title' => '', 'subtitle' => '', 'body' => '', 'image_url' => null, 'remove_image' => false];
+        $this->sections[] = ['key' => (string) Str::uuid(), 'id' => null, 'title' => '', 'subtitle' => '', 'meal_time' => '', 'body' => '', 'image_url' => null, 'remove_image' => false];
     }
 
     public function removeSection(string $key): void
@@ -139,12 +141,14 @@ class Editor extends Component
             'sections' => 'required|array|min:1|max:60',
             'sections.*.title' => 'required|string|max:150',
             'sections.*.subtitle' => 'nullable|string|max:150',
+            'sections.*.meal_time' => 'nullable|date_format:H:i',
             'sections.*.body' => 'nullable|string|max:5000',
             'uploads.*' => 'nullable|image|max:5120',
             'cover' => 'nullable|image|max:5120',
         ], [
             'sections.required' => 'Add at least one section.',
             'sections.*.title.required' => 'Each section needs a title.',
+            'sections.*.meal_time.date_format' => 'Enter the meal time as HH:MM.',
             'uploads.*.image' => 'Section photos must be images.',
         ], ['form.title' => 'title', 'form.daily_calories' => 'daily calories']);
 
@@ -154,6 +158,10 @@ class Editor extends Component
             'subtitle' => $s['subtitle'] ?: null,
             'body' => $s['body'] ?: null,
             'remove_image' => $s['remove_image'],
+        ] + ($this->planType() === FitnessPlanType::Diet ? [
+            // Meal reminders in the app use this time; left empty, it is read from the subtitle ("8:30 AM · …").
+            'meal_time' => ($s['meal_time'] ?? '') ?: FitnessPlanSection::parseTime($s['subtitle'] ?? null),
+        ] : []) + [
             'upload' => $this->uploads[$s['key']] ?? null,
         ], $this->sections);
 

@@ -2,7 +2,7 @@
     "info": {
         "name": "Fitnix Member App API (v1)",
         "_postman_id": "8f6c2b1e-4a7d-4c1e-9b8a-gymai-member-v1",
-        "description": "Member mobile app API.\n\n**Flow:** Check version → Send OTP → Verify OTP → Get gym branding.\n\nRun the requests in order. The test scripts save values into collection variables automatically:\n- **Send OTP** stores `otp` (from `debug_otp`, only returned when `OTP_EXPOSE_IN_RESPONSE=true` in a non-production environment) and `gym_id`.\n- **Verify OTP** stores `token` and `gym_id`.\n\nAll authenticated requests send `Authorization: Bearer {{token}}`.\n\n**Response format**\n- Success: `{ \"success\": true, \"message\": \"...\", \"data\": { ... } }`\n- Error: `{ \"success\": false, \"message\": \"...\", \"code\": \"ERROR_CODE\", \"data\"?: { ... }, \"errors\"?: { ... } }`\n\n**Error codes:** VALIDATION_ERROR, UNAUTHENTICATED, NO_GYM_CONNECTED, MEMBER_NOT_FOUND, MULTIPLE_GYMS, OTP_COOLDOWN, OTP_LIMIT_REACHED, OTP_NOT_FOUND, OTP_EXPIRED, OTP_INVALID, OTP_ATTEMPTS_EXCEEDED, MEMBER_INACTIVE, GYM_NOT_FOUND, GYM_INACTIVE, ALREADY_CHECKED_IN, ALREADY_CHECKED_OUT, NOT_CHECKED_IN, NO_ACTIVE_MEMBERSHIP, SELF_CHECKIN_DISABLED, PLAN_NOT_FOUND, FORBIDDEN, TOO_MANY_REQUESTS, NOT_FOUND.",
+        "description": "Member mobile app API.\n\n**Flow:** Check version → Send OTP → Verify OTP → Get gym branding.\n\nRun the requests in order. The test scripts save values into collection variables automatically:\n- **Send OTP** stores `otp` (from `debug_otp`, only returned when `OTP_EXPOSE_IN_RESPONSE=true` in a non-production environment) and `gym_id`.\n- **Verify OTP** stores `token` and `gym_id`.\n\nAll authenticated requests send `Authorization: Bearer {{token}}`.\n\n**Response format**\n- Success: `{ \"success\": true, \"message\": \"...\", \"data\": { ... } }`\n- Error: `{ \"success\": false, \"message\": \"...\", \"code\": \"ERROR_CODE\", \"data\"?: { ... }, \"errors\"?: { ... } }`\n\n**Error codes:** VALIDATION_ERROR, UNAUTHENTICATED, NO_GYM_CONNECTED, MEMBER_NOT_FOUND, MULTIPLE_GYMS, OTP_TOO_MANY, OTP_TOO_MANY, OTP_NOT_FOUND, OTP_EXPIRED, OTP_INVALID, OTP_ATTEMPTS_EXCEEDED, MEMBER_INACTIVE, GYM_NOT_FOUND, GYM_INACTIVE, ALREADY_CHECKED_IN, ALREADY_CHECKED_OUT, NOT_CHECKED_IN, NO_ACTIVE_MEMBERSHIP, SELF_CHECKIN_DISABLED, PLAN_NOT_FOUND, FORBIDDEN, TOO_MANY_REQUESTS, NOT_FOUND.",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "auth": {
@@ -412,7 +412,7 @@
                                     "value": "application/json"
                                 }
                             ],
-                            "body": "{\n  \"success\": false,\n  \"message\": \"Please wait before requesting another OTP.\",\n  \"code\": \"OTP_COOLDOWN\",\n  \"data\": { \"retry_after\": 24 }\n}"
+                            "body": "{\n  \"success\": false,\n  \"message\": \"Please wait before requesting another OTP.\",\n  \"code\": \"OTP_TOO_MANY\",\n  \"data\": { \"retry_after\": 24 }\n}"
                         }
                     ]
                 },
@@ -899,7 +899,7 @@
                 {
                     "name": "Update my profile",
                     "request": {
-                        "method": "PATCH",
+                        "method": "PUT",
                         "header": [
                             {
                                 "key": "Accept",
@@ -916,10 +916,10 @@
                                 "profile"
                             ]
                         },
-                        "description": "Send only the fields to change (null or \"\" clears). Editable: email, gender (male|female|other), date_of_birth (YYYY-MM-DD), blood_group (A+,A-,B+,B-,AB+,AB-,O+,O-), address, city, emergency_contact_name, emergency_contact_phone, emergency_contact_relation, fitness_goal, medical_notes. Name and phone are managed by the gym and ignored. Returns the full profile.",
+                        "description": "Partial update: send only what changed (null clears a field). Allowed fields = editable_fields from GET /me/profile. Any other field (name, phone, member_code...) -> 422 FIELD_NOT_EDITABLE with data.fields. Email is unique within the gym. Emergency phone: 10-15 digits, not your own number. Returns the same object as GET /me/profile.",
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n  \"city\": \"Mumbai\",\n  \"address\": \"12 Marine Drive\",\n  \"blood_group\": \"B+\",\n  \"emergency_contact_name\": \"Ravi\",\n  \"emergency_contact_phone\": \"9811111111\",\n  \"emergency_contact_relation\": \"Brother\",\n  \"fitness_goal\": \"Weight loss\"\n}",
+                            "raw": "{\n  \"email\": \"aarav@mail.com\",\n  \"gender\": \"male\",\n  \"date_of_birth\": \"1996-05-14\",\n  \"blood_group\": \"B+\",\n  \"city\": \"Pune\",\n  \"emergency_contact_name\": \"Rohan Shah\",\n  \"emergency_contact_phone\": \"9876543210\",\n  \"emergency_contact_relation\": \"Brother\",\n  \"fitness_goal\": \"Weight loss\",\n  \"medical_notes\": \"Mild knee pain\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -1090,7 +1090,7 @@
                                 "check-in"
                             ]
                         },
-                        "description": "State for the CHECK IN NOW button.\n\n`state`: `not_checked_in` → show **Check in now** · `checked_in` → show **Check out** · `checked_out` → visit done.\n`self_checkin_enabled: false` → hide the button and ask the member to show their QR at the desk."
+                        "description": "state (not_checked_in|checked_in|checked_out), checked_in_today, attendance {check_in_at, check_out_at, source: qr|app|reception} or null, has_active_membership, self_checkin_enabled, qr_checkin_enabled, qr_mode (printed|screen)."
                     },
                     "response": [
                         {
@@ -1183,6 +1183,39 @@
                             "body": "{\n  \"success\": true,\n  \"message\": \"Checked in. Have a great workout!\",\n  \"data\": {\n    \"attendance\": { \"date\": \"2026-11-28\", \"check_in_at\": \"2026-11-28T07:02:11+05:30\", \"check_out_at\": null, \"duration\": null, \"method\": \"self\" },\n    \"streak\": { \"current_streak\": 13, \"visits_this_month\": 19, \"checked_in_today\": true, \"at_risk\": false, \"week\": [\"…same as Get my streak…\"] }\n  }\n}"
                         }
                     ]
+                },
+                {
+                    "name": "Check in by scanning gym QR",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/check-in/qr",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "check-in",
+                                "qr"
+                            ]
+                        },
+                        "description": "Send the exact scanned text. Accepts the gym's join link, registration link or check-in QR (http/https, trailing slash and query string are fine). 200: check-in status + attendance + streak + source 'qr'. Errors: 422 INVALID_QR, 403 WRONG_GYM, 422 QR_EXPIRED (gym uses the live screen QR), 403 NO_ACTIVE_MEMBERSHIP, 403 SELF_CHECKIN_DISABLED, 403 QR_CHECKIN_DISABLED, 403 GYM_CLOSED, 409 ALREADY_CHECKED_IN (data = current status). 10 requests/minute.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"qr\": \"https://www.fitnix.in/join/<gym join token>\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
                 },
                 {
                     "name": "Check out",
@@ -2095,7 +2128,7 @@
                                 "send-otp"
                             ]
                         },
-                        "description": "Step 3: send an OTP to verify a **new** user's phone. Works for any number, member or not.\n\nSame rules as login OTPs: valid 5 minutes, resend after 30 s, max 5 per number per hour (`OTP_COOLDOWN`, `OTP_LIMIT_REACHED`).\n\n`debug_otp` is included only when `OTP_EXPOSE_IN_RESPONSE=true` and the app is not in production."
+                        "description": "Step 3: send an OTP to verify a **new** user's phone. Works for any number, member or not.\n\nSame rules as login OTPs: valid 5 minutes, resend after 30 s, max 5 per number per hour (`OTP_TOO_MANY`, `OTP_TOO_MANY`).\n\n`debug_otp` is included only when `OTP_EXPOSE_IN_RESPONSE=true` and the app is not in production."
                     },
                     "response": [
                         {
@@ -2661,6 +2694,236 @@
                         "description": "First versus latest weight, body measurements and photos, with the history between.\n\n- `weight`: first_kg, latest_kg, change_kg, history [{date, value}] (null / empty without weigh-ins).\n- `measurements`: one entry per recorded field with first, latest, change (null with a single entry) and history.\n- `photos`: first (`before`) and latest (`after`) photo of each pose that has at least two. `image_url` needs the same bearer token.\n- `latest_comparison`: the newest finished AI photo comparison, or null."
                     },
                     "response": []
+                }
+            ]
+        },
+        {
+            "name": "7. Reminders, water & consents",
+            "item": [
+                {
+                    "name": "Reminders (settings + Home card)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/reminders",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "reminders"
+                            ]
+                        },
+                        "description": "Everything for the reminder settings and the Home hydration / reminders cards. paused_by_master_switch = notification-settings \"reminders\" is off."
+                    }
+                },
+                {
+                    "name": "Update reminders",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/reminders",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "reminders"
+                            ]
+                        },
+                        "description": "Partial: send only the groups/fields that changed. Returns the same object as GET.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"hydration\": {\n    \"enabled\": true,\n    \"interval_minutes\": 45,\n    \"start_time\": \"08:00\",\n    \"end_time\": \"21:00\",\n    \"goal_ml\": 2500,\n    \"glass_ml\": 250\n  },\n  \"diet\": {\n    \"enabled\": true,\n    \"lead_minutes\": 10\n  },\n  \"workout\": {\n    \"enabled\": true,\n    \"time\": \"18:00\",\n    \"skip_rest_days\": true\n  }\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Water today + week",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/hydration",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "hydration"
+                            ]
+                        },
+                        "description": ""
+                    }
+                },
+                {
+                    "name": "Log water",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/hydration",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "hydration"
+                            ]
+                        },
+                        "description": "ml optional (defaults to glass_ml), 50-2000. goal_reached_now = true the first time today's goal is reached. 30/min.",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ml\": 250,\n  \"source\": \"app\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Undo last water",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/hydration/last",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "hydration",
+                                "last"
+                            ]
+                        },
+                        "description": "409 NOTHING_TO_UNDO when nothing was logged today."
+                    }
+                },
+                {
+                    "name": "Consents",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/consents",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "consents"
+                            ]
+                        },
+                        "description": ""
+                    }
+                },
+                {
+                    "name": "Give / withdraw consent",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/consents",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "consents"
+                            ]
+                        },
+                        "description": "type: progress_photos | ai_coach. Withdrawing progress_photos deletes all progress photos and their photo comparisons (data.deleted).",
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"type\": \"progress_photos\",\n  \"accepted\": true\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Delete my AI data",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Accept",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/me/ai/data",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "me",
+                                "ai",
+                                "data"
+                            ]
+                        },
+                        "description": "Withdraws both consents, deletes all progress photos and AI reports. Returns data.deleted {photos, reports}."
+                    }
                 }
             ]
         }

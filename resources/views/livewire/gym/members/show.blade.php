@@ -215,7 +215,7 @@
                             <td>{{ $a->check_in_at->format('h:i A') }}</td>
                             <td>{{ $a->check_out_at?->format('h:i A') ?? '—' }}</td>
                             <td>{{ $a->durationLabel() ?? '—' }}</td>
-                            <td><x-ui.badge :color="['qr' => 'indigo', 'self' => 'purple'][$a->method] ?? 'gray'">{{ strtoupper($a->method) }}</x-ui.badge></td>
+                            <td><x-ui.badge :color="$a->methodColor()">{{ $a->methodLabel() }}</x-ui.badge></td>
                         </tr>
                     @empty
                         <tr><td colspan="5"><x-ui.empty message="No attendance recorded." icon="calendar" /></td></tr>

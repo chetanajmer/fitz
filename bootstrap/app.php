@@ -55,6 +55,10 @@ return Application::configure(basePath: dirname(__DIR__))
             return $request->is('api/*') ? $apiError('Unauthenticated. Please log in again.', 'UNAUTHENTICATED', 401) : null;
         });
         $exceptions->render(function (ThrottleRequestsException $e, Request $request) use ($apiError) {
+            if ($request->is('api/*/auth/*send-otp', 'api/*/auth/*verify-otp')) {
+                return $apiError('Too many OTP requests. Please try again in a few minutes.', 'OTP_TOO_MANY', 429, ['data' => ['retry_after' => (int) ($e->getHeaders()['Retry-After'] ?? 60)]]);
+            }
+
             return $request->is('api/*') ? $apiError('Too many requests. Please slow down.', 'TOO_MANY_REQUESTS', 429, ['data' => ['retry_after' => (int) ($e->getHeaders()['Retry-After'] ?? 60)]]) : null;
         });
         $exceptions->render(function (HttpExceptionInterface $e, Request $request) use ($apiError) {

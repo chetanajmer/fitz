@@ -457,6 +457,27 @@ class PushNotificationTest extends TestCase
         $this->assertSame([str_repeat('p', 40)], MemberDevice::withoutGlobalScope(GymScope::class)->pluck('token')->all());
     }
 
+    public function test_every_notification_type_uses_the_android_channel_and_sound_the_app_ships(): void
+    {
+        $expected = [
+            'announcement' => 'fitz_announcements',
+            'membership_expiring' => 'fitz_membership', 'membership_expired' => 'fitz_membership',
+            'payment_received' => 'fitz_membership', 'balance_due' => 'fitz_membership',
+            'plan_assigned' => 'fitz_general', 'goal_achieved' => 'fitz_general', 'ai_report_ready' => 'fitz_general', 'test' => 'fitz_general',
+            'weigh_in_due' => 'fitz_reminders', 'workout_reminder' => 'fitz_reminders', 'streak_at_risk' => 'fitz_reminders',
+        ];
+
+        foreach (PushMessage::TYPES as $type => [, , $channel]) {
+            $this->assertSame($expected[$type] ?? null, FcmClient::androidChannel($channel)['id'], $type);
+            $this->assertSame('fitz_chime', FcmClient::androidChannel($channel)['sound'], $type);
+        }
+
+        // Personal reminders (ReminderService): meals and workouts on the reminders channel, water on its own.
+        $this->assertSame(['id' => 'fitz_reminders', 'sound' => 'fitz_chime'], FcmClient::androidChannel('reminders'));
+        $this->assertSame(['id' => 'fitz_water', 'sound' => 'water_drop'], FcmClient::androidChannel('water'));
+        $this->assertSame(['id' => 'fitz_general', 'sound' => 'fitz_chime'], FcmClient::androidChannel('unknown'));
+    }
+
     public function test_every_push_carries_its_saved_notification_id_and_picture(): void
     {
         $this->app->forgetInstance(FcmClient::class);
@@ -471,7 +492,7 @@ class PushNotificationTest extends TestCase
                 return true;
             }
 
-            public function send(string $token, string $title, string $body, array $data = [], string $channel = 'general', ?string $imageUrl = null): string
+            public function send(string $token, string $title, string $body, array $data = [], string $channel = 'general', ?string $imageUrl = null, array $android = []): string
             {
                 $this->sent[] = compact('title', 'body', 'data', 'channel', 'imageUrl');
 
@@ -732,6 +753,7 @@ class PushNotificationTest extends TestCase
         Http::assertSent(fn ($request) => str_contains($request->url(), 'messages:send')
             && $request['message']['token'] === 'old-token'
             && $request['message']['apns'] === ['payload' => ['aps' => ['sound' => 'default']]]
+            && $request['message']['android']['notification'] === ['channel_id' => 'fitz_general', 'sound' => 'fitz_chime']
             && ! array_key_exists('image', $request['message']['notification']));
 
         Http::assertSent(function ($request) use ($pem) {
@@ -751,7 +773,7 @@ class PushNotificationTest extends TestCase
             && $request['message']['data'] === ['screen' => 'progress', 'gym_id' => '5', 'image_url' => 'https://cdn.example.com/a.jpg']
             && $request['message']['notification']['image'] === 'https://cdn.example.com/a.jpg'
             && $request['message']['apns'] === ['payload' => ['aps' => ['sound' => 'default', 'mutable-content' => 1]], 'fcm_options' => ['image' => 'https://cdn.example.com/a.jpg']]
-            && $request['message']['android'] === ['priority' => 'high', 'notification' => ['channel_id' => 'reminders', 'sound' => 'default', 'image' => 'https://cdn.example.com/a.jpg']]);
+            && $request['message']['android'] === ['priority' => 'high', 'notification' => ['channel_id' => 'fitz_reminders', 'sound' => 'fitz_chime', 'image' => 'https://cdn.example.com/a.jpg']]);
 
         // Phones cannot load pictures from a developer machine.
         foreach (['http://localhost:8000/storage/a.jpg', 'http://127.0.0.1/a.jpg', 'http://192.168.1.5/a.jpg', '/storage/a.jpg'] as $local) {
@@ -777,12 +799,12 @@ class FakeFcmClient extends FcmClient
         return true;
     }
 
-    public function send(string $token, string $title, string $body, array $data = [], string $channel = 'general', ?string $imageUrl = null): string
+    public function send(string $token, string $title, string $body, array $data = [], string $channel = 'general', ?string $imageUrl = null, array $android = []): string
     {
         $result = $this->results[$token] ?? self::SENT;
 
         if ($result === self::SENT) {
-            $this->sent[] = ['token' => $token, 'title' => $title, 'body' => $body, 'data' => $data, 'channel' => $channel, 'image' => $imageUrl];
+            $this->sent[] = ['token' => $token, 'title' => $title, 'body' => $body, 'data' => $data, 'channel' => $channel, 'image' => $imageUrl, 'android' => $android];
         }
 
         return $result;

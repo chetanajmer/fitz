@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Policies\FitnessPlanPolicy;
 use App\Policies\MemberPolicy;
 use App\Policies\SaasInvoicePolicy;
+use App\Services\MemberOtpService;
 use App\Services\Sms\LogSmsSender;
 use App\Services\Sms\SmartPingSmsSender;
 use App\Services\StreakService;
@@ -50,7 +51,9 @@ class AppServiceProvider extends ServiceProvider
         Sanctum::usePersonalAccessTokenModel(PersonalAccessToken::class);
 
         // Abuse protection for OTP endpoints (per IP), on top of per-phone limits in MemberOtpService.
-        RateLimiter::for('otp-send', fn (Request $request) => Limit::perMinute(5)->by('otp-send:'.$request->ip()));
+        RateLimiter::for('otp-send', fn (Request $request) => MemberOtpService::isDemoPhone((string) $request->input('phone'))
+            ? Limit::none()
+            : Limit::perMinutes((int) config('gymai.otp.ip_window_minutes', 10), (int) config('gymai.otp.max_sends_per_ip', 3))->by('otp-send:'.$request->ip()));
         RateLimiter::for('otp-verify', fn (Request $request) => Limit::perMinute(10)->by('otp-verify:'.$request->ip()));
 
         Gate::policy(Member::class, MemberPolicy::class);

@@ -8,7 +8,9 @@ use App\Models\AiReport;
 use App\Models\Gym;
 use App\Models\GymAiSetting;
 use App\Models\Member;
+use App\Models\MemberConsent;
 use App\Models\PlatformSetting;
+use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -21,9 +23,11 @@ use Illuminate\Support\Facades\DB;
  */
 class AiAccessService
 {
-    public const CONSENT_TEXT = 'Your progress data (weight, measurements, attendance, workout/diet adherence and, for photo comparisons, the photos you choose) '
-        .'is sent to an AI provider to write your report. Providers that store or train on it are not used. '
-        .'Your reports are also visible to your gym admin and your trainer. Your medical notes are never sent. You can withdraw consent at any time; your AI reports and progress photos are then deleted.';
+    /** The consent text the member agrees to (config/consents.php, versioned). */
+    public function consentText(): string
+    {
+        return (string) config('consents.ai_coach.text');
+    }
 
     public function __construct(protected BodyProgressService $body) {}
 
@@ -140,7 +144,10 @@ class AiAccessService
             'available' => $available,
             'has_consented' => $member->ai_consent_at !== null,
             'consented_at' => $member->ai_consent_at?->toIso8601String(),
-            'consent_text' => self::CONSENT_TEXT,
+            'consent_text' => $this->consentText(),
+            'consent_version' => (int) config('consents.ai_coach.version'),
+            'consent_needs_update' => $this->consents()->state($member, MemberConsent::AI_COACH)['needs_update'],
+            'photo_consent' => collect($this->consents()->state($member, MemberConsent::PROGRESS_PHOTOS))->only(['accepted', 'needs_update'])->all(),
             'credits' => $this->credits($member, $settings),
             'features' => [
                 AiReport::PROGRESS => ['available' => $available, 'credits' => $this->cost(AiReport::PROGRESS)],
@@ -150,25 +157,41 @@ class AiAccessService
         ];
     }
 
-    public function setConsent(Member $member, bool $accepted): void
+    /**
+     * Agree to or withdraw AI coach. Withdrawing deletes the AI reports and the progress photos.
+     * Returns how many reports were erased.
+     */
+    public function setConsent(Member $member, bool $accepted, ?Request $request = null): int
     {
-        DB::transaction(function () use ($member, $accepted) {
+        return DB::transaction(function () use ($member, $accepted, $request) {
             $member->forceFill(['ai_consent_at' => $accepted ? now() : null])->save();
+            $this->consents()->record($member, MemberConsent::AI_COACH, $accepted, $request);
 
-            if (! $accepted) {
-                $this->eraseReports($member);
-                $this->body->deleteAllPhotos($member);
+            if ($accepted) {
+                return 0;
             }
+
+            $erased = $this->eraseReports($member);
+            $this->body->deleteAllPhotos($member);
+
+            return $erased;
         });
+    }
+
+    protected function consents(): ConsentService
+    {
+        return app(ConsentService::class);
     }
 
     /**
      * Delete the member's report history. Finished reports keep a bare usage record: without it, withdrawing
      * and agreeing again would refill the monthly credits, and the platform would lose its AI cost figures.
      */
-    protected function eraseReports(Member $member): void
+    public function eraseReports(Member $member, ?callable $filter = null): int
     {
-        $reports = AiReport::forGym($member->gym_id)->where('member_id', $member->id);
+        $reports = AiReport::forGym($member->gym_id)->where('member_id', $member->id)->where('status', '!=', AiReport::ERASED)
+            ->when($filter, fn ($q) => $filter($q));
+        $count = (clone $reports)->count();
 
         (clone $reports)->whereIn('status', [AiReport::PENDING, AiReport::FAILED])->delete();
         $reports->where('status', AiReport::COMPLETED)->update([
@@ -181,5 +204,7 @@ class AiAccessService
             'error' => null,
             'updated_at' => now(),
         ]);
+
+        return $count;
     }
 }

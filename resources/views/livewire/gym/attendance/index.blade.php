@@ -71,7 +71,7 @@
                                 <td><a href="{{ route('gym.members.show', $a->member_id) }}" class="font-medium hover:text-indigo-600">{{ $a->member->name }}</a></td>
                                 <td>{{ $a->check_in_at->format('h:i A') }}</td>
                                 <td>{{ $a->check_out_at?->format('h:i A') ?? '—' }}</td>
-                                <td><x-ui.badge :color="['qr' => 'indigo', 'self' => 'purple'][$a->method] ?? 'gray'">{{ strtoupper($a->method) }}</x-ui.badge></td>
+                                <td><x-ui.badge :color="$a->methodColor()">{{ $a->methodLabel() }}</x-ui.badge></td>
                                 <td class="text-right">
                                     @if (! $a->check_out_at)
                                         <button wire:click="checkOut({{ $a->id }})" class="btn-secondary btn-sm">Check out</button>

@@ -7,6 +7,7 @@ use App\Models\MemberMeasurement;
 use App\Models\ProgressPhoto;
 use App\Services\AiReportService;
 use App\Services\BodyProgressService;
+use App\Services\ConsentService;
 use App\Services\TransformationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,8 +50,10 @@ class BodyProgressController extends ApiController
     }
 
     /** POST /api/v1/me/progress-photos (multipart)  { photo, pose: front|side|back, taken_on? } */
-    public function storePhoto(Request $request): JsonResponse
+    public function storePhoto(Request $request, ConsentService $consents): JsonResponse
     {
+        $consents->requirePhotoConsent($this->member($request));
+
         $data = $request->validate([
             'photo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144'],
             'pose' => ['required', Rule::in(array_keys(ProgressPhoto::POSES))],
@@ -81,10 +84,14 @@ class BodyProgressController extends ApiController
     /** GET /api/v1/me/transformation — first versus latest weight, measurements and photos. */
     public function transformation(Request $request, TransformationService $transformation, AiReportService $reports): JsonResponse
     {
-        $data = $transformation->summary($this->member($request));
+        $member = $this->member($request);
+        $data = $transformation->summary($member);
+        $summary = $data;
         $photo = fn (ProgressPhoto $p) => $this->body->photoArray($p) + ['image_url' => route('api.v1.me.progress-photos.image', $p->id)];
         $data['photos'] = array_map(fn ($pair) => ['before' => $photo($pair['before']), 'after' => $photo($pair['after'])] + $pair, $data['photos']);
-        $data['latest_comparison'] = $data['latest_comparison'] ? $reports->toArray($data['latest_comparison']) : null;
+        $data['latest_comparison'] = $data['latest_comparison']
+            ? $transformation->apiReport($data['latest_comparison'], $reports->toArray($data['latest_comparison']), $member, $summary)
+            : null;
 
         return $this->success($data, 'Transformation.');
     }

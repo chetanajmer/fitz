@@ -28,6 +28,10 @@ class Streaks extends Component
 
     public bool $selfCheckIn = true;
 
+    public bool $qrCheckIn = true;
+
+    public bool $checkInHoursOnly = false;
+
     public function mount(): void
     {
         $rules = current_gym()->streakRules();
@@ -35,6 +39,8 @@ class Streaks extends Component
         $this->skipClosedDays = $rules['skip_closed_days'];
         $this->milestones = implode(', ', $rules['milestones']);
         $this->selfCheckIn = current_gym()->allowsSelfCheckIn();
+        $this->qrCheckIn = current_gym()->allowsQrCheckIn();
+        $this->checkInHoursOnly = current_gym()->limitsCheckInToOpeningHours();
     }
 
     public function saveRules(StreakService $streaks): void
@@ -45,11 +51,17 @@ class Streaks extends Component
             'graceDays' => 'required|integer|min:0|max:7',
             'skipClosedDays' => 'boolean',
             'selfCheckIn' => 'boolean',
+            'qrCheckIn' => 'boolean',
+            'checkInHoursOnly' => 'boolean',
             'milestones' => ['required', 'string', 'max:200', 'regex:/^\s*\d+(\s*,\s*\d+)*\s*$/'],
         ], ['milestones.regex' => 'Enter numbers separated by commas, e.g. 7, 14, 30.']);
 
         $gym = current_gym();
-        $gym->settings = array_merge($gym->settings ?? [], ['attendance' => ['member_self_checkin' => $this->selfCheckIn], 'streak' => [
+        $gym->settings = array_merge($gym->settings ?? [], ['attendance' => array_merge($gym->settings['attendance'] ?? [], [
+            'member_self_checkin' => $this->selfCheckIn,
+            'qr_checkin' => $this->qrCheckIn,
+            'checkin_hours_only' => $this->checkInHoursOnly,
+        ]), 'streak' => [
             'grace_days' => $this->graceDays,
             'skip_closed_days' => $this->skipClosedDays,
             'milestones' => collect(explode(',', $this->milestones))->map(fn ($m) => (int) trim($m))->filter(fn ($m) => $m > 0)->unique()->sort()->values()->all(),

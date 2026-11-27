@@ -96,6 +96,11 @@ class Member extends Model implements AuthenticatableContract
         return $this->hasMany(MemberDevice::class);
     }
 
+    public function reminderSettings(): HasOne
+    {
+        return $this->hasOne(MemberReminderSetting::class);
+    }
+
     /** The member's in-app notification list (newest first). */
     public function appNotifications(): HasMany
     {

@@ -39,11 +39,12 @@ class AuthController extends ApiController
         $payload = [
             'phone' => MemberOtpService::maskPhone((string) $data['phone']),
             'gym_id' => $result['member']->gym_id,
+            'otp_length' => (int) config('gymai.otp.length', 6),
             'expires_in' => (int) config('gymai.otp.ttl_seconds'),
             'resend_after' => (int) config('gymai.otp.resend_cooldown_seconds'),
         ];
 
-        if (config('gymai.otp.expose_in_response') && ! app()->isProduction()) {
+        if (config('gymai.otp.expose_in_response') && app()->isLocal()) {
             $payload['debug_otp'] = $result['code'];
         }
 

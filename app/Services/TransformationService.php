@@ -99,6 +99,24 @@ class TransformationService
             : $this->progressHighlight($report, $member, $summary);
     }
 
+    /**
+     * A report as the member app shows it: the stored report, its highlight card and the compared photos' URLs.
+     *
+     * @param  array<string, mixed>  $report  AiReportService::toArray()
+     * @param  array<string, mixed>  $summary  summary()
+     * @return array<string, mixed>
+     */
+    public function apiReport(AiReport $model, array $report, Member $member, array $summary): array
+    {
+        $photoUrl = fn (?int $id) => $id ? route('api.v1.me.progress-photos.image', $id) : null;
+
+        return $report + [
+            'before_photo_url' => $photoUrl($model->before_photo_id),
+            'after_photo_url' => $photoUrl($model->after_photo_id),
+            'highlight' => $model->status === AiReport::COMPLETED ? $this->highlight($model, $member, $summary) : null,
+        ];
+    }
+
     /** @param  array<string, mixed>  $summary */
     protected function comparisonHighlight(AiReport $report, array $summary): array
     {

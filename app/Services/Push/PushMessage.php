@@ -7,13 +7,14 @@ namespace App\Services\Push;
  *
  * screen  = the app screen to open: home, profile, membership, payments, progress, weight, plans,
  *           workout, diet, streak, checkin, gym (anything else opens Home).
- * channel = the Android notification channel: general, reminders, membership, announcements.
+ * channel = the logical channel: general, reminders, water, membership, announcements. config/push.php maps it
+ *           to the Android channel id (fitz_general, ...) and sound the app ships.
  */
 final class PushMessage
 {
     public const SCREENS = ['home', 'profile', 'membership', 'payments', 'progress', 'weight', 'plans', 'workout', 'diet', 'streak', 'checkin', 'gym'];
 
-    public const CHANNELS = ['general', 'reminders', 'membership', 'announcements'];
+    public const CHANNELS = ['general', 'reminders', 'water', 'membership', 'announcements'];
 
     /**
      * type => [member-settings category, default screen, Android channel].

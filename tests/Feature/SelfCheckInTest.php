@@ -117,6 +117,11 @@ class SelfCheckInTest extends TestCase
         $this->actingAs($this->gym->owner);
         Livewire::test(Streaks::class)->set('selfCheckIn', false)->call('saveRules')->assertHasNoErrors();
         $this->assertFalse($this->gym->fresh()->allowsSelfCheckIn());
+        $this->assertTrue($this->gym->fresh()->allowsQrCheckIn());
+
+        Livewire::test(Streaks::class)->set('qrCheckIn', false)->set('checkInHoursOnly', true)->call('saveRules');
+        $this->assertFalse($this->gym->fresh()->allowsQrCheckIn());
+        $this->assertTrue($this->gym->fresh()->limitsCheckInToOpeningHours());
 
         $token = $this->apiToken();
         $this->app['auth']->forgetGuards();

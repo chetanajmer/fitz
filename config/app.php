@@ -55,6 +55,13 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     /*
+    | Domains whose gym QR codes the member app accepts for check-in (comma separated), e.g.
+    | "fitnix.in,www.fitnix.in,smartai.morethangiftz.com" so QR codes printed on an older domain keep working.
+    | The APP_URL host (with and without "www.") is always allowed.
+    */
+    'qr_allowed_hosts' => array_values(array_filter(array_map('trim', explode(',', (string) env('QR_ALLOWED_HOSTS', ''))))),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
