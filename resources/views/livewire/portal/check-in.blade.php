@@ -5,32 +5,46 @@
     $today = now()->toDateString();
 @endphp
 <div class="space-y-6">
-    <x-ui.page-header title="QR check-in" subtitle="Show this code at the front desk to check in or out." />
+    <x-ui.page-header title="QR check-in" subtitle="Scan the QR at the front desk to check in or out." />
+
+    @if ($pendingDeskToken)
+        {{-- Arrived from a phone-camera scan of the desk QR: record it once, then drop the token from the address bar. --}}
+        <div wire:key="desk-{{ $pendingDeskToken }}" x-data x-init="history.replaceState(null, '', @js(route('portal.check-in'))); $wire.scanDeskQr(@js($pendingDeskToken))"
+            class="flex items-center gap-3 rounded-2xl bg-brand-600/10 px-4 py-3 text-sm font-semibold text-brand-600">
+            <x-ui.icon name="qr" class="size-5" /> Recording your visit…
+        </div>
+    @endif
+
+    {{-- Desk QR scanner --}}
+    <section class="pm-rise card" x-data="qrScanner({ onScan: (text) => $wire.scanDeskQr(text) })">
+        <div class="card-body flex flex-col gap-4 sm:flex-row sm:items-center">
+            <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand-600/10 text-brand-600"><x-ui.icon name="qr" class="size-6" /></span>
+            <div class="min-w-0 flex-1">
+                <h2 class="card-title">Scan the gym's QR</h2>
+                <p class="text-sm text-gray-500">Point your camera at the QR code at the front desk. First scan checks you in, next scan checks you out.</p>
+                <p x-show="error" x-text="error" x-cloak class="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert"></p>
+            </div>
+            <button type="button" x-on:click="start()" wire:loading.attr="disabled" wire:target="scanDeskQr" class="btn-primary shrink-0 rounded-full px-6 py-3 font-bold">
+                <x-ui.icon name="qr" class="size-5" />
+                <span wire:loading.remove wire:target="scanDeskQr">{{ $todayVisit && ! $todayVisit->check_out_at ? 'Scan to check out' : 'Scan to check in' }}</span>
+                <span wire:loading wire:target="scanDeskQr">Saving…</span>
+            </button>
+        </div>
+
+        <template x-teleport="body">
+            <div x-show="open" x-cloak x-transition.opacity x-on:keydown.escape.window="stop()" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 p-4" role="dialog" aria-modal="true" aria-label="Scan the gym QR code">
+                <div class="relative w-full max-w-sm overflow-hidden rounded-3xl bg-black ring-1 ring-white/10">
+                    <video x-ref="video" playsinline muted class="aspect-square w-full object-cover"></video>
+                    <div aria-hidden="true" class="pointer-events-none absolute inset-10 rounded-2xl border-2 border-white/80 shadow-[0_0_0_999px_rgb(0_0_0/0.35)]"></div>
+                </div>
+                <p class="mt-4 text-center text-sm text-white/80">Hold the QR code inside the frame.</p>
+                <button type="button" x-on:click="stop()" class="mt-4 rounded-full bg-white/10 px-6 py-2.5 text-sm font-semibold text-white ring-1 ring-white/20 hover:bg-white/20">Cancel</button>
+            </div>
+        </template>
+    </section>
 
     <div class="grid gap-6 lg:grid-cols-5">
-        {{-- QR card --}}
-        <section class="pm-rise card relative isolate overflow-hidden lg:col-span-2">
-            <div aria-hidden="true" class="pointer-events-none absolute -top-20 left-1/2 -z-10 size-72 -translate-x-1/2 rounded-full bg-brand-600/20 blur-3xl"></div>
-            <div class="card-body flex flex-col items-center text-center">
-                <p class="text-xs font-semibold tracking-[0.2em] text-brand-600 uppercase">{{ $member->gym->name }}</p>
-                <div class="pm-qr group mt-5 rounded-3xl bg-white p-4 shadow-[0_20px_60px_-25px_color-mix(in_srgb,var(--gym-orange)_70%,transparent)] ring-1 ring-gray-200 transition duration-300 hover:scale-[1.02] dark:ring-ink-700">
-                    <span aria-hidden="true" class="pm-corner top-2 left-2 rounded-tl-xl border-t-[3px] border-l-[3px]"></span>
-                    <span aria-hidden="true" class="pm-corner top-2 right-2 rounded-tr-xl border-t-[3px] border-r-[3px]"></span>
-                    <span aria-hidden="true" class="pm-corner bottom-2 left-2 rounded-bl-xl border-b-[3px] border-l-[3px]"></span>
-                    <span aria-hidden="true" class="pm-corner right-2 bottom-2 rounded-br-xl border-r-[3px] border-b-[3px]"></span>
-                    <img src="{{ route('portal.qr') }}" alt="My check-in QR code" width="240" height="240" class="size-56 sm:size-60">
-                </div>
-                <p class="mt-5 text-lg font-semibold text-gray-900">{{ $member->name }}</p>
-                <p class="font-mono text-sm text-gray-500">{{ $member->member_code }}</p>
-                <ol class="mt-5 w-full space-y-2 text-left text-sm text-gray-600">
-                    @foreach (['Open this page at the front desk.', 'Hold the code up to the scanner (turn up your screen brightness).', 'Scan again when you leave to check out.'] as $i => $step)
-                        <li class="flex gap-3"><span class="flex size-6 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-600">{{ $i + 1 }}</span>{{ $step }}</li>
-                    @endforeach
-                </ol>
-            </div>
-        </section>
-
-        <div class="space-y-6 lg:col-span-3">
+        <div class="space-y-6 lg:col-span-2">
             <div class="pm-rise" style="--d: 80ms">
                 @include('livewire.portal.partials.today')
             </div>
@@ -44,8 +58,10 @@
                     </div>
                 @endforeach
             </div>
+        </div>
 
-            {{-- This month --}}
+        {{-- This month --}}
+        <div class="lg:col-span-3">
             <div class="pm-rise card" style="--d: 260ms">
                 <div class="card-header"><h2 class="card-title">{{ $monthStart->format('F Y') }}</h2><span class="text-xs text-gray-500">{{ count($visitedThisMonth) }} {{ \Illuminate\Support\Str::plural('visit', count($visitedThisMonth)) }}</span></div>
                 <div class="card-body">
@@ -84,7 +100,7 @@
                     </span>
                     <div class="min-w-0 flex-1">
                         <p class="text-gray-900">{{ $a->date->format('l') }}</p>
-                        <p class="text-xs text-gray-500">{{ ['qr' => 'QR scan', 'self' => 'Self check-in'][$a->method] ?? 'Front desk' }}{{ $a->check_out_at ? ' · '.$a->durationLabel() : '' }}</p>
+                        <p class="text-xs text-gray-500">{{ ['qr' => 'QR scan', 'self' => 'Self check-in', 'desk_qr' => 'Desk QR scan'][$a->method] ?? 'Front desk' }}{{ $a->check_out_at ? ' · '.$a->durationLabel() : '' }}</p>
                     </div>
                     <span class="text-gray-500">{{ $a->check_in_at->format('h:i A') }} – {{ $a->check_out_at?->format('h:i A') ?? '…' }}</span>
                 </li>

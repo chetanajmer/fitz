@@ -85,7 +85,7 @@
                             @if ($selected)
                                 <div class="flex shrink-0 gap-1">
                                     <button type="button" wire:click="duplicatePlan" class="btn-ghost btn-sm">Duplicate</button>
-                                    <button type="button" wire:click="deletePlan" wire:confirm="Delete this plan from the library? Gyms keep the copies they already imported." class="btn-ghost btn-sm text-red-600">Delete</button>
+                                    <button type="button" wire:click="deletePlan" data-confirm-title="Delete plan?" wire:confirm="Delete this plan from the library? Gyms keep the copies they already imported." class="btn-ghost btn-sm text-red-600">Delete</button>
                                 </div>
                             @endif
                         </div>
@@ -144,7 +144,7 @@
                                 <div class="flex gap-1">
                                     <button type="button" wire:click="moveSection('{{ $section['key'] }}', -1)" class="btn-ghost btn-sm" @disabled($i === 0)><x-ui.icon name="arrow-up" class="size-4" /></button>
                                     <button type="button" wire:click="moveSection('{{ $section['key'] }}', 1)" class="btn-ghost btn-sm" @disabled($i === count($sections) - 1)><x-ui.icon name="arrow-down" class="size-4" /></button>
-                                    <button type="button" wire:click="removeSection('{{ $section['key'] }}')" wire:confirm="Remove this section?" class="btn-ghost btn-sm text-red-600" @disabled(count($sections) === 1)>Remove</button>
+                                    <button type="button" wire:click="removeSection('{{ $section['key'] }}')" data-confirm-title="Remove section?" wire:confirm="Remove this section?" class="btn-ghost btn-sm text-red-600" @disabled(count($sections) === 1)>Remove</button>
                                 </div>
                             </div>
                             <div class="card-body grid gap-4 sm:grid-cols-[1fr_11rem]">
@@ -203,7 +203,7 @@
             @endif
             <div class="flex items-center justify-between gap-2">
                 @if ($categoryId)
-                    <button type="button" wire:click="deleteCategory" wire:confirm="Delete this category AND all its plans from the library? Gyms keep what they already imported." class="btn-ghost text-red-600">Delete category</button>
+                    <button type="button" wire:click="deleteCategory" data-confirm-title="Delete category?" wire:confirm="Delete this category AND all its plans from the library? Gyms keep what they already imported." class="btn-ghost text-red-600">Delete category</button>
                 @else
                     <span></span>
                 @endif

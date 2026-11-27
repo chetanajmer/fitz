@@ -39,7 +39,7 @@
                             <button wire:click="showCategoryPlans({{ $c->id }})" class="text-indigo-600 hover:underline"><span class="inline-flex items-center gap-1">{{ $c->plans_count }} plans <x-ui.icon name="arrow-right" class="size-3.5" /></span></button>
                             <div class="flex gap-1">
                                 <button wire:click="editCategory({{ $c->id }})" class="btn-secondary btn-sm">Edit</button>
-                                <button wire:click="deleteCategory({{ $c->id }})" wire:confirm="Delete category “{{ $c->name }}”? Its plans stay, uncategorised." class="btn-ghost btn-sm text-red-600">Delete</button>
+                                <button wire:click="deleteCategory({{ $c->id }})" data-confirm-title="Delete category?" wire:confirm="Delete category “{{ $c->name }}”? Its plans stay, uncategorised." class="btn-ghost btn-sm text-red-600">Delete</button>
                             </div>
                         </div>
                     </div>
@@ -99,7 +99,7 @@
                                 <button wire:click="openSend({{ $p->id }})" class="btn-ghost btn-sm" title="Copy to a member and customise">Send to member</button>
                             @endif
                             @can('delete', $p)
-                                <button wire:click="deletePlan({{ $p->id }})" wire:confirm="Delete “{{ $p->title }}”?" class="btn-ghost btn-sm ml-auto text-red-600">Delete</button>
+                                <button wire:click="deletePlan({{ $p->id }})" data-confirm-title="Delete plan?" wire:confirm="Delete “{{ $p->title }}”?" class="btn-ghost btn-sm ml-auto text-red-600">Delete</button>
                             @endcan
                         </div>
                     </div>

@@ -23,7 +23,7 @@
             <img src="{{ $photoUrl($p->id) }}" alt="" loading="lazy" class="aspect-[3/4] w-full object-cover">
             <div class="flex items-center justify-between px-2 py-1 text-xs">
                 <span>{{ $p->taken_on->format('d M Y') }} · {{ ucfirst($p->pose) }}</span>
-                <button wire:click="deletePhoto({{ $p->id }})" wire:confirm="Delete this photo?" class="font-medium text-red-600 hover:underline">Delete</button>
+                <button wire:click="deletePhoto({{ $p->id }})" data-confirm-title="Delete photo?" wire:confirm="Delete this photo?" class="font-medium text-red-600 hover:underline">Delete</button>
             </div>
         </div>
     @empty

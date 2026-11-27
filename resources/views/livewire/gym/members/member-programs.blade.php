@@ -34,7 +34,7 @@
                         </div>
                     @endif
                     @if ($canAssign)
-                        <div class="mt-3 text-right"><button wire:click="stop({{ $a->id }})" wire:confirm="Stop this program for {{ $member->name }}?" class="text-xs font-medium text-red-600 hover:underline">Stop program</button></div>
+                        <div class="mt-3 text-right"><button wire:click="stop({{ $a->id }})" data-confirm-title="Stop program?" wire:confirm="Stop this program for {{ $member->name }}?" class="text-xs font-medium text-red-600 hover:underline">Stop program</button></div>
                     @endif
                 @else
                     <p class="mt-2 text-sm text-gray-500">No {{ strtolower($label) }} assigned. {{ $type === 'diet' && $member->diet_preference ? 'Preference: '.$member->diet_preference->label().'.' : '' }}</p>

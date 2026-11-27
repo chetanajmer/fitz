@@ -130,7 +130,7 @@
                                     <p class="text-gray-600">{{ \App\Support\NotificationCatalog::render($form['body'], $sample) }}</p>
                                 </div>
                                 <div class="flex justify-end gap-2">
-                                    <button type="button" wire:click="resetTemplate('{{ $key }}')" wire:confirm="Put this template back to the Fitnix default?" class="mr-auto text-xs font-medium text-gray-500 hover:underline">Reset to default</button>
+                                    <button type="button" wire:click="resetTemplate('{{ $key }}')" data-confirm-title="Reset template?" wire:confirm.primary="Put this template back to the Fitnix default?" class="mr-auto text-xs font-medium text-gray-500 hover:underline">Reset to default</button>
                                     <button type="button" wire:click="cancelEdit" class="btn-secondary">Cancel</button>
                                     <button type="submit" class="btn-primary">Save</button>
                                 </div>

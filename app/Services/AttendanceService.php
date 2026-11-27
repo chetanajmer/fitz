@@ -120,6 +120,34 @@ class AttendanceService
     }
 
     /**
+     * Desk QR flow: a signed-in member scans the gym's printed desk QR (the /register/{token} link)
+     * to check in, and scans it again to check out. Works whether or not self check-in is switched on,
+     * because the printed QR is only reachable at the gym.
+     *
+     * @return array{attendance: Attendance, action: 'checked_in'|'checked_out'}
+     */
+    public function handleDeskQrScan(Member $member, string $registerToken): array
+    {
+        $gymToken = (string) $member->gym->register_token;
+
+        if ($gymToken === '' || ! hash_equals($gymToken, trim($registerToken))) {
+            throw ValidationException::withMessages(['member' => "This QR code does not belong to {$member->gym->name}."]);
+        }
+
+        $today = $this->today($member);
+
+        if ($today?->check_out_at) {
+            throw ValidationException::withMessages(['member' => 'Your visit today is already complete ('.$today->check_in_at->format('h:i A').' – '.$today->check_out_at->format('h:i A').').']);
+        }
+
+        if ($today) {
+            return ['attendance' => $this->checkOut($today), 'action' => 'checked_out'];
+        }
+
+        return ['attendance' => $this->checkIn($member, 'desk_qr'), 'action' => 'checked_in'];
+    }
+
+    /**
      * QR flow: a scanned member QR toggles check-in → check-out for the day.
      * The token lookup is tenant-scoped, so a QR from another gym resolves to nothing.
      *

@@ -28,6 +28,7 @@ class Attendance extends Model
         self::METHOD_QR => ['QR', 'indigo'],
         self::METHOD_SELF => ['SELF', 'purple'],
         self::METHOD_GYM_QR => ['GYM QR', 'green'],
+        'desk_qr' => ['DESK QR', 'indigo'],
     ];
 
     protected $fillable = [];

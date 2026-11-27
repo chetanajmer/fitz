@@ -4,6 +4,8 @@ import './share-card';
 import './streak';
 import './qr-scanner';
 import './motion';
+import './confirm-dialog';
+import './qr-scanner';
 
 window.Chart = Chart;
 

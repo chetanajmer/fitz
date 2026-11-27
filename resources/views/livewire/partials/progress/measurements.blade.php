@@ -16,7 +16,7 @@
                 <tr wire:key="m-{{ $m->id }}">
                     <td>{{ $m->measured_on->format('d M Y') }}</td>
                     @foreach (array_keys($fields) as $key)<td>{{ $m->{$key} ?? '—' }}</td>@endforeach
-                    <td class="text-right"><button wire:click="deleteMeasurement({{ $m->id }})" wire:confirm="Delete these measurements?" class="text-xs font-medium text-red-600 hover:underline">Delete</button></td>
+                    <td class="text-right"><button wire:click="deleteMeasurement({{ $m->id }})" data-confirm-title="Delete measurements?" wire:confirm="Delete these measurements?" class="text-xs font-medium text-red-600 hover:underline">Delete</button></td>
                 </tr>
             @empty
                 <tr><td colspan="{{ count($fields) + 2 }}"><x-ui.empty message="No measurements yet." icon="scale" /></td></tr>

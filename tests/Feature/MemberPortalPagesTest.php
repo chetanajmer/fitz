@@ -59,14 +59,14 @@ class MemberPortalPagesTest extends TestCase
             ->assertSee('due'); // 600 of 1000 paid
     }
 
-    public function test_check_in_page_shows_the_real_qr_and_lets_the_member_check_in(): void
+    public function test_check_in_page_shows_the_desk_qr_scanner_and_lets_the_member_check_in(): void
     {
         $member = $this->memberWithPlan();
         $this->actingAs($member->user);
 
         $this->get(route('portal.check-in'))->assertOk()
-            ->assertSee(route('portal.qr'), false)
-            ->assertSee($member->member_code)
+            ->assertSee("Scan the gym's QR", false)
+            ->assertDontSee(route('portal.qr'), false)
             ->assertSee('Check in now');
 
         Livewire::test(CheckIn::class)->call('checkIn', 'not the gym QR')->assertHasErrors('member');

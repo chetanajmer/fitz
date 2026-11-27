@@ -56,7 +56,7 @@
                         <div class="mt-4 flex justify-end gap-1 border-t border-gray-100 pt-3">
                             <button wire:click="toggleActive({{ $p->id }})" class="btn-ghost btn-sm">{{ $p->is_active ? 'Deactivate' : 'Activate' }}</button>
                             <button wire:click="edit({{ $p->id }})" class="btn-secondary btn-sm">Edit</button>
-                            <button wire:click="delete({{ $p->id }})" wire:confirm="Delete {{ $p->title }}?" class="btn-ghost btn-sm text-red-600">Delete</button>
+                            <button wire:click="delete({{ $p->id }})" data-confirm-title="Delete program?" wire:confirm="Delete {{ $p->title }}?" class="btn-ghost btn-sm text-red-600">Delete</button>
                         </div>
                     @endif
                 </div>

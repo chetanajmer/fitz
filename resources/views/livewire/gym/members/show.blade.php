@@ -140,7 +140,7 @@
                         @else
                             <button wire:click="toggleStatus" class="btn-secondary w-full">Mark as {{ $m->status->value === 'active' ? 'inactive' : 'active' }}</button>
                         @endif
-                        <button wire:click="delete" wire:confirm="Delete {{ $m->name }}? Their history is kept but they will no longer appear in lists." class="btn-ghost w-full text-red-600">Delete member</button>
+                        <button wire:click="delete" data-confirm-title="Delete member?" wire:confirm="Delete {{ $m->name }}? Their history is kept but they will no longer appear in lists." class="btn-ghost w-full text-red-600">Delete member</button>
                     </div>
                 @endif
             </div>
@@ -169,7 +169,7 @@
                                     @endif
                                 @endif
                                 @if ($canMembership && $status->value !== 'cancelled' && (float) $ms->amount_paid === 0.0)
-                                    <button wire:click="cancelMembership({{ $ms->id }})" wire:confirm="Cancel this membership?" class="text-xs font-medium text-red-600 hover:underline">Cancel</button>
+                                    <button wire:click="cancelMembership({{ $ms->id }})" data-confirm-title="Cancel membership?" wire:confirm="Cancel this membership?" class="text-xs font-medium text-red-600 hover:underline">Cancel</button>
                                 @endif
                             </td>
                         </tr>

@@ -20,7 +20,7 @@
                             · last opened {{ $device->last_seen_at?->diffForHumans() ?? 'never' }}
                         </p>
                     </div>
-                    <button wire:click="removeDevice({{ $device->id }})" wire:confirm="Remove this phone? It stops receiving notifications until the app is opened again." class="text-xs text-red-600 hover:underline">Remove</button>
+                    <button wire:click="removeDevice({{ $device->id }})" data-confirm-title="Remove phone?" wire:confirm="Remove this phone? It stops receiving notifications until the app is opened again." class="text-xs text-red-600 hover:underline">Remove</button>
                 </div>
 
                 <p class="mt-2 text-xs font-medium text-gray-500">FCM token</p>

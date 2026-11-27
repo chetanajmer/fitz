@@ -50,7 +50,7 @@
                                     @if ($inv->status->value !== 'void')
                                         <button wire:click="openAdjust({{ $inv->id }})" class="text-xs font-medium text-gray-600 hover:underline">Adjust</button>
                                         @if ((float) $inv->amount_paid === 0.0)
-                                            <button wire:click="void({{ $inv->id }})" wire:confirm="Void this invoice?" class="text-xs font-medium text-red-600 hover:underline">Void</button>
+                                            <button wire:click="void({{ $inv->id }})" data-confirm-title="Void invoice?" wire:confirm="Void this invoice?" class="text-xs font-medium text-red-600 hover:underline">Void</button>
                                         @endif
                                     @endif
                                 </td>

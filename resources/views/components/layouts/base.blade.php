@@ -26,29 +26,8 @@
     @endif
     {{ $slot }}
 
-    {{-- Toasts: fired by session flashes or Livewire $this->dispatch('notify', message: '...', type: 'success') --}}
-    <div x-data="{
-            toasts: [],
-            add(message, type = 'success') {
-                const id = Date.now() + Math.random();
-                this.toasts.push({ id, message, type });
-                setTimeout(() => this.toasts = this.toasts.filter(t => t.id !== id), 4500);
-            }
-        }"
-        x-init="
-            @if (session('success')) add(@js(session('success')), 'success'); @endif
-            @if (session('error')) add(@js(session('error')), 'error'); @endif
-        "
-        @notify.window="add($event.detail.message, $event.detail.type ?? 'success')"
-        class="pointer-events-none fixed inset-x-0 bottom-4 z-[60] flex flex-col items-center gap-2 px-4 sm:items-end sm:pr-6 no-print">
-        <template x-for="toast in toasts" :key="toast.id">
-            <div x-transition.opacity
-                 class="pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg"
-                 :class="toast.type === 'error' ? 'bg-red-600' : 'bg-zinc-800 ring-1 ring-white/10'">
-                <span class="mt-0.5 shrink-0"><x-ui.icon name="warning" class="size-4" x-show="toast.type === 'error'" /><x-ui.icon name="check" class="size-4" x-show="toast.type !== 'error'" /></span>
-                <span x-text="toast.message" class="flex-1"></span>
-            </div>
-        </template>
-    </div>
+    <x-ui.confirm-dialog />
+    <x-ui.toasts />
+
 </body>
 </html>

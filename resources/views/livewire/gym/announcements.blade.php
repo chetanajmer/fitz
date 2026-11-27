@@ -124,9 +124,9 @@
                                             <button wire:click="openSend({{ $a->id }})" class="btn-primary btn-sm"><x-ui.icon name="bell" class="size-4" /> Send</button>
                                         @endif
                                         @if (in_array($a->status, [\App\Models\Announcement::PENDING, \App\Models\Announcement::APPROVED, \App\Models\Announcement::REJECTED], true))
-                                            <button wire:click="cancel({{ $a->id }})" wire:confirm="Withdraw this notification?" class="ml-2 text-xs font-medium text-gray-500 hover:underline">Withdraw</button>
+                                            <button wire:click="cancel({{ $a->id }})" data-confirm-title="Withdraw notification?" wire:confirm="Withdraw this notification?" class="ml-2 text-xs font-medium text-gray-500 hover:underline">Withdraw</button>
                                         @elseif ($a->status === \App\Models\Announcement::SCHEDULED)
-                                            <button wire:click="cancel({{ $a->id }})" wire:confirm="Cancel the scheduled send? It stays approved." class="text-xs font-medium text-red-600 hover:underline">Cancel send</button>
+                                            <button wire:click="cancel({{ $a->id }})" data-confirm-title="Cancel scheduled send?" wire:confirm="Cancel the scheduled send? It stays approved." class="text-xs font-medium text-red-600 hover:underline">Cancel send</button>
                                         @endif
                                     </td>
                                 </tr>
@@ -185,7 +185,7 @@
                 <p class="text-sm text-gray-500">{{ $paused ? 'Your members receive no automatic notifications. Your choices below are kept for when you turn them back on.' : 'Turn this off to stop every automatic notification to your members at once.' }}</p>
             </div>
             @if ($canEditSettings)
-                <button wire:click="togglePause" wire:confirm="{{ $paused ? 'Turn automatic notifications back on?' : 'Stop all automatic notifications to your members?' }}"
+                <button wire:click="togglePause" @if ($paused) data-confirm-title="Turn notifications on?" wire:confirm.primary="Turn automatic notifications back on?" @else data-confirm-title="Turn off notifications?" wire:confirm="Stop all automatic notifications to your members?" @endif
                     class="{{ $paused ? 'btn-primary' : 'btn-secondary text-red-600' }}">
                     {{ $paused ? 'Turn all on' : 'Turn all off' }}
                 </button>

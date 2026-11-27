@@ -17,7 +17,7 @@
                         <div class="flex gap-1">
                             <button type="button" wire:click="moveSection('{{ $section['key'] }}', -1)" class="btn-ghost btn-sm" @disabled($i === 0) title="Move up"><x-ui.icon name="arrow-up" class="size-4" /></button>
                             <button type="button" wire:click="moveSection('{{ $section['key'] }}', 1)" class="btn-ghost btn-sm" @disabled($i === count($sections) - 1) title="Move down"><x-ui.icon name="arrow-down" class="size-4" /></button>
-                            <button type="button" wire:click="removeSection('{{ $section['key'] }}')" wire:confirm="Remove this section?" class="btn-ghost btn-sm text-red-600" @disabled(count($sections) === 1)>Remove</button>
+                            <button type="button" wire:click="removeSection('{{ $section['key'] }}')" data-confirm-title="Remove section?" wire:confirm="Remove this section?" class="btn-ghost btn-sm text-red-600" @disabled(count($sections) === 1)>Remove</button>
                         </div>
                     </div>
                     <div class="card-body grid gap-4 sm:grid-cols-[1fr_11rem]">

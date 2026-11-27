@@ -5,6 +5,7 @@ namespace App\Livewire\PublicSite;
 use App\Enums\EnquirySource;
 use App\Models\Gym;
 use App\Models\MembershipPlan;
+use App\Rules\Recaptcha;
 use App\Services\EnquiryService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\RateLimiter;
@@ -19,6 +20,9 @@ use Livewire\Component;
  */
 class EnquiryForm extends Component
 {
+    /** reCAPTCHA v3 action name; the browser and the server must use the same value. */
+    public const CAPTCHA_ACTION = 'send_enquiry';
+
     #[Locked]
     public Gym $gym;
 
@@ -37,6 +41,9 @@ class EnquiryForm extends Component
 
     /** Honeypot — must stay empty. */
     public string $website = '';
+
+    /** Google reCAPTCHA v3 token, fetched by the browser right before each submit. */
+    public string $captchaToken = '';
 
     public bool $submitted = false;
 
@@ -64,6 +71,8 @@ class EnquiryForm extends Component
             return;
         }
 
+        $this->verifyCaptcha();
+
         $key = 'public-enquiry:'.$this->gym->id.':'.request()->ip();
         if (RateLimiter::tooManyAttempts($key, 5)) {
             throw ValidationException::withMessages(['name' => 'Too many submissions. Please try again later.']);
@@ -75,10 +84,33 @@ class EnquiryForm extends Component
         $this->submitted = true;
     }
 
+    /**
+     * Checks the invisible reCAPTCHA v3 token the browser fetched on submit. It runs only after the other
+     * fields pass, and the token is always cleared afterwards because Google accepts each token once.
+     *
+     * @throws ValidationException
+     */
+    protected function verifyCaptcha(): void
+    {
+        if (! Recaptcha::isEnabled()) {
+            return;
+        }
+
+        try {
+            $this->validate(['captchaToken' => ['required', 'string', new Recaptcha(self::CAPTCHA_ACTION)]], [
+                'captchaToken.required' => 'Security check did not load. Please refresh the page and try again.',
+            ]);
+        } finally {
+            $this->captchaToken = '';
+        }
+    }
+
     public function render(): View
     {
         return view('livewire.public-site.enquiry-form', [
             'plans' => MembershipPlan::forGym($this->gym)->active()->where('is_public', true)->orderBy('price')->get(['id', 'name']),
+            'recaptchaSiteKey' => Recaptcha::isEnabled() ? config('services.recaptcha.site_key') : null,
+            'captchaAction' => self::CAPTCHA_ACTION,
         ]);
     }
 }

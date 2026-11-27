@@ -24,7 +24,7 @@
                         </div>
                         <div class="flex shrink-0 gap-2">
                             <button type="button" wire:click="approveJoinRequest({{ $r->id }})" class="btn-primary btn-sm">Approve</button>
-                            <button type="button" wire:click="declineJoinRequest({{ $r->id }})" wire:confirm="Decline the join request from {{ $r->name }}?" class="btn-secondary btn-sm">Decline</button>
+                            <button type="button" wire:click="declineJoinRequest({{ $r->id }})" data-confirm-title="Decline join request?" wire:confirm="Decline the join request from {{ $r->name }}?" class="btn-secondary btn-sm">Decline</button>
                         </div>
                     </li>
                 @endforeach

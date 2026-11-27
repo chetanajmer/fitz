@@ -14,7 +14,7 @@
 
                 @if ($status['has_consented'])
                     <p class="mt-5 text-sm text-gym-muted">You accepted the AI terms on {{ \Illuminate\Support\Carbon::parse($status['consented_at'])->format('d M Y') }}.
-                        <button type="button" wire:click="setConsent(false)" wire:confirm="Withdraw your consent? All your AI reports and progress photos are deleted and cannot be restored. Your measurements stay, and credits you already used are not refunded." class="underline underline-offset-2 hover:text-white">Withdraw consent</button></p>
+                        <button type="button" wire:click="setConsent(false)" data-confirm-title="Withdraw consent?" wire:confirm="Withdraw your consent? All your AI reports and progress photos are deleted and cannot be restored. Your measurements stay, and credits you already used are not refunded." class="underline underline-offset-2 hover:text-white">Withdraw consent</button></p>
                 @elseif ($status['available'])
                     <p class="mt-5 text-sm text-gym-light/80">{{ $status['consent_text'] }}</p>
                     <button type="button" wire:click="setConsent(true)" class="btn-primary mt-4">I agree <x-ui.icon name="arrow-right" class="size-4" /></button>

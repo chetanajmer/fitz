@@ -133,7 +133,7 @@
                     <p class="text-xs text-gray-500">Billing uses the price in force on the first day of each month. Invoices already issued never change. Leave "Until" empty to keep it until you change it.</p>
                     @if ($pricing['custom'] || $priceHistory->contains(fn ($o) => $o->effective_from->isFuture()))
                         <div class="border-t border-gray-100 pt-3">
-                            <button type="button" wire:click="endCustomPrice" wire:confirm="Return {{ $g->name }} to the standard price from the 'From' date above?" class="btn-secondary w-full">Back to standard price from the "From" date</button>
+                            <button type="button" wire:click="endCustomPrice" data-confirm-button="Return to standard price" data-confirm-title="Return to standard price?" wire:confirm.primary="Return {{ $g->name }} to the standard price from the 'From' date above?" class="btn-secondary w-full">Back to standard price from the "From" date</button>
                         </div>
                     @endif
                 </form>

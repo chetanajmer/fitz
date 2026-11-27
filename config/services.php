@@ -18,6 +18,13 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    'recaptcha' => [
+        'site_key' => env('RECAPTCHA_SITE_KEY'),
+        'secret_key' => env('RECAPTCHA_SECRET_KEY'),
+        // reCAPTCHA v3 score from 0.0 (bot) to 1.0 (human); submissions below this are rejected.
+        'min_score' => (float) env('RECAPTCHA_MIN_SCORE', 0.5),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

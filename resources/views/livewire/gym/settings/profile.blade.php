@@ -147,7 +147,7 @@
                 <div wire:key="ph-{{ $p->id }}" class="group relative overflow-hidden rounded-xl bg-gray-100">
                     <img src="{{ $p->url() }}" alt="{{ $p->caption }}" class="aspect-[4/3] w-full object-cover">
                     @if ($p->caption)<p class="absolute inset-x-0 bottom-0 bg-black/50 px-2 py-1 text-xs text-white">{{ $p->caption }}</p>@endif
-                    <button wire:click="deletePhoto({{ $p->id }})" wire:confirm="Delete this photo?" class="absolute top-2 right-2 rounded-full bg-white/90 p-1 text-red-600 opacity-0 shadow group-hover:opacity-100"><x-ui.icon name="x" class="size-4" /></button>
+                    <button wire:click="deletePhoto({{ $p->id }})" data-confirm-title="Delete photo?" wire:confirm="Delete this photo?" data-confirm-button="Yes, delete" class="absolute top-2 right-2 rounded-full bg-white/90 p-1 text-red-600 opacity-0 shadow group-hover:opacity-100"><x-ui.icon name="x" class="size-4" /></button>
                 </div>
             @empty
                 <div class="card col-span-full"><x-ui.empty message="No photos yet. Show off your gym!" icon="upload" /></div>
@@ -184,7 +184,7 @@
                 <div class="rounded-lg bg-amber-50 p-4 text-sm text-amber-800">
                     <p class="font-medium">Link leaked or misused?</p>
                     <p class="mt-1">Generate a new secret link. Previously printed QR codes will stop working.</p>
-                    <button wire:click="regenerateJoinLink" wire:confirm="Generate a new QR link? Old QR codes will stop working." class="btn-secondary btn-sm mt-3">Regenerate link</button>
+                    <button wire:click="regenerateJoinLink" data-confirm-title="Regenerate QR link?" wire:confirm="Generate a new QR link? Old QR codes will stop working." class="btn-secondary btn-sm mt-3">Regenerate link</button>
                 </div>
             </div>
         </div>
@@ -276,7 +276,7 @@
                         </div>
 
                         <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4 dark:border-ink-700">
-                            <button type="button" wire:click="resetTheme('{{ $area }}')" wire:confirm="Reset the {{ strtolower($areaLabel) }} to the Fitnix colours?" class="text-sm font-medium text-gray-500 hover:text-brand-600 disabled:opacity-40" @disabled(! $saved['custom'])>Reset to default</button>
+                            <button type="button" wire:click="resetTheme('{{ $area }}')" data-confirm-title="Reset colours?" wire:confirm.primary="Reset the {{ strtolower($areaLabel) }} to the Fitnix colours?" class="text-sm font-medium text-gray-500 hover:text-brand-600 disabled:opacity-40" @disabled(! $saved['custom'])>Reset to default</button>
                             <button type="button" wire:click="saveTheme('{{ $area }}')" class="btn-primary" wire:loading.attr="disabled" wire:target="saveTheme('{{ $area }}')">Save {{ strtolower($areaLabel) }} colours</button>
                         </div>
                     </div>

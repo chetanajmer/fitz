@@ -28,7 +28,7 @@
                                 <td><x-ui.badge :color="$c->is_active ? 'green' : 'gray'">{{ $c->is_active ? 'Live' : 'Hidden' }}</x-ui.badge></td>
                                 <td class="text-right whitespace-nowrap">
                                     <button type="button" wire:click="edit({{ $c->id }})" class="btn-ghost btn-sm">Edit</button>
-                                    <button type="button" wire:click="toggle({{ $c->id }})" @if ($c->is_active) wire:confirm="Hide {{ $c->name }}? New gyms and app sign-ups won't see it or its gyms." @endif class="btn-secondary btn-sm">{{ $c->is_active ? 'Hide' : 'Make live' }}</button>
+                                    <button type="button" wire:click="toggle({{ $c->id }})" @if ($c->is_active) data-confirm-title="Hide city?" wire:confirm="Hide {{ $c->name }}? New gyms and app sign-ups won't see it or its gyms." @endif class="btn-secondary btn-sm">{{ $c->is_active ? 'Hide' : 'Make live' }}</button>
                                 </td>
                             </tr>
                             @if ($localityCityId === $c->id)
@@ -47,7 +47,7 @@
                                                     @else
                                                         <span class="flex-1">{{ $l->name }} <span class="text-gray-500">· {{ $l->gyms_count }} {{ \Illuminate\Support\Str::plural('gym', $l->gyms_count) }}</span></span>
                                                         <button type="button" wire:click="editLocality({{ $l->id }})" class="btn-ghost btn-sm">Rename</button>
-                                                        <button type="button" wire:click="deleteLocality({{ $l->id }})" wire:confirm="Remove {{ $l->name }}? Its gyms stay in {{ $c->name }} without a locality." class="btn-secondary btn-sm">Remove</button>
+                                                        <button type="button" wire:click="deleteLocality({{ $l->id }})" data-confirm-title="Remove locality?" wire:confirm="Remove {{ $l->name }}? Its gyms stay in {{ $c->name }} without a locality." class="btn-secondary btn-sm">Remove</button>
                                                     @endif
                                                 </div>
                                             @empty

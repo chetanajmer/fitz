@@ -72,7 +72,7 @@
                                     <td class="text-gray-600">{{ $prev ? $signed(round($h['weight_kg'] - $prev['weight_kg'], 2)) : '—' }}</td>
                                     <td><x-ui.badge :color="$h['source'] === 'app' ? 'blue' : 'gray'">{{ $h['source'] === 'app' ? 'Member app' : 'Gym' }}</x-ui.badge></td>
                                     <td class="text-gray-500">{{ $h['note'] ?: '—' }}</td>
-                                    <td class="text-right"><button wire:click="deleteLog({{ $h['id'] }})" wire:confirm="Delete this reading?" class="text-xs font-medium text-red-600 hover:underline">Delete</button></td>
+                                    <td class="text-right"><button wire:click="deleteLog({{ $h['id'] }})" data-confirm-title="Delete reading?" wire:confirm="Delete this reading?" class="text-xs font-medium text-red-600 hover:underline">Delete</button></td>
                                 </tr>
                             @empty
                                 <tr><td colspan="6"><x-ui.empty message="No weigh-ins yet." icon="chart" /></td></tr>

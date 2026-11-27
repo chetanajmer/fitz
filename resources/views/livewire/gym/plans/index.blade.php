@@ -28,7 +28,7 @@
                     <div class="flex gap-1">
                         <button wire:click="toggle({{ $plan->id }})" class="btn-ghost btn-sm">{{ $plan->is_active ? 'Disable' : 'Enable' }}</button>
                         <button wire:click="edit({{ $plan->id }})" class="btn-secondary btn-sm">Edit</button>
-                        <button wire:click="delete({{ $plan->id }})" wire:confirm="Archive this plan? Members keep their current memberships." class="btn-ghost btn-sm text-red-600">Archive</button>
+                        <button wire:click="delete({{ $plan->id }})" data-confirm-title="Archive plan?" wire:confirm="Archive this plan? Members keep their current memberships." class="btn-ghost btn-sm text-red-600">Archive</button>
                     </div>
                 </div>
             </div>

@@ -29,7 +29,7 @@
                     <div class="flex gap-1">
                         <button wire:click="toggleStatus({{ $t->id }})" class="btn-ghost btn-sm">{{ $t->status === 'active' ? 'Deactivate' : 'Activate' }}</button>
                         <button wire:click="edit({{ $t->id }})" class="btn-secondary btn-sm">Edit</button>
-                        <button wire:click="delete({{ $t->id }})" wire:confirm="Remove {{ $t->name }}? Their members will be unassigned." class="btn-ghost btn-sm text-red-600">Remove</button>
+                        <button wire:click="delete({{ $t->id }})" data-confirm-title="Remove trainer?" wire:confirm="Remove {{ $t->name }}? Their members will be unassigned." class="btn-ghost btn-sm text-red-600">Remove</button>
                     </div>
                 </div>
             </div>

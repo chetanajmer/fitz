@@ -28,7 +28,7 @@
                 <div class="card-body space-y-4">
                     @if (auth()->user()->login_phone)
                         <p class="text-sm text-gray-600">You can sign in with <strong>{{ auth()->user()->login_phone }}</strong> and your password, or with a one-time code (OTP tab).</p>
-                        <button type="button" wire:click="removeLoginPhone" wire:confirm="Stop signing in with this mobile number?" class="btn-secondary btn-sm">Remove</button>
+                        <button type="button" wire:click="removeLoginPhone" data-confirm-title="Remove sign-in number?" wire:confirm="Stop signing in with this mobile number?" class="btn-secondary btn-sm">Remove</button>
                         <p class="hint">To change it, verify a new number below.</p>
                     @else
                         <p class="text-sm text-gray-600">Verify your mobile number to sign in with it instead of your email.</p>

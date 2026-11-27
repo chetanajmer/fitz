@@ -15,6 +15,11 @@
                 <p class="mb-5 text-sm text-gray-500">Fill in your details to become a member.</p>
                 <livewire:public-site.member-registration-form :gym="$gym" />
             </div>
+            @if ($showMemberLogin ?? false)
+                <a href="{{ route('login') }}" class="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-white/15 px-4 py-3 text-sm font-semibold text-white ring-1 ring-white/30 backdrop-blur transition hover:bg-white/25">
+                    <x-ui.icon name="qr" class="size-4" /> Already a member? Log in to check in
+                </a>
+            @endif
             <a href="{{ $gym->publicUrl() }}" class="mt-6 text-center text-sm text-white/90 hover:underline">View {{ $gym->name }} →</a>
             <p class="mt-4 text-center text-xs text-white/60">Powered by Fitnix</p>
         </div>
