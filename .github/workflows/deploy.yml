@@ -1,17 +1,16 @@
-name: Test & deploy to cPanel
+name: Test & deploy to Hostinger
 
-# Every push to main:
+# Every push to main (or "Run workflow" on the Actions tab):
 #   1. run the full test suite (a failure stops everything),
-#   2. build a ready-to-run copy (Composer packages + compiled CSS/JS) and push it to the "deploy" branch,
-#   3. deploy it on cPanel:
-#        - automatic: when the repository variable CPANEL_SSH_ENABLED = true, over SSH (job "deploy");
-#        - one click: otherwise, in cPanel -> Git Version Control -> Manage -> Pull or Deploy:
-#          "Update from Remote", then "Deploy HEAD Commit" (runs .cpanel.yml).
+#   2. build a ready-to-run copy (Composer packages without dev tools + compiled CSS/JS),
+#   3. upload it to Hostinger over SSH and run deploy-hostinger.sh there (migrations, caches).
 #
-# For automatic deploys (Settings -> Secrets and variables -> Actions):
-#   Variable: CPANEL_SSH_ENABLED = true
-#   Secrets:  CPANEL_SSH_HOST, CPANEL_SSH_PORT, CPANEL_SSH_USER, CPANEL_SSH_KEY (private key),
-#             CPANEL_REPO_PATH (cPanel -> Git Version Control -> "Repository Path")
+# Settings -> Secrets and variables -> Actions -> Secrets:
+#   HOSTINGER_SSH_HOST  server IP          (hPanel -> Advanced -> SSH Access)
+#   HOSTINGER_SSH_PORT  usually 65002
+#   HOSTINGER_SSH_USER  e.g. u123456789
+#   HOSTINGER_SSH_KEY   the PRIVATE key whose public key is added in hPanel -> SSH Access -> SSH keys
+#   HOSTINGER_APP_PATH  live app folder, e.g. /home/u123456789/domains/fitnix.in/laravel
 
 on:
   push:
@@ -21,9 +20,6 @@ on:
 concurrency:
   group: deploy-production
   cancel-in-progress: false
-
-permissions:
-  contents: write
 
 jobs:
   test:
@@ -40,7 +36,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       - name: Install dependencies
@@ -57,10 +53,11 @@ jobs:
           php artisan key:generate
           php artisan test --compact
 
-  release:
-    name: Build deploy branch
+  deploy:
+    name: Deploy to Hostinger
     needs: test
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
 
@@ -72,7 +69,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       - name: Production dependencies and assets
@@ -81,65 +78,40 @@ jobs:
           npm ci
           npm run build
 
-      # Each build is a new commit ON TOP of the previous deploy commit (never a rewrite), so
-      # cPanel's "Update from Remote" (fast-forward only) always works.
-      - name: Push the ready-to-run build to the "deploy" branch
-        env:
-          SOURCE_MESSAGE: ${{ github.event.head_commit.message || 'manual run' }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git add -f vendor public/build
-          tree=$(git write-tree)
-          message="Deploy ${GITHUB_SHA::7}: $(printf '%s' "$SOURCE_MESSAGE" | head -n 1)"
-          if git fetch --quiet origin deploy; then
-            commit=$(git commit-tree "$tree" -p FETCH_HEAD -m "$message")
-          else
-            commit=$(git commit-tree "$tree" -m "$message")
-          fi
-          git push origin "$commit:refs/heads/deploy"
-
-  deploy:
-    name: Deploy on cPanel (SSH)
-    needs: release
-    if: ${{ vars.CPANEL_SSH_ENABLED == 'true' }}
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
       - name: Set up SSH
         env:
-          SSH_KEY: ${{ secrets.CPANEL_SSH_KEY }}
-          SSH_HOST: ${{ secrets.CPANEL_SSH_HOST }}
-          SSH_PORT: ${{ secrets.CPANEL_SSH_PORT }}
-          SSH_USER: ${{ secrets.CPANEL_SSH_USER }}
+          SSH_KEY: ${{ secrets.HOSTINGER_SSH_KEY }}
+          SSH_HOST: ${{ secrets.HOSTINGER_SSH_HOST }}
+          SSH_PORT: ${{ secrets.HOSTINGER_SSH_PORT }}
+          SSH_USER: ${{ secrets.HOSTINGER_SSH_USER }}
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts
+          ssh-keyscan -p "${SSH_PORT:-65002}" "$SSH_HOST" >> ~/.ssh/known_hosts
           {
-            echo "Host cpanel"
+            echo "Host hostinger"
             echo "  HostName $SSH_HOST"
-            echo "  Port $SSH_PORT"
+            echo "  Port ${SSH_PORT:-65002}"
             echo "  User $SSH_USER"
             echo "  IdentityFile ~/.ssh/deploy_key"
             echo "  IdentitiesOnly yes"
+            echo "  ServerAliveInterval 30"
           } >> ~/.ssh/config
 
-      - name: Pull the deploy branch and run the cPanel deploy tasks
+      # The build goes to a fresh folder next to the app (never into the live folder directly);
+      # deploy.sh then copies it in, keeping .env, storage/ (uploads, logs) and public/storage.
+      - name: Upload the build
         env:
-          REPO: ${{ secrets.CPANEL_REPO_PATH }}
+          APP_PATH: ${{ secrets.HOSTINGER_APP_PATH }}
         run: |
-          ssh cpanel "cd '$REPO' && git fetch origin deploy && git checkout -q -B deploy origin/deploy && git reset -q --hard origin/deploy && bash deploy-cpanel.sh"
+          tar --exclude=.git --exclude=node_modules --exclude=tests --exclude=.env \
+              --exclude=public/build.zip -czf /tmp/release.tgz .
+          ssh hostinger "rm -rf '$APP_PATH-release' && mkdir -p '$APP_PATH-release'"
+          ssh hostinger "tar -xzf - -C '$APP_PATH-release'" < /tmp/release.tgz
 
-  manual:
-    name: Ready to deploy in cPanel
-    needs: release
-    if: ${{ vars.CPANEL_SSH_ENABLED != 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Next step
+      - name: Run the deploy on the server
+        env:
+          APP_PATH: ${{ secrets.HOSTINGER_APP_PATH }}
         run: |
-          echo "### Ready to deploy" >> "$GITHUB_STEP_SUMMARY"
-          echo "The deploy branch is built. In cPanel -> Git Version Control -> Manage -> Pull or Deploy: click **Update from Remote**, then **Deploy HEAD Commit**." >> "$GITHUB_STEP_SUMMARY"
+          ssh hostinger "DEPLOYPATH='$APP_PATH' bash '$APP_PATH-release/deploy-hostinger.sh' && rm -rf '$APP_PATH-release'"
