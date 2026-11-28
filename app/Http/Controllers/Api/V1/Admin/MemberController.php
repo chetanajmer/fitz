@@ -21,6 +21,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 
 /**
  * Members in the staff app: /api/v1/admin/members*. Trainers without "members.all" only see and change
@@ -160,6 +161,21 @@ class MemberController extends AdminController
         $member->save();
 
         return $this->success(['id' => $member->id, 'status' => $member->status->value], "Member marked {$member->status->label()}.");
+    }
+
+    /**
+     * POST /admin/members/{id}/password { password, password_confirmation }
+     * The member's website sign-in (their email + this password); created when they have none yet.
+     * The member app is not affected: it signs in with an OTP.
+     */
+    public function password(Request $request, int $memberId): JsonResponse
+    {
+        $member = $this->editableMember($request, $memberId);
+        $data = $request->validate(['password' => ['required', 'confirmed', Password::min(8)]]);
+
+        $user = $this->members->setPortalPassword($member, $data['password']);
+
+        return $this->success(['id' => $member->id, 'login_email' => $user->email], "Password set. {$member->name} signs in to the website with {$user->email}.");
     }
 
     /** POST /admin/members/{id}/trainer { trainer_id|null } — needs "members.all". */

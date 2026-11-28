@@ -17,6 +17,7 @@ use App\Services\StreakService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
@@ -47,6 +48,13 @@ class Show extends Component
 
     /** @var array{membership_id: string, amount: string, method: string, reference: string, paid_at: string, notes: string} */
     public array $paymentForm = [];
+
+    // ---- Website password modal ----
+    public bool $showPasswordModal = false;
+
+    public string $portalPassword = '';
+
+    public string $portalPassword_confirmation = '';
 
     public function mount(Member $member): void
     {
@@ -212,6 +220,26 @@ class Show extends Component
         abort_unless(Auth::user()->can('members.all'), 403);
         $members->assignTrainer($this->member, $trainerId ? (int) $trainerId : null);
         $this->dispatch('notify', message: 'Trainer updated.');
+    }
+
+    public function openPasswordModal(): void
+    {
+        Gate::authorize('update', $this->member);
+        $this->resetValidation();
+        $this->reset('portalPassword', 'portalPassword_confirmation');
+        $this->showPasswordModal = true;
+    }
+
+    /** The member's website sign-in (email + password). The member app keeps using OTP. */
+    public function savePassword(MemberService $members): void
+    {
+        Gate::authorize('update', $this->member);
+        $this->validate(['portalPassword' => ['required', 'confirmed', Password::min(8)]], [], ['portalPassword' => 'password']);
+
+        $user = $members->setPortalPassword($this->member->fresh('user'), $this->portalPassword);
+
+        $this->reset('portalPassword', 'portalPassword_confirmation', 'showPasswordModal');
+        $this->dispatch('notify', message: "Password set. {$this->member->name} signs in to the website with {$user->email}.");
     }
 
     public function delete(MemberService $members)

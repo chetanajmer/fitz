@@ -124,6 +124,26 @@ class TrainerController extends AdminController
         return $this->success($this->detail($trainer->fresh()), 'Access updated.');
     }
 
+    /**
+     * POST /admin/trainers/{id}/password { password, password_confirmation }
+     * The trainer is signed out of the staff app and the website and signs in again with the new password.
+     */
+    public function password(Request $request, int $trainerId): JsonResponse
+    {
+        $trainer = $this->findTrainer($request, $trainerId);
+        $data = $request->validate(['password' => ['required', 'confirmed', Password::min(8)]]);
+
+        $this->trainers->setPassword($trainer, $data['password']);
+
+        return $this->success($this->detail($trainer->fresh()), 'Password reset. The trainer has been signed out and signs in with the new password.');
+    }
+
+    /** GET /admin/trainers/access-options — the access checklist for the "Add trainer" screen (defaults ticked). */
+    public function accessOptions(): JsonResponse
+    {
+        return $this->success(['access' => $this->accessCatalog(TrainerAccess::DEFAULTS)], 'Access options.');
+    }
+
     /** POST /admin/trainers/{id}/members { member_ids: [] } — members of other gyms are ignored. */
     public function assignMembers(Request $request, int $trainerId): JsonResponse
     {
@@ -220,23 +240,35 @@ class TrainerController extends AdminController
                 'status' => $member->status,
                 'membership' => $member->latestMembership ? $this->membershipData($member->latestMembership) : null,
             ])->values()->all(),
-            'access' => [
-                'sections' => collect(TrainerAccess::SECTIONS)->map(fn (array $items, string $title) => [
-                    'title' => $title,
-                    'permissions' => collect($items)->map(fn (array $item, string $key) => [
-                        'key' => $key,
-                        'label' => $item['label'],
-                        'hint' => $item['hint'],
-                        'granted' => in_array($key, $granted, true),
-                    ])->values()->all(),
-                ])->values()->all(),
-                'presets' => collect(TrainerAccess::PRESETS)->map(fn (array $preset, string $key) => [
+            'access' => $this->accessCatalog($granted),
+        ];
+    }
+
+    /**
+     * The sections an admin can switch on, with presets and defaults.
+     *
+     * @param  list<string>  $granted
+     * @return array{sections: list<array<string, mixed>>, presets: list<array<string, mixed>>, defaults: list<string>, requires: array<string, string>}
+     */
+    protected function accessCatalog(array $granted): array
+    {
+        return [
+            'sections' => collect(TrainerAccess::SECTIONS)->map(fn (array $items, string $title) => [
+                'title' => $title,
+                'permissions' => collect($items)->map(fn (array $item, string $key) => [
                     'key' => $key,
-                    'label' => $preset['label'],
-                    'permissions' => $preset['permissions'],
+                    'label' => $item['label'],
+                    'hint' => $item['hint'],
+                    'granted' => in_array($key, $granted, true),
                 ])->values()->all(),
-                'defaults' => TrainerAccess::DEFAULTS,
-            ],
+            ])->values()->all(),
+            'presets' => collect(TrainerAccess::PRESETS)->map(fn (array $preset, string $key) => [
+                'key' => $key,
+                'label' => $preset['label'],
+                'permissions' => $preset['permissions'],
+            ])->values()->all(),
+            'defaults' => TrainerAccess::DEFAULTS,
+            'requires' => TrainerAccess::REQUIRES,
         ];
     }
 

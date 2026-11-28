@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Exceptions\ApiException;
 use App\Models\User;
+use App\Support\StaffAppSections;
 use App\Tenancy\TenantManager;
 use Closure;
 use Illuminate\Http\Request;
@@ -46,6 +47,11 @@ class SetStaffApiContext
         $this->tenant->set($gym);
         Auth::guard('web')->setUser($user);
 
-        return $next($request);
+        $response = $next($request);
+
+        // Lets the app notice when the gym admin changed this trainer's access and reload GET /admin/me.
+        $response->headers->set('X-Staff-Access', StaffAppSections::version($user));
+
+        return $response;
     }
 }

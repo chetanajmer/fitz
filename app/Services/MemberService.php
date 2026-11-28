@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 class MemberService
 {
-    public function __construct(protected TenantManager $tenant) {}
+    public function __construct(protected TenantManager $tenant, protected AccountPasswordService $passwords) {}
 
     /**
      * @param  array  $data  validated member attributes (fillable)
@@ -81,10 +81,7 @@ class MemberService
             }
 
             if (! empty($extra['portal_password']) && $member->email) {
-                $member->user
-                    // An account first created by an OTP sign-in may have no email yet.
-                    ? $member->user->forceFill(['password' => $extra['portal_password'], 'email' => $member->user->email ?? strtolower($member->email)])->save()
-                    : $this->createPortalLogin($member, $extra['portal_password']);
+                $this->setPortalPassword($member, $extra['portal_password']);
             }
 
             return $member;
@@ -95,6 +92,37 @@ class MemberService
     {
         $member->trainer_id = $this->validTrainerId($trainerId);
         $member->save();
+    }
+
+    /**
+     * Sets the password the member signs in to the website with (their email + this password).
+     * The mobile app is not affected: it signs in with an OTP. Their other website sessions end.
+     */
+    public function setPortalPassword(Member $member, string $password): User
+    {
+        if (! $member->email) {
+            throw ValidationException::withMessages(['email' => "Add the member's email first. They sign in to the website with it."]);
+        }
+
+        if (! $member->user) {
+            return $this->createPortalLogin($member, $password);
+        }
+
+        return DB::transaction(function () use ($member, $password) {
+            $user = $member->user;
+
+            // An account first created by an OTP sign-in may have no email yet.
+            if (! $user->email) {
+                if (User::where('email', strtolower($member->email))->whereKeyNot($user->id)->exists()) {
+                    throw ValidationException::withMessages(['email' => 'A user account with this email already exists.']);
+                }
+                $user->forceFill(['email' => strtolower($member->email)])->save();
+            }
+
+            $this->passwords->setFor($user, $password);
+
+            return $user;
+        });
     }
 
     public function createPortalLogin(Member $member, string $password): User

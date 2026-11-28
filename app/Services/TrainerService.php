@@ -14,7 +14,7 @@ use Illuminate\Validation\ValidationException;
 
 class TrainerService
 {
-    public function __construct(protected TenantManager $tenant) {}
+    public function __construct(protected TenantManager $tenant, protected AccountPasswordService $passwords) {}
 
     public function create(array $data, ?UploadedFile $photo = null): User
     {
@@ -49,10 +49,6 @@ class TrainerService
         $trainer->fill(collect($data)->only(['name', 'phone', 'specialization', 'bio', 'status'])->all());
         $trainer->email = strtolower($data['email'] ?? $trainer->email);
 
-        if (! empty($data['password'])) {
-            $trainer->password = $data['password'];
-        }
-
         if ($photo) {
             if ($trainer->profile_photo_path) {
                 Storage::disk('public')->delete($trainer->profile_photo_path);
@@ -62,7 +58,18 @@ class TrainerService
 
         $trainer->save();
 
+        if (! empty($data['password'])) {
+            $this->setPassword($trainer, $data['password']);
+        }
+
         return $trainer;
+    }
+
+    /** A new password from the gym admin. The trainer is signed out of the staff app and the website. */
+    public function setPassword(User $trainer, string $password): void
+    {
+        $this->ensureOwnTrainer($trainer);
+        $this->passwords->setFor($trainer, $password);
     }
 
     /**

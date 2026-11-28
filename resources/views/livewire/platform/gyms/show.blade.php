@@ -188,6 +188,9 @@
                                 </p>
                                 <p class="truncate text-xs text-gray-500">{{ $u->email }} · last login {{ $u->last_login_at?->diffForHumans() ?? 'never' }}</p>
                             </div>
+                            @if ($u->isGymAdmin() || $u->isTrainer())
+                                <button wire:click="openPassword({{ $u->id }})" class="btn-secondary btn-sm">Set password</button>
+                            @endif
                             <button wire:click="magicLink({{ $u->id }})" class="btn-secondary btn-sm" @disabled(! $u->isActive())><x-ui.icon name="link" class="size-4" /> Magic link</button>
                         </li>
                     @empty
@@ -232,6 +235,25 @@
                 <a href="{{ $linkUrl }}" class="btn-primary">Open in this tab</a>
             </div>
         </div>
+    </x-ui.modal>
+
+    <x-ui.modal wire-model="showPassword" :title="'Set password for '.$passwordFor" max-width="md">
+        {{-- Only rendered while open, so the browser cannot autofill a saved password into it. --}}
+        @if ($showPassword)
+            <form wire:submit="savePassword" class="space-y-4">
+                <p class="text-sm text-gray-600">They are signed out of the website and the staff app, and sign in with this password from now on. Share it with them privately.</p>
+                <x-ui.field label="New password" name="newPassword" required hint="At least 8 characters.">
+                    <input wire:model="newPassword" type="password" class="input" autocomplete="new-password">
+                </x-ui.field>
+                <x-ui.field label="Confirm password" name="newPassword_confirmation" required>
+                    <input wire:model="newPassword_confirmation" type="password" class="input" autocomplete="new-password">
+                </x-ui.field>
+                <div class="flex justify-end gap-2">
+                    <button type="button" wire:click="$set('showPassword', false)" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary" wire:loading.attr="disabled">Set password</button>
+                </div>
+            </form>
+        @endif
     </x-ui.modal>
 
     <x-ui.modal wire-model="showStatusModal" :title="'Set gym to '.ucfirst($newStatus)" max-width="md">

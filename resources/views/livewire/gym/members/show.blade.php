@@ -140,6 +140,7 @@
                         @else
                             <button wire:click="toggleStatus" class="btn-secondary w-full">Mark as {{ $m->status->value === 'active' ? 'inactive' : 'active' }}</button>
                         @endif
+                        <button wire:click="openPasswordModal" class="btn-secondary w-full">{{ $m->user?->email ? 'Reset website password' : 'Set website password' }}</button>
                         <button wire:click="delete" wire:confirm="Delete {{ $m->name }}? Their history is kept but they will no longer appear in lists." class="btn-ghost w-full text-red-600">Delete member</button>
                     </div>
                 @endif
@@ -307,6 +308,33 @@
                     <button type="submit" class="btn-primary" wire:loading.attr="disabled">Save</button>
                 </div>
             </form>
+        </x-ui.modal>
+    @endif
+
+    {{-- Website password modal --}}
+    @if ($canManage)
+        <x-ui.modal wire-model="showPasswordModal" :title="($m->user?->email ? 'Reset' : 'Set').' website password'" max-width="md">
+            {{-- Only rendered while open, so the browser cannot autofill a saved password into it. --}}
+            @if ($showPasswordModal)
+                <form wire:submit="savePassword" class="space-y-4">
+                    @if ($m->email)
+                        <p class="text-sm text-gray-600">{{ $m->name }} signs in to the website with <strong>{{ $m->user?->email ?? $m->email }}</strong> and this password. Their other website sessions end. The member app is not affected; it signs in with an OTP.</p>
+                    @else
+                        <p class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Add the member's email first (Edit). They sign in to the website with it.</p>
+                    @endif
+                    @error('email') <div class="rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ $message }}</div> @enderror
+                    <x-ui.field label="New password" name="portalPassword" required hint="At least 8 characters.">
+                        <input wire:model="portalPassword" type="password" class="input" autocomplete="new-password">
+                    </x-ui.field>
+                    <x-ui.field label="Confirm password" name="portalPassword_confirmation" required>
+                        <input wire:model="portalPassword_confirmation" type="password" class="input" autocomplete="new-password">
+                    </x-ui.field>
+                    <div class="flex justify-end gap-2">
+                        <button type="button" wire:click="$set('showPasswordModal', false)" class="btn-secondary">Cancel</button>
+                        <button type="submit" class="btn-primary" wire:loading.attr="disabled" @disabled(! $m->email)>Set password</button>
+                    </div>
+                </form>
+            @endif
         </x-ui.modal>
     @endif
 

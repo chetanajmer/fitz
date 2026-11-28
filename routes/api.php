@@ -179,6 +179,7 @@ Route::prefix('v1/admin')->name('api.v1.admin.')->group(function () {
             Route::post('members/{memberId}/photo', [StaffMemberController::class, 'uploadPhoto'])->whereNumber('memberId')->middleware('throttle:staff-api')->name('members.photo');
             Route::delete('members/{memberId}/photo', [StaffMemberController::class, 'deletePhoto'])->whereNumber('memberId')->name('members.photo.destroy');
             Route::post('members/{memberId}/status', [StaffMemberController::class, 'status'])->whereNumber('memberId')->name('members.status');
+            Route::post('members/{memberId}/password', [StaffMemberController::class, 'password'])->whereNumber('memberId')->middleware('throttle:staff-api')->name('members.password');
             Route::post('members/{memberId}/trainer', [StaffMemberController::class, 'trainer'])->whereNumber('memberId')->name('members.trainer');
             Route::delete('members/{memberId}', [StaffMemberController::class, 'destroy'])->whereNumber('memberId')->name('members.destroy');
         });
@@ -308,11 +309,13 @@ Route::prefix('v1/admin')->name('api.v1.admin.')->group(function () {
         Route::prefix('trainers')->name('trainers.')->middleware('staff.can:trainers.manage')->group(function () {
             Route::get('/', [StaffTrainerController::class, 'index'])->name('index');
             Route::post('/', [StaffTrainerController::class, 'store'])->middleware(['throttle:staff-api', 'idempotent'])->name('store');
+            Route::get('access-options', [StaffTrainerController::class, 'accessOptions'])->name('access-options');
             Route::get('{trainerId}', [StaffTrainerController::class, 'show'])->whereNumber('trainerId')->name('show');
             Route::put('{trainerId}', [StaffTrainerController::class, 'update'])->whereNumber('trainerId')->middleware('throttle:staff-api')->name('update');
             Route::delete('{trainerId}', [StaffTrainerController::class, 'destroy'])->whereNumber('trainerId')->name('destroy');
             Route::post('{trainerId}/photo', [StaffTrainerController::class, 'uploadPhoto'])->whereNumber('trainerId')->middleware('throttle:staff-api')->name('photo');
             Route::post('{trainerId}/toggle', [StaffTrainerController::class, 'toggle'])->whereNumber('trainerId')->name('toggle');
+            Route::post('{trainerId}/password', [StaffTrainerController::class, 'password'])->whereNumber('trainerId')->middleware('throttle:staff-api')->name('password');
             Route::put('{trainerId}/access', [StaffTrainerController::class, 'access'])->whereNumber('trainerId')->name('access');
             Route::post('{trainerId}/members', [StaffTrainerController::class, 'assignMembers'])->whereNumber('trainerId')->middleware('throttle:staff-api')->name('members.assign');
             Route::delete('{trainerId}/members/{memberId}', [StaffTrainerController::class, 'unassignMember'])->whereNumber(['trainerId', 'memberId'])->name('members.unassign');

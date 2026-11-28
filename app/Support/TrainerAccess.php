@@ -53,7 +53,7 @@ class TrainerAccess
     ];
 
     /** Permissions that only make sense together with another one. */
-    protected const REQUIRES = [
+    public const REQUIRES = [
         'members.all' => 'members.view',
         'members.manage' => 'members.view',
         'members.import' => 'members.view',

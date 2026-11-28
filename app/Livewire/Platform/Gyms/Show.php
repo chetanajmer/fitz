@@ -11,6 +11,7 @@ use App\Models\Member;
 use App\Models\PricingRate;
 use App\Models\SaasInvoice;
 use App\Models\User;
+use App\Services\AccountPasswordService;
 use App\Services\BillingService;
 use App\Services\ImpersonationService;
 use App\Services\PlatformGymService;
@@ -18,6 +19,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
@@ -97,6 +99,50 @@ class Show extends Component
         $this->linkUrl = $link['url'];
         $this->linkFor = $user->name.' ('.str_replace('_', ' ', (string) $user->getRoleNames()->first()).')';
         $this->showLink = true;
+    }
+
+    // ---- Set a password (gym admins and trainers) ------------------------------
+
+    public bool $showPassword = false;
+
+    #[Locked]
+    public ?int $passwordUserId = null;
+
+    public string $passwordFor = '';
+
+    public string $newPassword = '';
+
+    public string $newPassword_confirmation = '';
+
+    public function openPassword(int $userId): void
+    {
+        $user = $this->staffAccount($userId);
+
+        $this->resetValidation();
+        $this->reset('newPassword', 'newPassword_confirmation');
+        $this->passwordUserId = $user->id;
+        $this->passwordFor = $user->name.' ('.($user->isGymAdmin() ? 'gym admin' : 'trainer').')';
+        $this->showPassword = true;
+    }
+
+    public function savePassword(AccountPasswordService $passwords): void
+    {
+        $this->validate(['newPassword' => ['required', 'confirmed', Password::min(8)]], [], ['newPassword' => 'password']);
+
+        $user = $this->staffAccount((int) $this->passwordUserId);
+        $passwords->setFor($user, $this->newPassword);
+
+        $this->reset('newPassword', 'newPassword_confirmation', 'passwordUserId', 'showPassword');
+        $this->dispatch('notify', message: "Password set for {$user->name}. They were signed out everywhere and sign in with the new password.");
+    }
+
+    /** A gym admin or trainer of this gym. Members are left to their gym (OTP app, or the gym's member form). */
+    protected function staffAccount(int $userId): User
+    {
+        $user = User::where('gym_id', $this->gym->id)->findOrFail($userId);
+        abort_unless($user->isGymAdmin() || $user->isTrainer(), 403);
+
+        return $user;
     }
 
     // ---- Custom pricing --------------------------------------------------------

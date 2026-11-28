@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Exceptions\ApiException;
+use App\Support\StaffAppSections;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,6 +24,10 @@ class EnsureStaffPermission
             }
         }
 
-        throw new ApiException('You do not have access to this.', 'FORBIDDEN', 403);
+        // The current sections let the app hide what the gym admin has just switched off.
+        throw new ApiException('You do not have access to this.', 'FORBIDDEN', 403, $user ? [
+            'sections' => StaffAppSections::for($user),
+            'access_version' => StaffAppSections::version($user),
+        ] : []);
     }
 }

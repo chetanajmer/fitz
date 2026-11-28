@@ -10,6 +10,7 @@ use App\Models\Member;
 use App\Models\Membership;
 use App\Models\User;
 use App\Services\CheckInCodeService;
+use App\Support\StaffAppSections;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -107,7 +108,9 @@ abstract class AdminController extends ApiController
                 'timezone' => (string) config('app.timezone'),
                 'theme' => $gym->dashboardColors('admin'),
             ],
-            'permissions' => $user->getAllPermissions()->pluck('name')->sort()->values()->all(),
+            'permissions' => StaffAppSections::permissionsOf($user),
+            'sections' => StaffAppSections::for($user),
+            'access_version' => StaffAppSections::version($user),
         ];
     }
 
