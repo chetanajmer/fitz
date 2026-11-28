@@ -6,6 +6,7 @@ use App\Models\AiReport;
 use App\Models\Announcement;
 use App\Models\Gym;
 use App\Models\GymAiSetting;
+use App\Models\IdempotencyKey;
 use App\Models\Member;
 use App\Models\MembershipPlan;
 use App\Models\Scopes\GymScope;
@@ -225,6 +226,8 @@ Schedule::call(fn () => SystemHealth::beat(SystemHealth::SCHEDULER))->everyMinut
 Schedule::job(new SchedulerHeartbeat)->everyMinute()->name('queue-heartbeat');
 // Shared hosting has no queue supervisor: the cron that runs schedule:run every minute also works the queue.
 Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=2')->everyMinute()->withoutOverlapping();
+// Staff app: stored Idempotency-Key responses are kept for 24 hours.
+Schedule::call(fn () => IdempotencyKey::where('created_at', '<', now()->subHours(IdempotencyKey::TTL_HOURS))->delete())->hourly()->name('prune-idempotency-keys');
 
 // Store review account: the member that OTP_DEMO_PHONE logs in as (fixed OTP_DEMO_CODE, no SMS). Safe to run again.
 Artisan::command('gymai:demo-member {gym : Gym id or slug} {--name=Play Store Review}', function (MemberService $members, MembershipService $memberships) {

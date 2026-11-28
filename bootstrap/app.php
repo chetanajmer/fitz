@@ -2,7 +2,10 @@
 
 use App\Http\Middleware\EnsureAccountIsActive;
 use App\Http\Middleware\EnsureGymIsOperational;
+use App\Http\Middleware\EnsureIdempotentRequest;
+use App\Http\Middleware\EnsureStaffPermission;
 use App\Http\Middleware\SetMemberApiContext;
+use App\Http\Middleware\SetStaffApiContext;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -30,6 +33,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureAccountIsActive::class,
             'gym.operational' => EnsureGymIsOperational::class,
             'member.api' => SetMemberApiContext::class,
+            'staff.api' => SetStaffApiContext::class,
+            'staff.can' => EnsureStaffPermission::class,
+            'idempotent' => EnsureIdempotentRequest::class,
         ]);
 
         // Panel theme preference is written by JS (light/dark), so it is stored unencrypted.

@@ -188,6 +188,10 @@
                             from any address, with the subject "Delete my Fitnix account". Include your name, the mobile number registered with your gym, and your gym's name.
                         </li>
                         <li>Or ask your gym's front desk, who will send the request to us.</li>
+                        <li>
+                            Gym staff (gym admins and trainers) can also open the Fitnix staff app and go to Profile → Delete account.
+                            A trainer's request goes to their gym and to us; a gym admin's request is handled by us.
+                        </li>
                     </ul>
                     <p>
                         To protect you, we may confirm the request with a one-time code sent to your registered number. We complete deletion within

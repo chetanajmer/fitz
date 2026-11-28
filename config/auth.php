@@ -49,6 +49,12 @@ return [
             'driver' => 'sanctum',
             'provider' => 'members',
         ],
+
+        // Mobile staff app (gym admins and trainers): stateless Sanctum bearer tokens issued to App\Models\User.
+        'staff' => [
+            'driver' => 'sanctum',
+            'provider' => 'users',
+        ],
     ],
 
     /*

@@ -7,6 +7,7 @@ use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\ProgressPhotoController;
 use App\Http\Controllers\PublicGymController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\SharedDocumentController;
 use App\Livewire;
 use Illuminate\Support\Facades\Route;
 
@@ -45,6 +46,13 @@ Route::livewire('/gyms', Livewire\PublicSite\BrowseGyms::class)->name('gyms.brow
 Route::get('/register/{token}', [PublicGymController::class, 'register'])->where('token', '[A-Za-z0-9]{20,64}')->name('gym.register');
 
 Route::view('/suspended', 'gym-suspended')->middleware('auth')->name('gym.suspended');
+
+// Receipts and invoices opened or shared from the staff app: signed, expiring links (see SharedDocumentController).
+Route::middleware('signed')->prefix('documents/shared')->name('documents.shared.')->group(function () {
+    Route::get('/receipts/{paymentId}', [SharedDocumentController::class, 'receipt'])->whereNumber('paymentId')->name('receipt');
+    Route::get('/invoices/{membershipId}', [SharedDocumentController::class, 'invoice'])->whereNumber('membershipId')->name('invoice');
+    Route::get('/fitnix-invoices/{invoiceId}', [SharedDocumentController::class, 'saasInvoice'])->whereNumber('invoiceId')->name('saas-invoice');
+});
 
 /*
 |--------------------------------------------------------------------------

@@ -55,6 +55,11 @@ class AppServiceProvider extends ServiceProvider
             ? Limit::none()
             : Limit::perMinutes((int) config('gymai.otp.ip_window_minutes', 10), (int) config('gymai.otp.max_sends_per_ip', 3))->by('otp-send:'.$request->ip()));
         RateLimiter::for('otp-verify', fn (Request $request) => Limit::perMinute(10)->by('otp-verify:'.$request->ip()));
+        // Staff app OTP sends: same allowance as the member app, counted separately.
+        RateLimiter::for('staff-otp-send', fn (Request $request) => Limit::perMinutes((int) config('gymai.otp.ip_window_minutes', 10), (int) config('gymai.otp.max_sends_per_ip', 3))->by('staff-otp-send:'.$request->ip()));
+        RateLimiter::for('staff-otp-verify', fn (Request $request) => Limit::perMinute(10)->by('staff-otp-verify:'.$request->ip()));
+        RateLimiter::for('staff-auth', fn (Request $request) => Limit::perMinute(20)->by('staff-auth:'.$request->ip()));
+        RateLimiter::for('staff-api', fn (Request $request) => Limit::perMinute(60)->by('staff-api:'.($request->user('staff')?->getAuthIdentifier() ?? $request->ip())));
 
         Gate::policy(Member::class, MemberPolicy::class);
         Gate::policy(SaasInvoice::class, SaasInvoicePolicy::class);
