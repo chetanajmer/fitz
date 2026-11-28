@@ -28,9 +28,33 @@
                     <p class="font-display text-5xl leading-none">{{ $credits['remaining'] }}<span class="text-2xl text-gym-muted"> / {{ $credits['limit'] }}</span></p>
                     <p class="mt-1 text-xs font-semibold">credits left this month</p>
                     <p class="text-xs text-gym-muted">New ones on {{ \Illuminate\Support\Carbon::parse($credits['resets_on'])->format('d M') }}</p>
+                    @if ($credits['extra'] > 0)
+                        <p class="text-xs text-gym-muted">Includes {{ $credits['extra'] }} extra from your gym</p>
+                    @endif
                 </div>
             @endif
         </div>
+
+        @if ($status['has_consented'] && $credits['pending_request'])
+            <p class="relative flex items-center gap-2 border-t border-white/10 px-6 py-4 text-sm text-gym-light/80 sm:px-10">
+                <x-ui.icon name="clock" class="size-4 shrink-0" /> You asked your gym for {{ $credits['pending_request']['credits'] }} more {{ \Illuminate\Support\Str::plural('credit', $credits['pending_request']['credits']) }}. Waiting for their answer.
+            </p>
+        @elseif ($status['has_consented'] && $status['can_request_credits'])
+            <form wire:submit="requestCredits" class="relative flex flex-wrap items-end gap-3 border-t border-white/10 px-6 py-4 sm:px-10">
+                <div class="basis-full">
+                    <p class="text-sm font-semibold">{{ $status['out_of_credits'] ? 'Out of AI credits?' : 'Need more AI credits?' }}</p>
+                    <p class="text-xs text-gym-muted">Ask your gym for extra credits this month.</p>
+                </div>
+                <label class="text-xs text-gym-muted">Credits
+                    <input wire:model="creditsWanted" type="number" min="1" max="{{ \App\Services\AiCreditRequestService::MEMBER_MAX }}" class="input mt-1 w-24 text-gray-900">
+                </label>
+                <label class="min-w-0 flex-1 basis-48 text-xs text-gym-muted">Note for your gym (optional)
+                    <input wire:model="creditNote" type="text" maxlength="300" class="input mt-1 text-gray-900" placeholder="e.g. I want a photo comparison before my event">
+                </label>
+                <button type="submit" wire:loading.attr="disabled" wire:target="requestCredits" class="btn-primary">Request credits</button>
+                @error('creditsWanted')<p class="input-error basis-full">{{ $message }}</p>@enderror
+            </form>
+        @endif
     </section>
 
     @include('livewire.portal.partials.analytics', ['weight' => $weight, 'visits' => $visits])

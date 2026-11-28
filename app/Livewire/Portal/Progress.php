@@ -2,10 +2,12 @@
 
 namespace App\Livewire\Portal;
 
+use App\Exceptions\ApiException;
 use App\Livewire\Concerns\RecordsBodyProgress;
 use App\Models\AiReport;
 use App\Models\Member;
 use App\Services\AiAccessService;
+use App\Services\AiCreditRequestService;
 use App\Services\TransformationService;
 use App\Services\WeightTrackingService;
 use Illuminate\Contracts\View\View;
@@ -23,6 +25,10 @@ class Progress extends Component
 {
     use RecordsBodyProgress;
 
+    public int|string $creditsWanted = 4;
+
+    public string $creditNote = '';
+
     public function mount(): void
     {
         $this->resetForms();
@@ -32,6 +38,26 @@ class Progress extends Component
     {
         $access->setConsent($this->progressMember(), $accepted);
         $this->dispatch('notify', message: $accepted ? 'Thanks! AI coach is ready.' : 'Consent withdrawn. Your AI reports and progress photos were deleted.');
+    }
+
+    /** Out of credits: ask the gym admin for more. */
+    public function requestCredits(AiCreditRequestService $requests): void
+    {
+        $this->validate([
+            'creditsWanted' => ['required', 'integer', 'min:1', 'max:'.AiCreditRequestService::MEMBER_MAX],
+            'creditNote' => ['nullable', 'string', 'max:300'],
+        ], [], ['creditsWanted' => 'credits']);
+
+        try {
+            $requests->requestForMember($this->progressMember(), (int) $this->creditsWanted, $this->creditNote);
+        } catch (ApiException $e) {
+            $this->addError('creditsWanted', $e->getMessage());
+
+            return;
+        }
+
+        $this->reset('creditNote');
+        $this->dispatch('notify', message: 'Request sent. Your gym will review it soon.');
     }
 
     /** Always the signed-in member's own profile, never taken from the request. */

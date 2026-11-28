@@ -6,6 +6,8 @@ use App\Livewire\Portal\CheckIn;
 use App\Models\Attendance;
 use App\Models\Gym;
 use App\Models\Member;
+use App\Services\AttendanceService;
+use App\Services\CheckInCodeService;
 use App\Services\MembershipService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -41,6 +43,8 @@ class DeskQrCheckInTest extends TestCase
         $this->assertSame('desk_qr', $attendance->method);
         $this->assertNull($attendance->check_out_at);
 
+        $this->travel(AttendanceService::MIN_MINUTES_BEFORE_QR_CHECKOUT)->minutes();
+
         Livewire::test(CheckIn::class)
             ->call('scanDeskQr', $this->gym->registerUrl())
             ->assertHasNoErrors()
@@ -53,6 +57,42 @@ class DeskQrCheckInTest extends TestCase
             ->assertHasErrors(['member']);
 
         $this->assertSame(1, Attendance::withoutGlobalScopes()->count());
+    }
+
+    public function test_a_second_scan_right_after_checking_in_does_not_check_out(): void
+    {
+        $this->actingAs($this->member->user);
+
+        Livewire::test(CheckIn::class)->call('scanDeskQr', $this->gym->registerUrl())->assertHasNoErrors();
+
+        $this->travel(1)->minutes();
+
+        Livewire::test(CheckIn::class)
+            ->call('scanDeskQr', $this->gym->registerUrl())
+            ->assertHasErrors(['member']);
+
+        $this->assertNull(Attendance::withoutGlobalScopes()->sole()->check_out_at);
+    }
+
+    public function test_gym_on_the_live_screen_qr_only_accepts_the_desk_qr_for_checking_out(): void
+    {
+        $this->gym->forceFill(['settings' => array_merge($this->gym->settings ?? [], ['checkin' => ['qr' => CheckInCodeService::SCREEN]])])->save();
+        $this->actingAs($this->member->user);
+
+        Livewire::test(CheckIn::class)
+            ->call('scanDeskQr', $this->gym->registerUrl())
+            ->assertHasErrors(['member']);
+
+        $this->assertSame(0, Attendance::withoutGlobalScopes()->count());
+
+        $this->inGym($this->gym, fn () => app(AttendanceService::class)->checkIn($this->member, 'qr'));
+        $this->travel(30)->minutes();
+
+        Livewire::test(CheckIn::class)
+            ->call('scanDeskQr', $this->gym->registerUrl())
+            ->assertHasNoErrors();
+
+        $this->assertNotNull(Attendance::withoutGlobalScopes()->sole()->check_out_at);
     }
 
     public function test_desk_qr_works_even_when_self_check_in_is_switched_off(): void

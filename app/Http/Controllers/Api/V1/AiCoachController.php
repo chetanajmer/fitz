@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Models\AiReport;
 use App\Models\Member;
 use App\Services\AiAccessService;
+use App\Services\AiCreditRequestService;
 use App\Services\AiReportService;
 use App\Services\ConsentService;
 use App\Services\TransformationService;
@@ -82,6 +83,22 @@ class AiCoachController extends ApiController
             'Your report is being prepared. We will notify you when it is ready.',
             202,
         );
+    }
+
+    /**
+     * POST /api/v1/me/ai/credit-requests  { credits: 1-20, note? } — out of credits: ask the gym admin for more.
+     * Shown when GET /me/ai returns can_request_credits = true.
+     */
+    public function requestCredits(Request $request, AiCreditRequestService $requests): JsonResponse
+    {
+        $data = $request->validate([
+            'credits' => ['required', 'integer', 'min:1', 'max:'.AiCreditRequestService::MEMBER_MAX],
+            'note' => ['nullable', 'string', 'max:300'],
+        ]);
+        $member = $this->member($request);
+        $requests->requestForMember($member, (int) $data['credits'], $data['note'] ?? null);
+
+        return $this->success($this->access->status($member), 'Request sent. Your gym will review it soon.', 201);
     }
 
     /**

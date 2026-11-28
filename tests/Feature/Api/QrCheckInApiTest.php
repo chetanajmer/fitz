@@ -82,6 +82,45 @@ class QrCheckInApiTest extends TestCase
         $this->assertSame(1, Attendance::withoutGlobalScopes()->count());
     }
 
+    public function test_scanning_the_desk_qr_again_checks_out_then_the_visit_is_complete(): void
+    {
+        $this->scan($this->gym->registerUrl())->assertOk()
+            ->assertJsonPath('data.action', 'checked_in')
+            ->assertJsonPath('data.state', 'checked_in');
+
+        $this->travel(90)->minutes();
+
+        $this->scan($this->gym->registerUrl())->assertOk()
+            ->assertJsonPath('message', 'Checked out at 11:30 AM (1h 30m). See you next time!')
+            ->assertJsonPath('data.action', 'checked_out')
+            ->assertJsonPath('data.state', 'checked_out')
+            ->assertJsonPath('data.attendance.check_out_at', now()->toIso8601String());
+
+        $this->scan($this->gym->registerUrl())->assertStatus(409)
+            ->assertJsonPath('code', 'ALREADY_CHECKED_OUT')
+            ->assertJsonPath('data.state', 'checked_out');
+
+        $this->assertSame(1, Attendance::withoutGlobalScopes()->count());
+    }
+
+    public function test_scanning_the_desk_qr_twice_in_a_row_does_not_check_out(): void
+    {
+        $this->scan($this->gym->registerUrl())->assertOk()->assertJsonPath('data.action', 'checked_in');
+
+        $this->travel(2)->minutes();
+
+        $this->scan($this->gym->registerUrl())->assertStatus(409)
+            ->assertJsonPath('code', 'CHECK_OUT_TOO_SOON')
+            ->assertJsonPath('message', 'You checked in at 10:00 AM. Scan again after 10:05 AM to check out.')
+            ->assertJsonPath('data.state', 'checked_in');
+
+        $this->assertNull(Attendance::withoutGlobalScopes()->sole()->check_out_at);
+
+        $this->travel(3)->minutes();
+
+        $this->scan($this->gym->registerUrl())->assertOk()->assertJsonPath('data.action', 'checked_out');
+    }
+
     public function test_link_variants_all_resolve_to_the_gym(): void
     {
         $resolver = app(GymQrResolver::class);
@@ -164,7 +203,15 @@ class QrCheckInApiTest extends TestCase
         $this->scan($this->gym->joinUrl())->assertStatus(422)->assertJsonPath('code', 'QR_EXPIRED');
         $this->scan($codes->url($this->gym->checkin_token))->assertStatus(422)->assertJsonPath('code', 'QR_EXPIRED');
 
+        // The printed desk QR works away from the gym, so it cannot open a visit here.
+        $this->scan($this->gym->registerUrl())->assertStatus(422)->assertJsonPath('code', 'QR_EXPIRED');
+        $this->assertSame(0, Attendance::withoutGlobalScopes()->count());
+
         $this->scan($codes->url($codes->screenCode($this->gym->fresh())))->assertOk()->assertJsonPath('data.source', 'qr');
+
+        // It can still close the visit the screen QR opened.
+        $this->travel(60)->minutes();
+        $this->scan($this->gym->registerUrl())->assertOk()->assertJsonPath('data.action', 'checked_out');
     }
 
     /** @param  array<string, bool>  $values */

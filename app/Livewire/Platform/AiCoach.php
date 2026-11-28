@@ -2,14 +2,18 @@
 
 namespace App\Livewire\Platform;
 
+use App\Exceptions\ApiException;
+use App\Models\AiCreditRequest;
 use App\Models\AiReport;
 use App\Models\Gym;
 use App\Models\GymAiSetting;
 use App\Models\PlatformSetting;
 use App\Services\Ai\OpenRouterClient;
 use App\Services\AiAccessService;
+use App\Services\AiCreditRequestService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -31,6 +35,9 @@ class AiCoach extends Component
 
     /** @var array{allowed: bool, monthly_credits: string, member_ceiling: string, photos_allowed: bool} */
     public array $gymForm = [];
+
+    /** Credits to grant per pending gym request, keyed by request id. @var array<int, int|string> */
+    public array $grant = [];
 
     protected const KEYS = ['ai_enabled', 'ai_model', 'ai_credits_progress', 'ai_credits_photo_comparison', 'ai_default_gym_credits', 'ai_default_member_ceiling'];
 
@@ -118,6 +125,39 @@ class AiCoach extends Component
         $this->dispatch('notify', message: 'Gym AI limits saved.');
     }
 
+    /** Approve a gym's request for a bigger pool, granting the amount typed next to it (or what they asked for). */
+    public function approveGymRequest(int $id, AiCreditRequestService $requests): void
+    {
+        $request = AiCreditRequest::forGymPool()->with('gym:id,name')->findOrFail($id);
+        $granted = (int) ($this->grant[$id] ?? $request->credits);
+
+        try {
+            $requests->approve($request, Auth::user(), $granted);
+        } catch (ApiException $e) {
+            $this->addError("grant.{$id}", $e->getMessage());
+
+            return;
+        }
+
+        unset($this->grant[$id]);
+        $this->dispatch('notify', message: "{$granted} extra credits added to {$request->gym->name} for this month.");
+    }
+
+    public function rejectGymRequest(int $id, AiCreditRequestService $requests): void
+    {
+        $request = AiCreditRequest::forGymPool()->with('gym:id,name')->findOrFail($id);
+
+        try {
+            $requests->reject($request, Auth::user());
+        } catch (ApiException $e) {
+            $this->addError("grant.{$id}", $e->getMessage());
+
+            return;
+        }
+
+        $this->dispatch('notify', message: "Request from {$request->gym->name} declined.");
+    }
+
     public function render(OpenRouterClient $client): View
     {
         $start = Carbon::now()->startOfMonth();
@@ -134,6 +174,8 @@ class AiCoach extends Component
             'gymSettings' => GymAiSetting::query()->get()->keyBy('gym_id'),
             'usage' => $usage,
             'totalCost' => (float) $usage->sum('cost_usd'),
+            'gymRequests' => AiCreditRequest::forGymPool()->pending()->with(['gym:id,name,city', 'requester:id,name'])->oldest('id')->get(),
+            'extraByGym' => AiCreditRequest::forGymPool()->grantedInMonth()->groupBy('gym_id')->select('gym_id', DB::raw('SUM(granted_credits) as credits'))->pluck('credits', 'gym_id'),
         ]);
     }
 }

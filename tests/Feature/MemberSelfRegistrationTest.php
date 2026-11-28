@@ -128,8 +128,9 @@ class MemberSelfRegistrationTest extends TestCase
 
         $this->get(route('gym.dashboard'))->assertOk()->assertSee(route('gym.qr-codes'), false);
         $this->get(route('gym.qr-codes'))->assertOk()
-            ->assertSee('Registration & check-in')
+            ->assertSee('Registration, check-in & check-out')
             ->assertSee($gym->registerUrl(), false)
+            ->assertDontSee('Member check-in')
             ->assertDontSee($gym->joinUrl(), false);
     }
 }

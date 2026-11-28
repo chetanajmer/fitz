@@ -9,6 +9,41 @@
     @endunless
 
     <div class="space-y-6">
+        @if ($gymRequests->isNotEmpty())
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Gym credit requests</h2>
+                    <x-ui.badge color="amber">{{ $gymRequests->count() }} waiting</x-ui.badge>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="table">
+                        <thead><tr><th>Gym</th><th>Asked for</th><th>Used / pool</th><th>Note</th><th>Requested</th><th>Grant</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach ($gymRequests as $request)
+                                @php $s = $gymSettings->get($request->gym_id); @endphp
+                                <tr wire:key="gr-{{ $request->id }}">
+                                    <td><span class="font-medium">{{ $request->gym->name }}</span> <span class="text-gray-500">{{ $request->gym->city }}</span></td>
+                                    <td>{{ $request->credits }} credits</td>
+                                    <td>{{ (int) ($usage->get($request->gym_id)->credits ?? 0) }} / {{ ($s->monthly_credits ?? $settings['ai_default_gym_credits']) + (int) ($extraByGym[$request->gym_id] ?? 0) }}</td>
+                                    <td class="max-w-xs text-gray-500">{{ $request->note ?? '—' }}</td>
+                                    <td class="text-gray-500">{{ $request->created_at->format('d M, h:i A') }}@if ($request->requester) · {{ $request->requester->name }}@endif</td>
+                                    <td>
+                                        <input wire:model="grant.{{ $request->id }}" type="number" min="1" max="{{ \App\Services\AiCreditRequestService::GYM_MAX }}" placeholder="{{ $request->credits }}" class="input w-24" aria-label="Credits to grant {{ $request->gym->name }}">
+                                        @error('grant.'.$request->id)<p class="input-error">{{ $message }}</p>@enderror
+                                    </td>
+                                    <td class="text-right whitespace-nowrap">
+                                        <button type="button" wire:click="approveGymRequest({{ $request->id }})" class="btn-primary btn-sm">Approve</button>
+                                        <button type="button" wire:click="rejectGymRequest({{ $request->id }})" wire:confirm="Decline this request?" class="btn-secondary btn-sm">Decline</button>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <p class="hint px-5 pb-4">Approved credits are added to the gym's pool for {{ now()->format('F Y') }} only.</p>
+            </div>
+        @endif
+
         <form wire:submit="save" class="card max-w-3xl">
             <div class="card-header"><h2 class="card-title">Platform settings</h2></div>
             <div class="card-body space-y-4">
@@ -62,7 +97,10 @@
                                         <x-ui.badge color="gray">Not allowed</x-ui.badge>
                                     @endif
                                 </td>
-                                <td>{{ (int) ($u->credits ?? 0) }} / {{ $s->monthly_credits ?? $settings['ai_default_gym_credits'] }}</td>
+                                <td>
+                                    {{ (int) ($u->credits ?? 0) }} / {{ ($s->monthly_credits ?? $settings['ai_default_gym_credits']) + (int) ($extraByGym[$gym->id] ?? 0) }}
+                                    @if ($extraByGym[$gym->id] ?? 0)<span class="block text-xs text-gray-500">incl. {{ (int) $extraByGym[$gym->id] }} extra</span>@endif
+                                </td>
                                 <td>{{ $s?->memberMonthlyLimit() ?? $settings['ai_default_member_ceiling'] }}</td>
                                 <td>{{ ($s?->photos_allowed ?? true) ? 'Yes' : 'No' }}</td>
                                 <td>{{ (int) ($u->reports ?? 0) }}</td>

@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Livewire\Gym\CheckInScreen;
-use App\Livewire\Gym\QrCodes;
 use App\Livewire\Portal\Dashboard;
 use App\Models\Attendance;
 use App\Models\Gym;
@@ -90,7 +89,7 @@ class CheckInScanTest extends TestCase
     {
         $old = $this->gym->checkin_token;
         $this->actingAs($this->gym->owner);
-        Livewire::test(QrCodes::class)->call('regenerateCheckinQr')->assertHasNoErrors();
+        app(GymProfileService::class)->regenerateCheckinToken($this->gym);
 
         $this->assertFalse($this->codes->accepts($this->gym->fresh(), $old));
         $this->assertTrue($this->codes->accepts($this->gym->fresh(), $this->gym->fresh()->checkin_token));
@@ -101,8 +100,7 @@ class CheckInScanTest extends TestCase
         $this->actingAs($this->gym->owner);
         $this->get(route('gym.check-in-screen'))->assertOk()->assertSee('uses the printed QR');
 
-        Livewire::test(QrCodes::class)->assertSee('Member check-in')->call('setCheckinMode', 'screen')->assertSee('Open live screen')
-            ->call('setCheckinMode', 'other')->assertStatus(422);
+        $this->useScreen();
 
         $this->assertSame(CheckInCodeService::SCREEN, $this->codes->mode($this->gym->fresh()));
         Livewire::test(CheckInScreen::class)->assertSee('changes every 30 seconds');

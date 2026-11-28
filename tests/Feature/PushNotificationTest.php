@@ -463,7 +463,7 @@ class PushNotificationTest extends TestCase
             'announcement' => 'fitz_announcements',
             'membership_expiring' => 'fitz_membership', 'membership_expired' => 'fitz_membership',
             'payment_received' => 'fitz_membership', 'balance_due' => 'fitz_membership',
-            'plan_assigned' => 'fitz_general', 'goal_achieved' => 'fitz_general', 'ai_report_ready' => 'fitz_general', 'test' => 'fitz_general',
+            'plan_assigned' => 'fitz_general', 'goal_achieved' => 'fitz_general', 'ai_report_ready' => 'fitz_general', 'ai_credits_decided' => 'fitz_general', 'test' => 'fitz_general',
             'weigh_in_due' => 'fitz_reminders', 'workout_reminder' => 'fitz_reminders', 'streak_at_risk' => 'fitz_reminders',
         ];
 

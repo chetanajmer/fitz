@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\MemberStatus;
 use App\Exceptions\ApiException;
+use App\Models\AiCreditRequest;
 use App\Models\AiReport;
 use App\Models\Gym;
 use App\Models\GymAiSetting;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\DB;
  *  1. Super Admin: platform switch; per gym allowed, monthly credit pool, per-member ceiling, photos allowed.
  *  2. Gym admin: enabled, eligible members (all / plans / selected), per-member limit (≤ ceiling).
  *  3. Member: consent, and credits left this month.
+ * Extra credits approved on request (AiCreditRequest) are added to the member's limit and the gym's pool for that month.
  * Usage = credits of this month's non-failed AI reports.
  */
 class AiAccessService
@@ -102,8 +104,8 @@ class AiAccessService
             $type === AiReport::PHOTO_COMPARISON && ! $settings->photos_allowed => ['AI_FEATURE_DISABLED', 'Photo comparison is not available at your gym.', 403],
             ! $this->isEligible($member, $settings) => ['AI_NOT_ELIGIBLE', 'AI coach is not included in your membership. Ask your gym about it.', 403],
             $member->ai_consent_at === null => ['AI_CONSENT_REQUIRED', 'Please accept the AI consent first.', 403],
-            $this->memberUsed($member) + $cost > $settings->memberMonthlyLimit() => ['AI_LIMIT_REACHED', 'You have used all your AI credits for this month.', 429],
-            $this->gymUsed($member->gym_id) + $cost > $settings->monthly_credits => ['AI_GYM_LIMIT_REACHED', 'Your gym has used all its AI credits for this month.', 429],
+            $this->memberUsed($member) + $cost > $this->memberLimit($member, $settings) => ['AI_LIMIT_REACHED', 'You have used all your AI credits for this month. You can ask your gym for more.', 429],
+            $this->gymUsed($member->gym_id) + $cost > $this->gymPool($settings) => ['AI_GYM_LIMIT_REACHED', 'Your gym has used all its AI credits for this month.', 429],
             default => null,
         };
 
@@ -124,14 +126,58 @@ class AiAccessService
             && $this->isEligible($member, $settings);
     }
 
-    /** @return array{limit: int, used: int, remaining: int, resets_on: string} */
+    /** Extra credits the gym admin granted this member for the month. */
+    public function memberExtra(Member $member, ?Carbon $month = null): int
+    {
+        return (int) AiCreditRequest::forGym($member->gym_id)->where('member_id', $member->id)->grantedInMonth($month)->sum('granted_credits');
+    }
+
+    /** Extra credits the Super Admin granted the gym's pool for the month. */
+    public function gymExtra(Gym|int $gym, ?Carbon $month = null): int
+    {
+        return (int) AiCreditRequest::forGym($gym)->forGymPool()->grantedInMonth($month)->sum('granted_credits');
+    }
+
+    /** The member's credits this month: the gym's per-member limit plus any extra the gym admin granted. */
+    public function memberLimit(Member $member, ?GymAiSetting $settings = null): int
+    {
+        $settings ??= $this->settingsFor($member->gym);
+
+        return $settings->memberMonthlyLimit() + $this->memberExtra($member);
+    }
+
+    /** Whether the member is out of credits: too few left for the dearest AI feature they can use. */
+    public function memberIsOut(Member $member, ?GymAiSetting $settings = null): bool
+    {
+        $settings ??= $this->settingsFor($member->gym);
+        $needed = $this->cost($settings->photos_allowed ? AiReport::PHOTO_COMPARISON : AiReport::PROGRESS);
+
+        return $this->credits($member, $settings)['remaining'] < $needed;
+    }
+
+    /** The gym's pool this month: the Super Admin's monthly credits plus any extra granted on request. */
+    public function gymPool(GymAiSetting $settings): int
+    {
+        return $settings->monthly_credits + $this->gymExtra($settings->gym_id);
+    }
+
+    /** @return array{limit: int, used: int, remaining: int, extra: int, resets_on: string, pending_request: array{credits: int, requested_at: string}|null} */
     public function credits(Member $member, ?GymAiSetting $settings = null): array
     {
         $settings ??= $this->settingsFor($member->gym);
-        $limit = $settings->memberMonthlyLimit();
+        $extra = $this->memberExtra($member);
+        $limit = $settings->memberMonthlyLimit() + $extra;
         $used = $this->memberUsed($member);
+        $pending = AiCreditRequest::forGym($member->gym_id)->where('member_id', $member->id)->pending()->latest('id')->first();
 
-        return ['limit' => $limit, 'used' => $used, 'remaining' => max(0, $limit - $used), 'resets_on' => Carbon::today()->addMonthNoOverflow()->startOfMonth()->toDateString()];
+        return [
+            'limit' => $limit,
+            'used' => $used,
+            'remaining' => max(0, $limit - $used),
+            'extra' => $extra,
+            'resets_on' => Carbon::today()->addMonthNoOverflow()->startOfMonth()->toDateString(),
+            'pending_request' => $pending ? ['credits' => $pending->credits, 'requested_at' => $pending->created_at->toIso8601String()] : null,
+        ];
     }
 
     /** What the member app shows on the AI coach screen. @return array<string, mixed> */
@@ -148,7 +194,10 @@ class AiAccessService
             'consent_version' => (int) config('consents.ai_coach.version'),
             'consent_needs_update' => $this->consents()->state($member, MemberConsent::AI_COACH)['needs_update'],
             'photo_consent' => collect($this->consents()->state($member, MemberConsent::PROGRESS_PHOTOS))->only(['accepted', 'needs_update'])->all(),
-            'credits' => $this->credits($member, $settings),
+            'credits' => $credits = $this->credits($member, $settings),
+            // No open request: the app shows "Ask your gym for more credits" (highlighted when out_of_credits).
+            'can_request_credits' => $available && $credits['pending_request'] === null,
+            'out_of_credits' => $this->memberIsOut($member, $settings),
             'features' => [
                 AiReport::PROGRESS => ['available' => $available, 'credits' => $this->cost(AiReport::PROGRESS)],
                 AiReport::PHOTO_COMPARISON => ['available' => $available && $settings->photos_allowed, 'credits' => $this->cost(AiReport::PHOTO_COMPARISON)],

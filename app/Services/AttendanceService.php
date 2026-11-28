@@ -14,6 +14,9 @@ use Illuminate\Validation\ValidationException;
 
 class AttendanceService
 {
+    /** A repeat scan of the desk QR only checks a member out once this long has passed since check-in. */
+    public const MIN_MINUTES_BEFORE_QR_CHECKOUT = 5;
+
     public function __construct(protected StreakService $streaks, protected CheckInCodeService $codes) {}
 
     /**
@@ -107,6 +110,20 @@ class AttendanceService
         return $this->checkOut($attendance);
     }
 
+    /**
+     * Guards against a double scan of the desk QR checking the member straight back out.
+     *
+     * @throws ValidationException
+     */
+    public function ensureQrCheckOutIsNotTooSoon(Attendance $attendance): void
+    {
+        $earliestCheckOut = $attendance->check_in_at->copy()->addMinutes(self::MIN_MINUTES_BEFORE_QR_CHECKOUT);
+
+        if (now()->lt($earliestCheckOut)) {
+            throw ValidationException::withMessages(['member' => 'You checked in at '.$attendance->check_in_at->format('h:i A').'. Scan again after '.$earliestCheckOut->format('h:i A').' to check out.']);
+        }
+    }
+
     public function checkOut(Attendance $attendance): Attendance
     {
         if ($attendance->check_out_at) {
@@ -121,8 +138,9 @@ class AttendanceService
 
     /**
      * Desk QR flow: a signed-in member scans the gym's printed desk QR (the /register/{token} link)
-     * to check in, and scans it again to check out. Works whether or not self check-in is switched on,
-     * because the printed QR is only reachable at the gym.
+     * to check in, and scans it again to check out. Works whether or not self check-in is switched on.
+     * A gym using the live screen QR only accepts the printed desk QR for checking out, because a photo
+     * of a printed QR works anywhere.
      *
      * @return array{attendance: Attendance, action: 'checked_in'|'checked_out'}
      */
@@ -141,7 +159,13 @@ class AttendanceService
         }
 
         if ($today) {
+            $this->ensureQrCheckOutIsNotTooSoon($today);
+
             return ['attendance' => $this->checkOut($today), 'action' => 'checked_out'];
+        }
+
+        if ($this->codes->mode($member->gym) === CheckInCodeService::SCREEN) {
+            throw ValidationException::withMessages(['member' => 'Please scan the live check-in QR on the screen at the front desk to check in.']);
         }
 
         return ['attendance' => $this->checkIn($member, 'desk_qr'), 'action' => 'checked_in'];

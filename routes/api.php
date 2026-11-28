@@ -94,6 +94,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('ai/reports', [AiCoachController::class, 'index'])->name('ai.reports.index');
             Route::post('ai/reports', [AiCoachController::class, 'store'])->middleware('throttle:10,1')->name('ai.reports.store');
             Route::get('ai/reports/{reportId}', [AiCoachController::class, 'show'])->whereNumber('reportId')->name('ai.reports.show');
+            Route::post('ai/credit-requests', [AiCoachController::class, 'requestCredits'])->middleware('throttle:5,1')->name('ai.credit-requests.store');
             Route::get('reminders', [ReminderController::class, 'show'])->name('reminders');
             Route::put('reminders', [ReminderController::class, 'update'])->middleware('throttle:30,1')->name('reminders.update');
             Route::get('hydration', [ReminderController::class, 'hydration'])->name('hydration');

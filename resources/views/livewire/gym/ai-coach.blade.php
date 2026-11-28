@@ -9,14 +9,54 @@
     @endif
 
     <div class="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <x-ui.stat label="Credits used this month" :value="$used.' / '.$settings->monthly_credits" icon="sparkles" :color="$used >= $settings->monthly_credits ? 'red' : 'brand'" hint="Gym pool set by Fitnix, resets on the 1st" />
+        <x-ui.stat label="Credits used this month" :value="$used.' / '.$pool" icon="sparkles" :color="$used >= $pool ? 'red' : 'brand'" :hint="$poolExtra > 0 ? 'Includes '.$poolExtra.' extra from Fitnix this month' : 'Gym pool set by Fitnix, resets on the 1st'" />
         <x-ui.stat label="Per member limit" :value="$settings->memberMonthlyLimit().' credits'" icon="user" color="blue" :hint="'Fitnix maximum: '.$settings->member_ceiling" />
         <x-ui.stat label="Photo comparison" :value="$settings->photos_allowed ? 'Included' : 'Not included'" icon="camera" :color="$settings->photos_allowed ? 'green' : 'gray'" />
         <x-ui.stat label="Members who consented" :value="$consentedCount" icon="shield" color="green" hint="Accepted the AI consent in the app" />
     </div>
 
+    @if ($memberRequests->isNotEmpty())
+        <div class="card mb-6">
+            <div class="card-header">
+                <h2 class="card-title">Member credit requests</h2>
+                <x-ui.badge color="amber">{{ $memberRequests->count() }} waiting</x-ui.badge>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table">
+                    <thead><tr><th>Member</th><th>Asked for</th><th>Note</th><th>Requested</th><th>Grant</th><th></th></tr></thead>
+                    <tbody>
+                        @foreach ($memberRequests as $request)
+                            <tr wire:key="cr-{{ $request->id }}">
+                                <td>
+                                    @can('view', $request->member)
+                                        <a href="{{ route('gym.members.show', ['member' => $request->member, 'tab' => 'ai']) }}" class="font-medium text-indigo-600 hover:underline">{{ $request->member->name }}</a>
+                                    @else
+                                        {{ $request->member->name }}
+                                    @endcan
+                                </td>
+                                <td>{{ $request->credits }} {{ \Illuminate\Support\Str::plural('credit', $request->credits) }}</td>
+                                <td class="max-w-xs text-gray-500">{{ $request->note ?? '—' }}</td>
+                                <td class="text-gray-500">{{ $request->created_at->format('d M, h:i A') }}</td>
+                                <td>
+                                    <input wire:model="grant.{{ $request->id }}" type="number" min="1" max="{{ \App\Services\AiCreditRequestService::MEMBER_MAX }}" placeholder="{{ $request->credits }}" class="input w-20" aria-label="Credits to grant {{ $request->member->name }}">
+                                    @error('grant.'.$request->id)<p class="input-error">{{ $message }}</p>@enderror
+                                </td>
+                                <td class="text-right whitespace-nowrap">
+                                    <button type="button" wire:click="approveMemberRequest({{ $request->id }})" class="btn-primary btn-sm">Approve</button>
+                                    <button type="button" wire:click="rejectMemberRequest({{ $request->id }})" wire:confirm="Decline this request?" class="btn-secondary btn-sm">Decline</button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <p class="hint px-5 pb-4">Extra credits count for this month only and come out of your gym's pool ({{ max(0, $pool - $used) }} left).</p>
+        </div>
+    @endif
+
     <div class="grid gap-6 lg:grid-cols-3">
-        <form wire:submit="save" class="card lg:col-span-1">
+        <div class="space-y-6 lg:col-span-1">
+        <form wire:submit="save" class="card">
             <div class="card-header"><h2 class="card-title">Settings</h2></div>
             <div class="card-body space-y-4">
                 <label class="flex items-center gap-2 text-sm font-medium">
@@ -56,6 +96,42 @@
             </div>
             <div class="border-t border-gray-100 px-5 py-4"><button type="submit" class="btn-primary">Save</button></div>
         </form>
+
+        @php $openPoolRequest = $poolRequests->first(fn ($r) => $r->isPending()); @endphp
+        <div class="card">
+            <div class="card-header"><h2 class="card-title">Need more credits?</h2></div>
+            <div class="card-body space-y-4">
+                @if ($openPoolRequest)
+                    <p class="flex items-start gap-2 text-sm text-amber-800"><x-ui.icon name="clock" class="mt-0.5 size-4 shrink-0" /> You asked Fitnix for {{ $openPoolRequest->credits }} credits on {{ $openPoolRequest->created_at->format('d M') }}. Waiting for their answer.</p>
+                @else
+                    <form wire:submit="requestPoolCredits" class="space-y-3">
+                        <p class="text-sm text-gray-500">
+                            {{ $settings->allowed ? 'Ask Fitnix to add credits to your gym\'s pool for this month.' : 'Ask Fitnix to switch on AI coach and add credits for your gym.' }}
+                            You get {{ $settings->monthly_credits }} credits every month; {{ max(0, $pool - $used) }} left now.
+                        </p>
+                        <x-ui.field label="Credits" name="poolCredits">
+                            <input wire:model="poolCredits" type="number" min="{{ \App\Services\AiCreditRequestService::GYM_MIN }}" max="{{ \App\Services\AiCreditRequestService::GYM_MAX }}" class="input">
+                        </x-ui.field>
+                        <x-ui.field label="Note (optional)" name="poolNote">
+                            <input wire:model="poolNote" type="text" maxlength="300" class="input" placeholder="e.g. Transformation challenge this month">
+                        </x-ui.field>
+                        <button type="submit" wire:loading.attr="disabled" wire:target="requestPoolCredits" class="btn-primary">Send request</button>
+                    </form>
+                @endif
+
+                @foreach ($poolRequests->reject(fn ($r) => $r->isPending()) as $past)
+                    <p wire:key="pr-{{ $past->id }}" class="flex items-center justify-between gap-2 border-t border-gray-100 pt-3 text-sm">
+                        <span class="text-gray-500">{{ $past->created_at->format('d M') }} · {{ $past->credits }} credits</span>
+                        @if ($past->status === \App\Models\AiCreditRequest::APPROVED)
+                            <x-ui.badge color="green">{{ $past->granted_credits }} added</x-ui.badge>
+                        @else
+                            <x-ui.badge color="red">Declined</x-ui.badge>
+                        @endif
+                    </p>
+                @endforeach
+            </div>
+        </div>
+        </div>
 
         <div class="card lg:col-span-2">
             <div class="card-header"><h2 class="card-title">Latest AI reports</h2></div>

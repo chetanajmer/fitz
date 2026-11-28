@@ -65,7 +65,8 @@ class CheckInController extends ApiController
 
     /**
      * POST /api/v1/me/check-in/qr { "qr": "<scanned text>" } — the member scans the gym's QR code
-     * (join / registration link, or the check-in QR) to mark today's attendance.
+     * (join / registration link, or the check-in QR) to mark today's attendance. Scanning the desk QR
+     * (registration link) again after checking in checks the member out, once a few minutes have passed.
      */
     public function qrCheckIn(Request $request): JsonResponse
     {
@@ -83,9 +84,33 @@ class CheckInController extends ApiController
             $this->rejectScan($member, $data['qr'], 'WRONG_GYM', 'This QR belongs to another gym.', 403);
         }
 
-        // A gym showing the live screen QR wants members at the desk: printed codes and links are not enough.
-        if ($this->codes->mode($gym) === CheckInCodeService::SCREEN && $scan['kind'] !== GymQrResolver::KIND_CHECKIN_SCREEN) {
+        $today = $scan['kind'] === GymQrResolver::KIND_REGISTER ? $this->attendance->today($member) : null;
+
+        // A gym showing the live screen QR wants members at the desk: printed codes and links are not enough
+        // to check in. The printed desk QR (registration link) may still close a visit that is already open.
+        if ($this->codes->mode($gym) === CheckInCodeService::SCREEN && $scan['kind'] !== GymQrResolver::KIND_CHECKIN_SCREEN && ! $today) {
             $this->rejectScan($member, $data['qr'], 'QR_EXPIRED', 'Please scan the live check-in QR on the screen at the front desk.', 422);
+        }
+
+        // Scanning the desk QR again while checked in checks the member out.
+        if ($today) {
+            if ($today->check_out_at) {
+                throw new ApiException('Your visit today is already complete ('.$today->check_in_at->format('h:i A').' – '.$today->check_out_at->format('h:i A').').', 'ALREADY_CHECKED_OUT', 409, $this->statusPayload($member));
+            }
+
+            try {
+                $this->attendance->ensureQrCheckOutIsNotTooSoon($today);
+            } catch (ValidationException $e) {
+                throw new ApiException(collect($e->errors())->flatten()->first(), 'CHECK_OUT_TOO_SOON', 409, $this->statusPayload($member));
+            }
+
+            $record = $this->attendance->checkOut($today);
+
+            return $this->success($this->statusPayload($member) + [
+                'action' => 'checked_out',
+                'source' => $record->source(),
+                'streak' => $this->streaks->summary($member),
+            ], 'Checked out at '.$record->check_out_at->format('h:i A').' ('.$record->durationLabel().'). See you next time!');
         }
 
         if (! $member->memberships()->valid()->exists()) {
@@ -115,6 +140,7 @@ class CheckInController extends ApiController
         }
 
         return $this->success($this->statusPayload($member) + [
+            'action' => 'checked_in',
             'source' => $record->source(),
             'streak' => $this->streaks->summary($member),
         ], "Checked in at {$gym->name}. Have a great workout!");
